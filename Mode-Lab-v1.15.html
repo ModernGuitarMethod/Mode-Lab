@@ -135,7 +135,7 @@ button.action.practice{background:#166534;color:#fff}
 .head{width:12px;height:9px;border-radius:50%;background:currentColor;color:#e2e8f0;position:absolute;left:50%;transform:translateX(-50%)}
 .ledger{position:absolute;width:18px;height:1px;background:#94a3b8;left:50%;transform:translateX(-50%)}
 .tab-block{margin-left:0;font-family:"Courier New",monospace;font-size:12px;line-height:1.4;color:#e2e8f0;padding-top:4px}
-.tab-row{display:flex;align-items:center;min-height:18px}.tab-str{width:42px;flex:0 0 42px;color:#94a3b8;font-size:10px;text-align:right;padding-right:6px;box-sizing:border-box}
+.tab-row{display:flex;align-items:center;min-height:14px;height:14px}.tab-str{width:42px;flex:0 0 42px;color:#94a3b8;font-size:10px;text-align:right;padding-right:6px;box-sizing:border-box}
 .tab-row.vf-tab{position:relative;display:block;padding-left:0}
 .tab-row.vf-tab .tab-str{position:absolute;left:2px;top:0;width:32px;flex:none;text-align:left;padding-right:0;z-index:2}
 .tab-cells{display:flex;position:relative;flex:1;min-height:18px}.tab-cell{width:34px;flex:0 0 34px;text-align:center;color:#555}
@@ -303,7 +303,7 @@ body.light .card{background:var(--card);border-color:#d4cbb8}
   .how-row{grid-column:1/-1;grid-row:1;margin:0 0 .15rem}
   .col-controls{grid-column:1;grid-row:2;overflow:auto;-webkit-overflow-scrolling:touch;padding-right:.2rem}
   .col-play{grid-column:2;grid-row:2;overflow:auto;-webkit-overflow-scrolling:touch}
-  .col-wide{grid-column:1/-1;grid-row:3;max-height:26vh;overflow:auto;overflow-x:auto}
+  .col-wide{grid-column:1/-1;grid-row:3;max-height:none;overflow:hidden;overflow-x:auto}
   .hint-box,.footer{display:none}
   .string-row{height:20px}
   .tuner-meter{height:20px}
@@ -318,12 +318,12 @@ body.light .card{background:var(--card);border-color:#d4cbb8}
 /* v1.15 one screen: no page scroll, tab stays on screen */
 html,body{height:100dvh;max-height:100dvh;overflow:hidden}
 .app{height:100%;max-height:100dvh;display:flex;flex-direction:column;min-height:0}
-header{height:64px;min-height:56px;margin:0 0 .15rem;padding:0 14px}
+header{height:56px;min-height:52px;margin:0 0 .1rem;padding:0 12px}
 .card.layout{
   flex:1;min-height:0;overflow:hidden;
   display:grid;
   grid-template-columns:1fr;
-  grid-template-rows:auto minmax(0,32vh) minmax(0,1fr) minmax(120px,28vh);
+  grid-template-rows:auto minmax(0,30vh) minmax(0,1fr) minmax(190px,36vh);
   gap:.22rem;
 }
 .how-row{grid-row:1;margin:0 0 .1rem}
@@ -346,18 +346,26 @@ header{height:64px;min-height:56px;margin:0 0 .15rem;padding:0 14px}
 .nut{left:26px;width:3px;top:0;bottom:0;z-index:3}
 .strings-wrap{overflow:hidden;position:relative}
 .level-row{margin-top:.1rem}
-.score-scroll{max-height:none}
+.score-scroll{max-height:none;min-height:0;overflow-x:auto;overflow-y:hidden}
+.vf-host{min-height:0;padding-bottom:0}
+.tab-block{margin-top:4px;padding-top:4px}
+.tab-row,.tab-row.vf-tab{min-height:14px !important;height:14px;line-height:14px;padding:0}
+.tab-str{font-size:9px}
+.section{margin:0;padding:.28rem .4rem .3rem}
+.progress-notes,.status,.score-legend{display:none !important}
+.col-wide{overflow:hidden}
+.score-scroll{overflow-y:hidden}
 @media (orientation: landscape) and (min-width: 860px){
   body{padding:.25rem .4rem;height:100dvh;overflow:hidden}
   .card.layout{
     grid-template-columns:minmax(260px,32%) 1fr;
-    grid-template-rows:auto minmax(0,1fr) minmax(110px,26vh);
+    grid-template-rows:auto minmax(0,1fr) minmax(190px,34vh);
     gap:.28rem;
   }
   .how-row{grid-column:1/-1;grid-row:1}
   .col-controls{grid-column:1;grid-row:2;max-height:none}
   .col-play{grid-column:2;grid-row:2}
-  .col-wide{grid-column:1/-1;grid-row:3;max-height:26vh}
+  .col-wide{grid-column:1/-1;grid-row:3;max-height:none;overflow:hidden}
   .string-row{height:16px}
   .hint-box,.footer{display:none !important}
 }
@@ -543,7 +551,6 @@ header{height:64px;min-height:56px;margin:0 0 .15rem;padding:0 14px}
   <div class="col-wide">
   <div class="section">
     <div class="section-label" id="modeFormula"></div>
-    <div class="section-label" style="margin-top:.45rem">Notation + Tab</div>
     <div class="score-scroll" id="scoreScroll"><div id="scoreWrap"></div></div>
   </div>
   <div class="progress-notes" id="progressNotes"></div>
@@ -1583,14 +1590,14 @@ function renderScoreVex(){
   const n=scale.length, colW=36;
   const keyName=vexKeySignature();
   const width=Math.max(280, 110+Math.max(1,n)*colW);
-  wrap.innerHTML=`<div class="vf-host" style="min-width:${width}px"></div><div class="tab-block" id="homeTab" style="min-width:${width}px"></div><div class="score-legend">Gold = current · Green = done</div>`;
+  wrap.innerHTML=`<div class="vf-host" style="min-width:${width}px"></div><div class="tab-block" id="homeTab" style="min-width:${width}px"></div>`;
   const host=wrap.querySelector(".vf-host");
   const renderer=new VF.Renderer(host, VF.Renderer.Backends.SVG);
-  renderer.resize(width, instrument==="bass"?168:158);
+  renderer.resize(width, instrument==="bass"?112:100);
   const ctx=renderer.getContext();
   ctx.setFillStyle("#e2e8f0");
   ctx.setStrokeStyle("#94a3b8");
-  const stave=new VF.Stave(8, 12, width-16);
+  const stave=new VF.Stave(8, 4, width-16);
   const clef=instrument==="bass"?"bass":"treble";
   if(clef==="bass") stave.addClef("bass");
   else stave.addClef("treble","default","8vb");
