@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta http-equiv="Permissions-Policy" content="microphone=*, autoplay=*"/>
-<title>Mode Lab v1.16 + Jam Lab v1.16</title>
+<title>Mode Lab v1.17 + Jam Lab v1.17</title>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#080808}
 iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#080808}
@@ -17,7 +17,7 @@ iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#080808
 const p = new URLSearchParams(location.search);
 const jam = p.get("lab")==="jam";
 p.delete("lab");
-const file = jam ? "Jam-Lab-v1.16.html" : "Mode-Lab-v1.16.html";
+const file = jam ? "Jam-Lab-v1.17.html" : "Mode-Lab-v1.17.html";
 const q = p.toString();
 document.getElementById("lab").src = q ? file+"?"+q : file;
 </script>
