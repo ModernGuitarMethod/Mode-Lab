@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta http-equiv="Permissions-Policy" content="microphone=*"/>
-<title>Mode Lab v1.22 + Jam Lab v1.22</title>
+<title>Mode Lab v1.24 + Jam Lab v1.24</title>
 </head>
 <body>
 <script>
 const p = new URLSearchParams(location.search);
 const jam = p.get("lab")==="jam";
 p.delete("lab");
-const file = jam ? "Jam-Lab-v1.22.html" : "Mode-Lab-v1.22.html";
+const file = jam ? "Jam-Lab-v1.24.html" : "Mode-Lab-v1.24.html";
 const q = p.toString();
 location.replace(q ? file+"?"+q : file);
 </script>
