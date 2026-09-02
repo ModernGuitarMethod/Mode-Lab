@@ -12,7 +12,11 @@
 const p = new URLSearchParams(location.search);
 const lab = (p.get("lab")||"").toLowerCase();
 p.delete("lab");
-const file = lab==="jam" ? "Jam-Lab-v1.31.html" : lab==="chord" ? "Chord-Lab-v1.31.html" : "Mode-Lab-v1.31.html";
+const file = lab==="jam" ? "Jam-Lab-v1.33.html"
+  : lab==="chord" ? "Chord-Lab-v1.33.html"
+  : lab==="song" ? "Songwriter-Lab-v1.33.html"
+  : lab==="player" ? "Player-Lab-v1.33.html"
+  : "Mode-Lab-v1.33.html";
 const q = p.toString();
 location.replace(q ? file+"?"+q : file);
 </script>
