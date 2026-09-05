@@ -4,19 +4,22 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta http-equiv="Permissions-Policy" content="microphone=*"/>
-<title>Guitar Lab</title>
+<meta name="theme-color" content="#000000"/>
+<meta name="apple-mobile-web-app-title" content="Mode Lab"/>
+<meta name="application-name" content="Mode Lab"/>
+<title>Mode Lab</title>
 </head>
 <body>
 <script>
 const p = new URLSearchParams(location.search);
 const lab = (p.get("lab")||"").toLowerCase();
 p.delete("lab");
-const file = lab==="jam" ? "Jam-Lab-v1.33.html"
-  : lab==="chord" ? "Chord-Lab-v1.33.html"
-  : lab==="song" ? "Songwriter-Lab-v1.33.html"
-  : lab==="player" ? "Player-Lab-v1.33.html"
-  : "Mode-Lab-v1.33.html";
+let file = "Mode-Lab-v1.35.html";
+if(lab==="jam") file = "Jam-Lab-v1.35.html";
+else if(lab==="chord") file = "Chord-Lab-v1.35.html";
+else if(lab==="song") file = "Songwriter-Lab-v1.35.html";
+else if(lab==="player" || lab==="tab") file = "Tab-Lab-v1.35.html";
+else if(lab==="fret") file = "Fret-Lab-v1.35.html";
 const q = p.toString();
 location.replace(q ? file+"?"+q : file);
 </script>
