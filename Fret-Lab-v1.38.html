@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Fret Lab v1.38 · Dale Taylor Mode Lab school · branded header clone · nut=open · Theory games one-surface Test -->
+<!-- Fret Lab v1.38 · Dale Taylor Mode Lab school · branded header clone · nut=open · nut-fix · Theory games one-surface Test -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -114,7 +114,7 @@ body.light a.action.ghost{color:#2a2118}
 .game-brief .gb-title{font-size:1.15rem;font-weight:800;color:var(--gold);line-height:1.25;margin:0 0 .25rem}
 .game-brief .gb-do{font-size:1.02rem;font-weight:700;color:var(--white);line-height:1.35;margin:0}
 .game-brief .gb-phase{display:inline-block;margin-top:.35rem;font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.fret-numbers .fret-num-open{font-size:.52rem;letter-spacing:.02em;line-height:1.1;padding-top:1px}
+.fret-numbers .fret-num-open{font-size:.55rem;letter-spacing:.06em;line-height:1.1;padding-top:1px;font-weight:800;color:#f0e0c0;text-transform:uppercase}
 .view-row{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;align-items:center;margin:.35rem 0 .5rem}
 .view-pill,.mini-pill{background:#1a1a1a;border:1px solid #333;color:var(--muted);padding:.26rem .6rem;border-radius:999px;font-size:.68rem;font-weight:800;cursor:pointer}
 .view-pill.on,.mini-pill.on{background:var(--gold);color:#111;border-color:var(--gold)}
@@ -133,12 +133,12 @@ body.light a.action.ghost{color:#2a2118}
 .neck-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overflow-y:visible;padding-bottom:4px}
 .neck-outer{background:linear-gradient(180deg,#3a2a1c,#2a1c12 40%,#1f150e);border-radius:10px;padding:10px 6px 14px;border:1px solid #5a4030;position:relative;box-shadow:inset 0 2px 8px rgba(0,0,0,.4);overflow:visible;min-width:min(100%,520px)}
 .strings-wrap{position:relative;overflow:visible}
-.nut{position:absolute;left:62px;top:2px;bottom:2px;width:5px;background:linear-gradient(90deg,#f0e6d0,#c9b896);border-radius:2px;z-index:5;pointer-events:none}.fret-cell.open-cell::after{display:none}.fret-cell.open-cell{z-index:6}
+.nut{position:absolute;left:62px;top:0;bottom:0;width:7px;background:linear-gradient(90deg,#fff8e8,#e8d4a8 45%,#a89068);border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.45),inset 0 0 2px rgba(255,255,255,.35);z-index:5;pointer-events:none}.fret-cell.open-cell::after{display:none}.fret-cell.open-cell{z-index:6}
 .fret-numbers{display:grid;text-align:center;font-size:.6rem;font-weight:700;color:#b89a6d;margin-bottom:2px}
 .string-row{display:grid;height:28px;align-items:center;position:relative}
 .neck-outer.str4 .string-row{height:32px}
 .string-name{font-size:.62rem;font-weight:700;color:#d4b896;text-align:right;padding-right:4px}
-.string-line{position:absolute;left:67px;right:2px;height:1.5px;background:linear-gradient(90deg,#888,#ccc,#888);top:50%;transform:translateY(-50%);z-index:1;opacity:.7;pointer-events:none}
+.string-line{position:absolute;left:69px;right:2px;height:1.5px;background:linear-gradient(90deg,#888,#ccc,#888);top:50%;transform:translateY(-50%);z-index:1;opacity:.7;pointer-events:none}
 .fret-cell{height:100%;position:relative;display:flex;align-items:center;justify-content:center;z-index:2;cursor:pointer;background:transparent;border:none;padding:0}
 .fret-cell::after{content:"";position:absolute;right:0;top:2px;bottom:2px;width:2.2px;background:linear-gradient(180deg,#e0e0e0,#888);border-radius:1px;z-index:3}
 .inlay{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:rgba(232,220,190,.28);pointer-events:none;z-index:1;box-shadow:inset 0 0 2px rgba(0,0,0,.35)}
@@ -677,7 +677,7 @@ function renderStaff(midi, showAcc, cls){
 function renderTab(stringIdx, fret, cls){
   if(cls==null) cls="ask";
   lastScore.cls=cls||"ask";
-  loadAlphaNotes([{s:stringIdx,f:fret}], "String "+(strNames()[stringIdx]||"?")+" · fret "+fret);
+  loadAlphaNotes([{s:stringIdx,f:fret}], "String "+(strNames()[stringIdx]||"?")+(fret===0?" · OPEN":" · fret "+fret));
   if($("tabHost")) $("tabHost").innerHTML="";
 }
 function clearScore(){
@@ -716,10 +716,10 @@ function buildNeck(opts){
   const frets=nFrets();
   const names=strNames();
   const openM=opens();
-  /* v1.38 nut=open: col0 = open (fret 0) LEFT of nut; cells 1..n = frets (MIDI open+f). Header label "open" (not 0). */
+  /* Dale lock — open left of nut; frets 1…n; never show 0 as a fret label. (data-f=0 OK for MIDI open.) */
   const cols="28px 34px repeat("+frets+",minmax(26px,1fr))";
   const inlays={3:1,5:1,7:1,9:1,12:1};
-  let nums="<div class=\"fret-numbers\" style=\"grid-template-columns:"+cols+"\"><div></div><div class=\"fret-num-open\" title=\"open\">open</div>";
+  let nums="<div class=\"fret-numbers\" style=\"grid-template-columns:"+cols+"\"><div></div><div class=\"fret-num-open\" title=\"OPEN\">OPEN</div>";
   for(let f=1;f<=frets;f++) nums+="<div>"+f+"</div>";
   nums+="</div>";
   let rows="<div class=\"strings-wrap\"><div class=\"nut\" aria-hidden=\"true\"></div>";
@@ -730,7 +730,7 @@ function buildNeck(opts){
       const showInlay = f>0 && inlays[f] && (si===Math.floor((names.length-1)/2) || (f===12 && (si===1 || si===names.length-2)));
       const inlayHtml = showInlay ? ("<span class=\"inlay"+(f===12?" double":"")+"\"></span>") : "";
       const openCls = f===0 ? " open-cell" : "";
-      const aria = f===0 ? (nm+" open") : (nm+" fret "+f);
+      const aria = f===0 ? (nm+" OPEN") : (nm+" fret "+f);
       rows+="<button type=\"button\" class=\"fret-cell"+openCls+"\" data-s=\""+si+"\" data-f=\""+f+"\" data-midi=\""+midi+"\" aria-label=\""+aria+"\">"+inlayHtml+"<span class=\"dot\"></span></button>";
     }
     rows+="</div>";
@@ -843,7 +843,7 @@ function staffWrittenMidi(midi){
 
 function landmarksPool(){
   const o=opens(); const pool=[];
-  o.forEach((m,si)=>pool.push({s:si,f:0,midi:m,label:"open "+strNames()[si]}));
+  o.forEach((m,si)=>pool.push({s:si,f:0,midi:m,label:"OPEN "+strNames()[si]}));
   [5,7,12].forEach(f=>o.forEach((m,si)=>pool.push({s:si,f:f,midi:m+f,label:strNames()[si]+" fret "+f})));
   return pool;
 }
@@ -918,7 +918,7 @@ function startStaffNeck(){
   const midi=o[s]+f;
   const name=spellPrefer(pcOf(midi), preferSharpSpell());
   currentQ={type:"staff-neck", s,f,midi, name, expectMidi:true};
-  $("promptQ").textContent = phase==="test" ? "Find this note on the neck" : (name + (f===0?" open":" · try the neck"));
+  $("promptQ").textContent = phase==="test" ? "Find this note on the neck" : (name + (f===0?" OPEN":" · try the neck"));
   $("promptHint").textContent="Exact MIDI · tap or mic later";
   applyTestSurfaces("staff-and-neck");
   /* Prompt = staff; answer = blank neck (both visible; no lit target / no tab) */
@@ -1012,7 +1012,7 @@ function startFirstFour(){
   if(!pool.length){ m2Stage="naturals"; return startFirstFour(); }
   const q=pool[Math.floor(Math.random()*pool.length)];
   currentQ={type:"first-four", ...q};
-  $("promptQ").textContent=phase==="test"?"Name the note":(strNames()[q.s]+(q.f===0?" open":" fret "+q.f));
+  $("promptQ").textContent=phase==="test"?"Name the note":(strNames()[q.s]+(q.f===0?" OPEN":" fret "+q.f));
   $("promptHint").textContent=useSharps?"First four frets — sharps":"First four frets — naturals (then sharps)";
   applyTestSurfaces("neck");
   buildNeck({lit:[[q.s,q.f]], litClass:"target"});
@@ -1020,7 +1020,7 @@ function startFirstFour(){
     renderStaff(q.midi,true,"ask");
     const gh=$("m2GridHost"); gh.style.display="block";
     let grid="";
-    for(let f=0;f<=4;f++) grid+=`<div class="m2-cell${f===q.f?" lit":""}">${f===0?"open":f}</div>`;
+    for(let f=0;f<=4;f++) grid+=`<div class="m2-cell${f===q.f?" lit":""}">${f===0?"OPEN":f}</div>`;
     gh.innerHTML=`<div class="section-label">Frets open–4</div><div class="m2-grid">${grid}</div>`;
   } else {
     clearPromptSurfaces();

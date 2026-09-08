@@ -727,7 +727,7 @@ header .rail-center{
     <span class="swap on">Chord</span>
     <a class="swap" id="songSwap" href="Songwriter-Lab-v1.37.html" target="_top">Song</a>
     <a class="swap" id="tabSwap" href="Tab-Lab-v1.37.html" target="_top">Tab</a>
-    <a class="swap" id="fretSwap" href="Fret-Lab-v1.37.html" target="_top">Fret</a>
+    <a class="swap" id="fretSwap" href="Fret-Lab-v1.38.html" target="_top">Fret</a>
   </div>
 </header>
 <div class="card layout">
@@ -778,9 +778,6 @@ header .rail-center{
     <div class="family-tabs" id="familyTabs" hidden></div>
     <div class="modes" id="modes" hidden></div>
     <span id="voiceSeg" hidden></span>
-    <span id="cagedSeg" hidden></span>
-    <span id="invSeg" hidden></span>
-    <span id="markSeg" hidden></span>
     <div class="mode-tip" id="modeTip"></div>
     <div class="section-label">Diatonic chords · tap one</div>
     <div class="dia" id="dia"></div>
@@ -1571,8 +1568,8 @@ function fingersFor(form, base){
     "x02223@0":[null,0,1,2,3,4],
     "022100@1":[1,3,4,2,1,1],
     "133211@1":[1,3,4,2,1,1],
-    "x02220@2":[null,1,3,4,4,2],
-    "x24442@2":[null,1,3,4,4,2],
+    "x02220@2":[null,1,2,3,4,1],
+    "x24442@2":[null,1,2,3,4,1],
     "022000@2":[1,3,4,1,1,1],
     "244222@2":[1,3,4,1,1,1],
     "021000@0":[0,2,1,0,0,0],
@@ -2672,6 +2669,12 @@ function renderMarkers(){
   document.querySelectorAll("#markSeg button").forEach(b=>{
     b.classList.toggle("on", b.getAttribute("data-mark")===markerMode);
   });
+  const msd=document.getElementById("markSelDrop");
+  if(msd && document.activeElement!==msd) msd.value=markerMode;
+  const csd=document.getElementById("cagedSel");
+  if(csd && document.activeElement!==csd) csd.value=cagedLetter;
+  const isd=document.getElementById("invSel");
+  if(isd && document.activeElement!==isd) isd.value=String(invIndex);
   document.querySelectorAll("#voiceSeg button").forEach(b=>{
     b.classList.toggle("on", (b.getAttribute("data-voice")==="7")===(voiceTier!=="triad"));
   });
@@ -2702,7 +2705,7 @@ function updateLabLinks(){
   const player=document.getElementById("tabSwap");
   if(player) player.href="Tab-Lab-v1.37.html?"+qs;
   const fret=document.getElementById("fretSwap");
-  if(fret) fret.href="Fret-Lab-v1.37.html?"+qs;
+  if(fret) fret.href="Fret-Lab-v1.38.html?"+qs;
 }
 function sharedLabQuery(extra){
   const o={root:rootName,family:family,mode:modeName};
@@ -2808,6 +2811,7 @@ function fillInit(){
   if(sc) sc.onchange=()=>{ showScale=sc.checked; render(); };
   
 (function wireChordDropdowns(){
+  /* v1.38 Dale/Theory: Markers/CAGED/Inv dropdowns set state directly (no empty duplicate seg ids). B A-shape @2 fingers [null,1,2,3,4,1]. */
   function clickSeg(segId, attr, v){
     const box=document.getElementById(segId);
     if(!box) return false;
@@ -2827,11 +2831,11 @@ function fillInit(){
   const aqs=document.getElementById("allQualSel");
   if(aqs){ /* onchange assigned in renderAllQualDropdown */ }
   const cs=document.getElementById("cagedSel");
-  if(cs){ cs.onchange=function(){ clickSeg("cagedSeg","data-caged",cs.value); }; }
+  if(cs){ cs.onchange=function(){ cagedLetter=cs.value; render(); }; }
   const is=document.getElementById("invSel");
-  if(is){ is.onchange=function(){ clickSeg("invSeg","data-inv",is.value); }; }
+  if(is){ is.onchange=function(){ invIndex=parseInt(is.value,10)||0; render(); }; }
   const ms=document.getElementById("markSelDrop");
-  if(ms){ ms.onchange=function(){ clickSeg("markSeg","data-mark",ms.value); }; }
+  if(ms){ ms.onchange=function(){ markerMode=ms.value; render(); }; }
   try{syncLabLogo();}catch(e){}
 })();
 
