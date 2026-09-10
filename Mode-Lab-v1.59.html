@@ -1668,22 +1668,37 @@ function shapeIndexOff(){
 function shapeLabel(){
   return scaleShape===1?"4th finger":scaleShape===3?"1st finger":"2nd finger";
 }
-function shapeFinger(rootFret, fret){
+function stringThirdShift(opens){
+  /* After a major-3rd string pair (standard G→B), higher strings sit +1 fret vs all-fourths.
+     All Fourths / bass fourths: no shift. Open tunings with odd intervals: no CAGED shift. */
+  opens=opens||currentOpens();
+  const n=opens.length, sh=new Array(n).fill(0);
+  let acc=0;
+  for(let s=n-2;s>=0;s--){
+    const iv=opens[s]-opens[s+1];
+    if(iv===4) acc=1;
+    sh[s]=acc;
+  }
+  return sh;
+}
+function shapeFinger(rootFret, fret, stringIndex){
+  const sh=stringThirdShift();
+  const adj=fret-((stringIndex>=0&&sh[stringIndex])?sh[stringIndex]:0);
   if(scaleShape===1){
-    const rel=fret-(rootFret-3);
+    const rel=adj-(rootFret-3);
     if(rel<=0) return 1;
     if(rel===1) return 2;
     if(rel===2) return 3;
     return 4;
   }
   if(scaleShape===3){
-    const d=fret-rootFret;
+    const d=adj-rootFret;
     if(d<=0) return 1;
     if(d===1) return 2;
     if(d===2) return 3;
     return 4;
   }
-  const rel=fret-(rootFret-1);
+  const rel=adj-(rootFret-1);
   if(rel<=0) return 1;
   if(rel===1) return 2;
   if(rel===2) return 3;
@@ -1711,9 +1726,12 @@ function shapeSlotList(rootS, rootFret, nStr){
   if(scaleShape===1){
     // 4th finger on the root, then across to the next string (A-string fret 2 in A). Never skip up the E string.
     add(rootS, [rootFret]);
-    for(let s=rootS-1;s>=0;s--){
-      const stretch=(s===rootS-3)?1:0;
-      add(s, tones(s, rootFret-3-stretch, rootFret));
+    {
+      const sh=stringThirdShift(opens);
+      for(let s=rootS-1;s>=0;s--){
+        const stretch=sh[s]||0;
+        add(s, tones(s, rootFret-3, rootFret+stretch));
+      }
     }
   } else if(scaleShape===3){
     // 1st finger on root: 3-notes-per-string in a 5-fret stretch (A major 5-7-9)
@@ -1873,13 +1891,13 @@ function computePositions(notes){
     }
     if(best){
       used[best.s+"|"+best.f]=1;
-      map[note]=[[best.s, best.f, shapeFinger(rootFret, best.f)]];
+      map[note]=[[best.s, best.f, shapeFinger(rootFret, best.f, best.s)]];
     }
   });
   return map;
 }
-function fingerFor(fret){
-  return shapeFinger(typeof windowRootFret==="number"?windowRootFret:windowStart, fret);
+function fingerFor(fret, s){
+  return shapeFinger(typeof windowRootFret==="number"?windowRootFret:windowStart, fret, s);
 }
 
 function placeExtraBass(extra, map){
@@ -1900,7 +1918,7 @@ function placeExtraBass(extra, map){
         if (f >= 0 && f <= 24) { best = {s, f}; break; }
       }
     }
-    if (best) map[note] = [[best.s, best.f, fingerFor(best.f)]];
+    if (best) map[note] = [[best.s, best.f, fingerFor(best.f, best.s)]];
   });
   let minF = windowStart;
   extra.forEach(note => {
@@ -2428,9 +2446,12 @@ function renderScoreVex(){
     const style={fillStyle:color, strokeStyle:color};
     sn.setStyle(style);
     if(typeof sn.setGroupStyle==="function") sn.setGroupStyle(style);
-    // v1.38 Theory: below mid-line B4 = UP; on/above B4 = DOWN (written pitch; guitar treble 8vb = +12)
-    const writtenMidi = noteToMidi(note) + (instrument==="bass" ? 0 : 12);
-    sn.setStemDirection(writtenMidi < 71 ? 1 : -1);
+    // Middle-line rule: treble B4 (71) / bass D3 (50). Below = stem UP; on or above = DOWN.
+    const sounding = noteToMidi(note);
+    const bassClef = instrument==="bass";
+    const writtenMidi = sounding + (bassClef ? 0 : 12);
+    const mid = bassClef ? 50 : 71;
+    sn.setStemDirection(writtenMidi < mid ? 1 : -1);
     notes.push(sn);
   });
   function makeVoice(ticks){
@@ -3390,5 +3411,20 @@ FAMILIES = {
 })();
 </script>
 
+
+<script>
+(function(){
+  function warm(){
+    try{ if(typeof glInitSf==="function") glInitSf(); }catch(e){}
+    try{ if(typeof bootAudio==="function"){ /* arm on first gesture */ } }catch(e){}
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", warm);
+  else warm();
+  document.addEventListener("pointerdown", function once(){
+    try{ if(typeof bootAudio==="function") bootAudio(); }catch(e){}
+    document.removeEventListener("pointerdown", once);
+  });
+})();
+</script>
 </body>
 </html>
