@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tab Lab v1.55 · Mode Lab — Tab Lab update · play-first · flask | Dale Taylor | Mode·Jam·Chord·Song·Tab·Fret · meter Song↔Tab · beams+multi-system+notation-above -->
+<!-- Tab Lab v1.56 · Mode Lab — Tab Lab update · play-first · flask | Dale Taylor | Mode·Jam·Chord·Song·Tab·Fret · meter Song↔Tab · beams+multi-system+notation-above -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -22,7 +22,7 @@
 <meta name="apple-mobile-web-app-title" content="Mode Lab"/>
 <meta name="application-name" content="Mode Lab"/>
 
-<title>Mode Lab · Tab Lab v1.55</title>
+<title>Mode Lab · Tab Lab v1.56</title>
 <style>
 :root{--bg:#080808;--card:#111;--panel:#161616;--line:#2a2a2a;--gold:#d4a017;--gold-dim:rgba(212,160,23,.14);--gold-border:rgba(212,160,23,.35);--white:#f5f5f5;--muted:#9ca3af;--green:#22c55e;--red:#ef4444;--cyan:#22d3ee}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -118,7 +118,7 @@ body.light{background:var(--bg);color:var(--white)}
 .playhead{position:absolute;top:6px;bottom:6px;width:3px;background:var(--gold);border-radius:2px;left:318px;z-index:4;box-shadow:0 0 12px rgba(212,160,23,.7);pointer-events:none}
 .playhead::after{content:"";position:absolute;top:-4px;left:-4px;width:11px;height:11px;background:var(--gold);border-radius:50%;box-shadow:0 0 8px rgba(212,160,23,.8)}
 .tab-caption{text-align:center;font-size:.62rem;color:var(--muted);padding:0 .5rem .35rem}
-.transport{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;align-items:center;margin:.55rem 0 .25rem;padding:.35rem .15rem .2rem;background:var(--card);flex:0 0 auto}
+.transport{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;align-items:center;margin:.15rem 0;padding:.15rem 0;background:transparent;flex:0 0 auto}
 button.action{background:var(--gold);color:#111;border:none;padding:.45rem .78rem;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;min-height:44px}
 button.action.stop{background:#dc2626;color:#fff}
 button.action.ghost{background:#1a1a1a;color:var(--white);border:1px solid #333}
@@ -857,7 +857,7 @@ body:not(.inst-bass) .logo-gl-bass{display:none !important}
 .swap.on{background:var(--gold) !important;color:#111 !important;border-color:var(--gold) !important}
 
 
-.tab-edit-dock{display:flex!important;flex-wrap:wrap;visibility:visible!important;flex:0 0 auto;min-height:72px;z-index:5;gap:.4rem .7rem;align-items:flex-start;padding:.45rem .6rem;border-top:1px solid #d4a017;background:#0c0c0c}
+#tabEditDock,.tab-edit-dock{display:flex!important;flex-wrap:wrap;visibility:visible;flex:0 0 auto;min-height:64px;z-index:8;gap:.4rem .7rem;align-items:flex-start;padding:.45rem .6rem;border-top:1px solid #d4a017;background:#0c0c0c}
 .ted-rail,.ted-pad{display:flex;flex-wrap:wrap;gap:.28rem;align-items:center}
 .ted-lab{color:#e8c35a;font-size:.62rem;font-weight:800;letter-spacing:.04em;margin-left:.3rem}
 .ted-frets button,.ted-dpad button,.tab-edit-dock .tl-tool{min-width:2rem;min-height:2rem;background:#161616;color:#f3efe3;border:1px solid #d4a017;border-radius:7px;font-weight:800;cursor:pointer}
@@ -1040,6 +1040,58 @@ body:not(.inst-bass) .logo-gl-bass{display:none !important}
 .ted-rail{display:flex;flex-wrap:wrap;gap:.28rem;align-items:center}
 .ted-dpad{display:flex;gap:.22rem;align-items:center}
 .ted-dpad span{display:none}
+
+/* v1.55 compact chrome + large editor */
+.title-strip{padding:.15rem 0 .1rem!important;min-height:0}
+.song-title{font-size:1rem!important}
+.last-opened{font-size:.7rem}
+.tl-toolbar{margin:0!important;padding:0!important;gap:.3rem!important}
+.tl-chords{display:none!important}
+.tl-nav-row{display:none!important}
+.transport.tl-transport,.transport{margin:0!important;padding:.1rem 0!important;gap:.28rem!important}
+button.action.tl-pad{min-height:36px!important;padding:.2rem .45rem!important}
+.tab-stage{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.at-viewport{flex:1 1 auto!important;min-height:280px!important}
+.tab-edit-dock{gap:.45rem .8rem!important;padding:.55rem .65rem!important;background:#101010;border-top:2px solid #d4a017}
+.tab-edit-dock .tl-tool,.tab-edit-dock [data-fret],.tab-edit-dock [data-nav]{
+  min-width:2.4rem;min-height:2.4rem;font-size:.95rem;font-weight:800;padding:.35rem .5rem;border-radius:8px;
+  border:1px solid #d4a017;background:#1a1a1a;color:#f3efe3
+}
+.tab-edit-dock .tl-tool:hover,.tab-edit-dock [data-fret]:hover{background:#d4a017;color:#111}
+.ted-frets{display:flex;flex-wrap:wrap;gap:.28rem;max-width:28rem}
+#trackRail{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;padding:.25rem 0;flex:0 0 auto}
+#trackRail button{min-height:2.1rem;padding:.25rem .7rem;border-radius:999px;border:1px solid #d4a017;background:#161616;color:#e8c35a;font-weight:800}
+#trackRail button.on{background:#d4a017;color:#111}
+
+/* ===== Mode Lab tokens + pill atom (Tab Lab 1.56) ===== */
+:root{
+  --gold:#d4a017;
+  --gold-soft:#e8c35a;
+  --ink:#0a0a0a;
+  --panel:#141414;
+  --cream:#f3efe3;
+}
+.pill{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:2.05rem;padding:.28rem .78rem;border-radius:999px;
+  border:1px solid var(--gold);background:var(--ink);color:var(--gold-soft);
+  font:800 .72rem/1 system-ui,sans-serif;letter-spacing:.03em;
+  cursor:pointer;user-select:none;white-space:nowrap;
+}
+.pill:hover{background:#1c1c1c;color:#f3e2a6}
+.pill.on,.pill[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
+.pill.ghost{background:transparent}
+.pill.stop{background:#7a1212;border-color:#e24b4b;color:#fff}
+.pill.pad{min-width:2.05rem;padding:.28rem .45rem}
+.pills{display:flex;flex-wrap:wrap;gap:.32rem .38rem;align-items:center}
+.pills .lab{color:var(--gold);font:800 .58rem/1 system-ui;letter-spacing:.08em;text-transform:uppercase;margin-right:.2rem}
+#tabEditDock.tab-edit-dock{display:flex!important;flex-direction:column;gap:.35rem;padding:.45rem .55rem;background:#0c0c0c;border-top:1px solid var(--gold)}
+
+/* suite tokens + hide shared strip */
+#glSharedBar{display:none!important}
+:root{--gold:#d4a017;--gold-soft:#e8c35a;--ink:#0a0a0a}
+.pill{display:inline-flex;align-items:center;justify-content:center;min-height:2.05rem;padding:.28rem .78rem;border-radius:999px;border:1px solid var(--gold);background:#0a0a0a;color:var(--gold-soft);font:800 .72rem/1 system-ui,sans-serif;cursor:pointer}
+.pill.on{background:var(--gold);color:#0a0a0a}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js"></script>
@@ -1177,7 +1229,7 @@ header{
 .tl-tool:hover,.tl-tool.on{border-color:var(--gold);background:#1b1608}
 .tl-upload,.tl-download{display:flex;align-items:center;justify-content:center;min-height:52px;padding:.45rem .7rem;border:1px solid #3a3a3a;border-radius:12px;background:#161616;color:#f0f0f0;font-weight:700;font-size:.78rem;cursor:pointer}
 .tl-upload input{display:none}
-.tl-chords{display:flex;gap:.75rem;align-items:flex-end;justify-content:flex-start;flex-wrap:wrap;min-height:72px;margin:0 0 .35rem;padding:.2rem .1rem}
+.tl-chords{display:flex;gap:.4rem;align-items:flex-end;justify-content:flex-start;flex-wrap:wrap;min-height:0;margin:0;padding:0 .1rem}
 .tl-chord{display:flex;flex-direction:column;align-items:center;gap:.2rem;color:#f5f5f5}
 .tl-chord b{font-size:.9rem;font-weight:800}
 .tl-chord svg{width:44px;height:56px}
@@ -1244,7 +1296,7 @@ header{
 <div class="card">
   <div class="title-strip">
     <div class="title-main">
-      <div class="song-title" id="songTitle">A minor pentatonic box <em>· sample</em></div>
+      <div class="song-title" id="songTitle">Untitled <em>· 4/4</em></div>
       <div class="last-opened" id="lastOpened">Drop a GP/MusicXML file — or play the demo.</div>
     </div>
     <div class="title-actions">
@@ -1326,41 +1378,61 @@ header{
       <span id="tabMeta">Tablature · demo · 4/4</span>
       <span class="scroll-hint" id="sfProgress">Loading engine…</span>
     </div>
+    
+    <div id="trackRail" aria-label="Score tracks">
+      <span class="ted-lab">Tracks</span>
+      <button type="button" data-track="0" class="on">Guitar</button>
+      <button type="button" data-track="1">Bass</button>
+      <button type="button" id="addKeysTrack">+ Keys</button>
+      <button type="button" id="addDrumsTrack">+ Drums</button>
+    </div>
     <div id="tabEditDock" class="tab-edit-dock">
-  <div class="ted-rail">
-    <span class="ted-lab">Pitch</span>
-    <button type="button" class="tl-tool" data-act="note">♪ Note</button>
-    <button type="button" class="tl-tool" data-act="rest">Rest</button>
-    <button type="button" class="tl-tool" data-art="dead">x Mute</button>
-    <span class="ted-lab">Time</span>
-    <button type="button" class="tl-tool" data-dur="1">1</button>
-    <button type="button" class="tl-tool" data-dur="2">2</button>
-    <button type="button" class="tl-tool" data-dur="4">4</button>
-    <button type="button" class="tl-tool" data-dur="8">8</button>
-    <button type="button" class="tl-tool" data-dur="16">16</button>
-    <span class="ted-lab">Connect</span>
-    <button type="button" class="tl-tool" data-art="hp">H-P</button>
-    <button type="button" class="tl-tool" data-art="slide">Slide</button>
-    <button type="button" class="tl-tool" data-art="bend" id="bendBtn" title="Cycle bend: ½ · full · release · prebend">Bend</button>
-    <button type="button" class="tl-tool" data-art="vib">Vibrato</button>
-    <span class="ted-lab">Hand</span>
-    <button type="button" class="tl-tool" data-art="pm">PM</button>
-    <button type="button" class="tl-tool" data-art="lr">Let ring</button>
+  <div class="pills" data-row="theory">
+    <span class="lab">Theory</span>
+    <button type="button" class="pill" data-act="note">Note</button>
+    <button type="button" class="pill" data-act="rest">Rest</button>
+    <button type="button" class="pill" data-dur="1">1</button>
+    <button type="button" class="pill on" data-dur="4">4</button>
+    <button type="button" class="pill" data-dur="2">2</button>
+    <button type="button" class="pill" data-dur="8">8</button>
+    <button type="button" class="pill" data-dur="16">16</button>
+    <button type="button" class="pill" data-dur="32">32</button>
+    <button type="button" class="pill" data-act="dot">Dot</button>
+    <button type="button" class="pill" data-act="triplet">Triplet</button>
+    <button type="button" class="pill" data-act="tie">Tie</button>
   </div>
-  <div class="ted-pad">
-    <div class="ted-dpad">
-      <button type="button" data-nav="str-">▲</button>
-      <span></span>
-      <button type="button" data-nav="beat-">◀</button>
-      <button type="button" data-nav="beat+">▶</button>
-      <button type="button" data-nav="str+">▼</button>
-    </div>
-    <div class="ted-frets">
-<button type="button" data-fret="0">0</button><button type="button" data-fret="1">1</button><button type="button" data-fret="2">2</button><button type="button" data-fret="3">3</button><button type="button" data-fret="4">4</button><button type="button" data-fret="5">5</button><button type="button" data-fret="6">6</button><button type="button" data-fret="7">7</button><button type="button" data-fret="8">8</button><button type="button" data-fret="9">9</button><button type="button" data-fret="10">10</button><button type="button" data-fret="11">11</button><button type="button" data-fret="12">12</button>
-    </div>
+  <div class="pills" data-row="nav">
+    <span class="lab">Navigate</span>
+    <button type="button" class="pill pad" data-nav="str-">↑</button>
+    <button type="button" class="pill pad" data-nav="str+">↓</button>
+    <button type="button" class="pill pad" data-nav="beat-">←</button>
+    <button type="button" class="pill pad" data-nav="beat+">→</button>
+<button type="button" class="pill pad" data-fret="0">0</button><button type="button" class="pill pad" data-fret="1">1</button><button type="button" class="pill pad" data-fret="2">2</button><button type="button" class="pill pad" data-fret="3">3</button><button type="button" class="pill pad" data-fret="4">4</button><button type="button" class="pill pad" data-fret="5">5</button><button type="button" class="pill pad" data-fret="6">6</button><button type="button" class="pill pad" data-fret="7">7</button><button type="button" class="pill pad" data-fret="8">8</button><button type="button" class="pill pad" data-fret="9">9</button><button type="button" class="pill pad" data-fret="10">10</button><button type="button" class="pill pad" data-fret="11">11</button><button type="button" class="pill pad" data-fret="12">12</button>
+    <button type="button" class="pill pad" data-act="plus12">+12</button>
+  </div>
+  <div class="pills" data-row="tech">
+    <span class="lab">Technique</span>
+    <button type="button" class="pill" data-art="hp">H-P</button>
+    <button type="button" class="pill" data-art="slide">Slide</button>
+    <button type="button" class="pill" data-art="bend" id="bendBtn">Bend</button>
+    <button type="button" class="pill" data-art="vib">Vibrato</button>
+    <button type="button" class="pill" data-art="pm">PM</button>
+    <button type="button" class="pill" data-art="lr">Let-ring</button>
+    <button type="button" class="pill" data-art="grace">Grace</button>
+    <button type="button" class="pill" data-art="nh">Harm</button>
+    <button type="button" class="pill" data-art="ah">Pinch</button>
+    <button type="button" class="pill" data-art="tap">Tap</button>
+    <button type="button" class="pill" data-art="slap">Slap</button>
+    <button type="button" class="pill" data-art="pop">Pop</button>
+    <button type="button" class="pill" data-art="ghost">Ghost</button>
+    <button type="button" class="pill" data-art="dead">Mute</button>
+    <button type="button" class="pill" data-art="accent">Accent</button>
+    <button type="button" class="pill" data-art="staccato">Stacc</button>
+    <button type="button" class="pill" data-art="trill">Trill</button>
+    <button type="button" class="pill" data-art="tremolo">Tremolo</button>
   </div>
 </div>
-    <div id="fallTab" class="is-hidden" aria-hidden="true"></div>
+    id="fallTab" class="is-hidden" aria-hidden="true"></div>
     
 <div class="at-viewport" id="atViewport">
       <div class="at-viewbar" id="atViewBar" role="tablist" aria-label="Score view">
@@ -1524,7 +1596,7 @@ header{
     </div>
   </div>
 </div>
-<div class="footer">Dale Taylor · <span>Tab Lab v1.55</span></div>
+<div class="footer">Dale Taylor · <span>Tab Lab v1.56</span></div>
 </div>
 
 <div class="howto" id="howto">
@@ -2006,7 +2078,7 @@ function wireProChrome(){
   };
   window.addEventListener("storage", function(ev){
     if(ev.key==="modelab.shared.v1"||ev.key==="modelab.shared.ping"){
-      try{ if(lastFile&&lastFile.isDemo&&!modelDirty) loadDemoScore(); }catch(e){}
+      try{ if(lastFile&&lastFile.isBlank&&!modelDirty) loadBlankScore(); else if(lastFile&&lastFile.isDemo&&!modelDirty) loadDemoScore(); }catch(e){}
     }
     if(ev.key===SONG_TO_TAB) applySongHandoff();
   });
@@ -2222,13 +2294,24 @@ function noteTex(n, extra){
   if(n.hp) fx.push("h");
   if(n.pm) fx.push("pm");
   if(n.lr) fx.push("lr");
+  if(n.grace) fx.push("gr");
+  if(n.nh) fx.push("nh");
+  if(n.ah) fx.push("ah");
+  if(n.tap) fx.push("t");
+  if(n.slap) fx.push("s");
+  if(n.pop) fx.push("p");
+  if(n.ghost) fx.push("x");
+  if(n.accent) fx.push("ac");
+  if(n.staccato) fx.push("stac");
   if(n.finger){
     /* Mode Lab 1-4 = index..pinky. alphaTab lf 1=thumb 2=index 3=middle 4=ring 5=pinky */
     var at=({1:2,2:3,3:4,4:5}[n.finger|0]);
     if(at) fx.push("lf "+at);
   }
   if(extra) extra.forEach(function(x){ fx.push(x); });
-  const body = n.dead ? ("x."+n.str) : (String(n.fret)+"."+n.str);
+  const body = (n.dead||n.ghost) ? ("x."+n.str) : (String(n.fret)+"."+n.str);
+  if(n.trill) fx.push("tr");
+  if(n.tremolo) fx.push("tp");
   return fx.length ? body+"{"+fx.join(" ")+"}" : body;
 }
 function midiPitchTok(midi){
@@ -2245,7 +2328,10 @@ function notePitchTok(tr, n){
 }
 function beatTex(beat, tr){
   tr=tr||(model&&model.tracks&&model.tracks[sel&&sel.track])||{kind:"guitar",clef:"treble"};
-  if(!beat.notes || !beat.notes.length) return "r";
+  const dur="."+String(beat.dur||4)+(beat.dot?".":"");
+  const tu=beat.triplet?'{tu 3}':'';
+  const tie=beat.tie?'{tie}':'';
+  if(!beat.notes || !beat.notes.length) return "r"+dur+tu+tie;
   const extra=[];
   if(beat.chord && beat.chord.name) extra.push("ch \""+String(beat.chord.name).replace(/"/g,"")+"\"");
   const useTab = tr.kind==="guitar" || tr.kind==="bass";
@@ -2703,22 +2789,33 @@ function blankModel(){
   var nStr=bass?4:6;
   var beats=[];
   for(var i=0;i<4;i++) beats.push({dur:"4", notes:[]});
-  return {title:"Untitled · 4/4", tempo:96, tsN:4, tsD:4,
-    tracks:[{name:bass?"Bass":"Guitar", kind:bass?"bass":"guitar", strings:nStr, bars:[{beats:beats},{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))}]}]};
+  var emptyBars=function(){ return [{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))}]; };
+  return {title:"Untitled · 4/4", tempo:96, tsN:4, tsD:4, soloTrack:0,
+    tracks:[
+      {name:"Guitar", kind:"guitar", strings:6, clef:"treble", program:27, bars:emptyBars()},
+      {name:"Bass", kind:"bass", strings:4, clef:"bass", program:34, bars:emptyBars()}
+    ]};
 }
 function loadBlankScore(){
   modelDirty=false;
   model=blankModel();
   lastFile={name:"blank", isDemo:false, isBlank:true};
   try{
-    var tex="\\title \"Untitled\"\n\\tempo 96\n.";
-    tex += (tabSharedState().instrument==="bass")
-      ? "\\tuning E1 A1 D2 G2\n\\instrument 34\n"
-      : "\\tuning E4 B3 G3 D3 A2 E2\n\\instrument 27\n";
-    tex += "\\ts 4/4\n";
-    tex += ":4 r r r r | r r r r | r r r r | r r r r";
-    if(api && api.tex) api.tex(tex);
-  }catch(e){ console.warn(e); }
+    var el=document.getElementById("songTitle");
+    if(el) el.innerHTML="Untitled <em>· 4/4</em>";
+    var meta=document.getElementById("tabMeta");
+    if(meta) meta.textContent="Tablature · blank · 4/4 · 96 BPM";
+  }catch(e){}
+  function push(){
+    try{
+      if(api && api.tex){ api.tex(toTex(model)); return true; }
+    }catch(e){ console.warn("blank tex", e); }
+    return false;
+  }
+  if(!push()){
+    setTimeout(push, 400);
+    setTimeout(push, 1200);
+  }
   try{ paintFallback(); }catch(e){}
 }
 function loadDemoScore(){
@@ -3601,8 +3698,12 @@ function bindUi(){
   if(editToggle && editDrawer){
     editToggle.addEventListener("click", function(){
       const dock=$("tabEditDock");
-      if(dock){ dock.scrollIntoView({block:"nearest"}); dock.style.display="flex"; }
       const open=editDrawer.classList.toggle("open");
+      if(dock){
+        dock.style.display = open ? "flex" : "none";
+        if(open) dock.scrollIntoView({block:"nearest"});
+      }
+
       editToggle.classList.toggle("on", open);
       editToggle.setAttribute("aria-expanded", open?"true":"false");
       editDrawer.setAttribute("aria-hidden", open?"false":"true");
@@ -3749,7 +3850,7 @@ bootPlayer();
 
 
 <script>
-/* Tab Lab v1.55 — keep alphaTab notation+tab on top; hide crude fallback when AT paints */
+/* Tab Lab v1.56 — keep alphaTab notation+tab on top; hide crude fallback when AT paints */
 (function(){
   function hideFallIfReady(){
     var fall=document.getElementById("fallTab");
@@ -4219,6 +4320,10 @@ FAMILIES = {
     if(b.dataset.dur && typeof setDur==="function") setDur(parseInt(b.dataset.dur,10));
     if(b.dataset.act==="rest" && typeof insertRest==="function") insertRest();
     if(b.dataset.act==="note" && typeof setFret==="function") setFret(0);
+    if(b.dataset.act==="dot"){ pushUndo(); ensureEditModel(); curBeat().dot=!curBeat().dot; refreshAll(true); }
+    if(b.dataset.act==="triplet"){ pushUndo(); ensureEditModel(); curBeat().triplet=!curBeat().triplet; refreshAll(true); }
+    if(b.dataset.act==="tie"){ pushUndo(); ensureEditModel(); curBeat().tie=!curBeat().tie; refreshAll(true); }
+    if(b.dataset.act==="plus12"){ var n=curBeat().notes.find(function(x){return x.str===sel.str}); var f=n?((n.fret|0)+12)%25:12; setFret(f); }
     if(b.dataset.fret!=null && typeof setFret==="function") setFret(parseInt(b.dataset.fret,10));
     if(b.dataset.nav) go(b.dataset.nav);
     if(typeof refreshSelHud==="function") refreshSelHud();
@@ -4286,5 +4391,85 @@ FAMILIES = {
 })();
 </script>
 
+
+<script>
+(function(){
+  function paintTracks(){
+    var rail=document.getElementById("trackRail");
+    if(!rail || typeof model==="undefined" || !model.tracks) return;
+    var html='<span class="ted-lab">Tracks</span>';
+    model.tracks.forEach(function(tr,i){
+      html+='<button type="button" data-track="'+i+'" class="'+(sel.track===i?"on":"")+'">'+(tr.name||("Track "+(i+1)))+'</button>';
+    });
+    html+='<button type="button" id="addKeysTrack">+ Keys</button><button type="button" id="addDrumsTrack">+ Drums</button>';
+    rail.innerHTML=html;
+  }
+  function emptyBars(){
+    var beats=[];
+    for(var i=0;i<4;i++) beats.push({dur:"4", notes:[]});
+    return [{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))},{beats:JSON.parse(JSON.stringify(beats))}];
+  }
+  function showTrack(i){
+    if(!model || !model.tracks[i]) return;
+    sel.track=i; sel.bar=0; sel.beat=0;
+    var tr=model.tracks[i];
+    var inst=document.getElementById("tlInst");
+    if(inst) inst.value = tr.kind==="gm"?"keys":(tr.kind||"guitar");
+    var clef=document.getElementById("tlClef");
+    if(clef) clef.value=tr.clef==="bass"?"bass":"treble";
+    paintTracks();
+    try{ if(typeof loadFromModel==="function") loadFromModel(); }catch(e){}
+    try{ if(typeof refreshSelHud==="function") refreshSelHud(); }catch(e){}
+  }
+  document.addEventListener("click", function(ev){
+    var b=ev.target.closest("#trackRail [data-track]");
+    if(b){ ev.preventDefault(); showTrack(parseInt(b.getAttribute("data-track"),10)); }
+    if(ev.target.id==="addKeysTrack"){
+      model.tracks.push({name:"Keys", kind:"keys", strings:6, clef:"treble", program:0, bars:emptyBars()});
+      showTrack(model.tracks.length-1);
+    }
+    if(ev.target.id==="addDrumsTrack"){
+      model.tracks.push({name:"Drums", kind:"drums", strings:6, clef:"percussion", program:0, bars:emptyBars()});
+      showTrack(model.tracks.length-1);
+    }
+  });
+  var inst=document.getElementById("tlInst");
+  if(inst){
+    inst.addEventListener("change", function(){
+      var kind=this.value;
+      var tr=model.tracks[sel.track];
+      if(!tr){
+        model.tracks.push({name:kind, kind:kind, strings:kind==="bass"?4:6, clef:kind==="bass"?"bass":"treble", program:kind==="bass"?34:27, bars:emptyBars()});
+        sel.track=model.tracks.length-1;
+        tr=model.tracks[sel.track];
+      }
+      tr.kind=kind==="keys"?"keys":kind;
+      tr.name=kind.charAt(0).toUpperCase()+kind.slice(1);
+      tr.clef=kind==="bass"?"bass":(kind==="drums"?"percussion":"treble");
+      tr.strings=kind==="bass"?4:6;
+      tr.program=kind==="bass"?34:(kind==="keys"?0:27);
+      paintTracks();
+      try{ loadFromModel(); }catch(e){}
+    });
+  }
+  setTimeout(paintTracks, 300);
+  setTimeout(paintTracks, 1200);
+})();
+</script>
+
+<script>
+(function(){
+  function warm(){
+    try{ if(typeof glInitSf==="function") glInitSf(); }catch(e){}
+    try{ if(typeof bootAudio==="function"){ /* arm on first gesture */ } }catch(e){}
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", warm);
+  else warm();
+  document.addEventListener("pointerdown", function once(){
+    try{ if(typeof bootAudio==="function") bootAudio(); }catch(e){}
+    document.removeEventListener("pointerdown", once);
+  });
+})();
+</script>
 </body>
 </html>
