@@ -14,13 +14,14 @@
 const p = new URLSearchParams(location.search);
 const lab = (p.get("lab")||"").toLowerCase();
 p.delete("lab");
-/* Landing = Mode. Pill order: Mode · Jam · Fret · Chord · Tab · Song */
-const file = lab==="jam" ? "Jam-Lab-v1.69.html"
-  : lab==="fret" ? "Fret-Lab-v1.69.html"
-  : lab==="chord" ? "Chord-Lab-v1.69.html"
-  : lab==="tab" || lab==="player" ? "Tab-Lab-v1.69.html"
-  : lab==="song" || lab==="songwriter" ? "Songwriter-Lab-v1.69.html"
-  : "Mode-Lab-v1.69.html";
+/* Landing = Mode. Pill order: Mode · Jam · Fret · Chord · Tab · Song · Know */
+const file = lab==="jam" ? "Jam-Lab-v1.80.html"
+  : lab==="fret" ? "Fret-Lab-v1.80.html"
+  : lab==="chord" ? "Chord-Lab-v1.80.html"
+  : lab==="tab" || lab==="player" ? "Tab-Lab-v1.80.html"
+  : lab==="song" || lab==="songwriter" ? "Songwriter-Lab-v1.80.html"
+  : lab==="study" || lab==="know" || lab==="knowledge" ? "Study-Lab-v1.80.html"
+  : "Mode-Lab-v1.80.html";
 const q = p.toString();
 location.replace(q ? file+"?"+q : file);
 </script>
