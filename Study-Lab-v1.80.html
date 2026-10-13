@@ -1245,7 +1245,7 @@ function loadBank(name){
       if((m=nm.match(/^s(\d)f(\d+)$/))) L.SMP[m[1]+'_'+m[2]]=[item];
       else if((m=nm.match(/^p(\d)f(\d)/))) (L.PALM[m[1]+'_'+m[2]]=L.PALM[m[1]+'_'+m[2]]||[]).push(item);
       if(src.remove) src.remove(); delete BANKS[name][nm];   // free the text once decoded
-    }catch(e){} };
+    }catch(e){ if(KLA&&!window.__klAudioBadWarned){ window.__klAudioBadWarned=1; console.warn('Study Lab could not read a recording',nm,e); try{ hint('<b>The recordings couldn\u2019t be read.</b> Upload the six <b>study-audio</b> files from the same package as this Study Lab page.'); }catch(_e){} } } };
   // background decoding steps aside while someone is playing, so strums are never delayed
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const worker=async()=>{ L.busy++; while(L.queue.length){ while(typeof ptrs!=='undefined' && ptrs.size) await sleep(50); await one(L.queue.shift()); await sleep(0); } L.busy--; };
@@ -1272,11 +1272,20 @@ function pickClick(i,vel,t){
   src.connect(bp); bp.connect(g); g.connect(sBuses[i]); src.start(t,Math.random()*0.1); src.stop(t+0.02);
 }
 function sampleFor(i,f){ const B=bank(); for(let g=Math.min(f,MAXF()); g>=0; g--){ const L=B.SMP[i+'_'+g]; if(L&&L.length) return {L,rate:Math.pow(2,(f-g)/12)}; } return null; }
+/* used only when a recording isn't available (still loading, or the study-audio files are missing): a plucked string at the right pitch */
+function fallbackPluck(i,f,vel,when,opt){ try{ const a=audio(); if(!a) return; opt=opt||{}; if(opt.dead||f<0) return;
+    const t=Math.max(a.currentTime,when||0), midi=OPEN[i]+Math.max(0,f), hz=440*Math.pow(2,(midi-69)/12), len=Math.min(2.2,Math.max(0.5,opt.dur||1.6));
+    const o1=a.createOscillator(), o2=a.createOscillator(), lp=a.createBiquadFilter(), g=a.createGain();
+    o1.type='triangle'; o2.type='sawtooth'; o1.frequency.value=hz; o2.frequency.value=hz*1.002; lp.type='lowpass';
+    lp.frequency.setValueAtTime(Math.min(9000,hz*9),t); lp.frequency.exponentialRampToValueAtTime(Math.max(300,hz*1.5),t+len*0.6);
+    const m=a.createGain(); m.gain.value=0.35; o2.connect(m); m.connect(lp); o1.connect(lp); lp.connect(g);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.32*(vel||0.6),t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+len);
+    g.connect(sBuses&&sBuses[i]?sBuses[i]:a.destination); o1.start(t); o2.start(t); o1.stop(t+len+0.05); o2.stop(t+len+0.05); window.__klFallbackUsed=(window.__klFallbackUsed||0)+1; }catch(e){} }
 async function playNote(i,vel,when,opt){
   opt=opt||{};
   const a=audio(); if(!a) return;
   const fret=opt.fret!=null?opt.fret:(chord?chord.f[i]:0), muted=fret<0, f=Math.max(0,fret), T=TONE[G];
-  const sm=sampleFor(i,f); if(!sm) return;      // note still arriving: the nearest lower recording is shifted up
+  const sm=sampleFor(i,f); if(!sm){ fallbackPluck(i,f,vel,when,opt); return; }      // no recording available: a simple plucked string, never silence
   const L=sm.L, rate=sm.rate*Math.pow(2,((opt.cents||0)+(opt.shift||0)*100)/1200);
   const t=Math.max(a.currentTime,when||0);
   window._klMicMuteUntil=Math.max(window._klMicMuteUntil||0,performance.now()+(t-a.currentTime)*1000+(opt.dur?opt.dur*1000+300:1500));
