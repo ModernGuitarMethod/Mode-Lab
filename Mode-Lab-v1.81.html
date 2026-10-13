@@ -3039,11 +3039,11 @@ function vexKeySignature(){
 }
 /* Best-fit key signature for the notation: fewest written accidentals for the scale's own spelling.
    Symmetric scales (whole tone, diminished) and the Japanese pentatonics use C with written accidentals. */
-var ML_KS_C={"Whole Tone":1,"Hirajoshi":1,"Iwato":1,"In Sen":1,"Insen":1,"In":1,"Kumoi":1,"Yo":1,"Ryukyu":1,"Pelog":1,"Augmented":1};
+var ML_KS_C={"Whole Tone":1,"Hirajoshi":1,"Iwato":1,"In Sen":1,"Insen":1,"In":1,"Kumoi":1,"Yo":1,"Ryukyu":1,"Pelog":1,"Augmented":1,"Chromatic":1};
 function mlAtKeySig(){
   var mode=(typeof currentMode==="string")?currentMode:"";
   if(ML_KS_C[mode] || /dimin|whole.?tone|half.?whole|whole.?half|japan/i.test(mode)) return "C";
-  if(/chromatic/i.test(mode)) return vexKeySignature();
+  if(/chromatic/i.test(mode)) return "C";
   var seen={}, ns=[];
   scale.forEach(function(n){ var m=String(n).match(/^([A-G])([#b]{0,2})/i); if(m){ var k=m[1].toUpperCase()+(m[2]||""); if(!seen[k]){ seen[k]=1; ns.push([m[1].toUpperCase(), m[2]||""]); } } });
   if(!ns.length) return vexKeySignature();
