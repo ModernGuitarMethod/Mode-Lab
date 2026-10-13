@@ -203,7 +203,8 @@ button.action.practice{background:#166534;color:#fff}
 .finger-guide{font-size:.6rem;color:var(--muted);display:flex;gap:3px}.finger-guide i{display:inline-flex;width:14px;height:14px;border-radius:50%;background:var(--gold);color:#111;font-size:.52rem;font-weight:800;align-items:center;justify-content:center;font-style:normal}
 .neck-outer{background:linear-gradient(180deg,#3a2a1c,#2a1c12 40%,#1f150e);border-radius:10px;padding:10px 6px 8px;border:1px solid #5a4030;position:relative;box-shadow:inset 0 2px 8px rgba(0,0,0,.4);overflow:hidden}
 .strings-wrap{position:relative;overflow:hidden}.nut{position:absolute;left:28px;top:2px;bottom:2px;width:5px;background:linear-gradient(90deg,#f0e6d0,#c9b896);border-radius:2px;z-index:5;pointer-events:none}
-.fret-numbers{display:grid;text-align:center;font-size:.6rem;font-weight:700;color:#b89a6d;margin-bottom:2px}
+.fret-numbers{display:grid;text-align:center;font-size:12px;font-weight:800;color:#f1d9a8;margin-bottom:3px;line-height:1.2}
+body.light .fret-numbers{color:#5c4214}
 .string-row{display:grid;height:28px;align-items:center;position:relative}
 .neck-outer.str7 .string-row,.neck-outer.str8 .string-row{height:23px}
 .neck-outer.str7 .dot,.neck-outer.str8 .dot{width:15px;height:15px;font-size:.52rem}
@@ -1481,6 +1482,7 @@ header .rail-left .logo-dale:not(.logo-dale-full){display:none !important}
         <li>Open <strong>Jam this scale</strong> (or the Jam pill) — key, family and mode travel with you.</li>
         <li>Come back anytime; your Mode choices stay in the link.</li>
       </ol>
+      <p style="font-size:.75rem;opacity:.75">Notation and tab engraved with <a href="https://www.alphatab.net" target="_blank" rel="noopener">alphaTab</a> (MPL-2.0) by Daniel Kuschny and contributors.</p>
     </div>
   </div>
 </div>
@@ -3035,6 +3037,25 @@ function vexKeySignature(){
   const ok={"C":1,"G":1,"D":1,"A":1,"E":1,"B":1,"F#":1,"C#":1,"F":1,"Bb":1,"Eb":1,"Ab":1,"Db":1,"Gb":1,"Cb":1};
   return ok[name]?name:"C";
 }
+/* Best-fit key signature for the notation: fewest written accidentals for the scale's own spelling.
+   Symmetric scales (whole tone, diminished) and the Japanese pentatonics use C with written accidentals. */
+var ML_KS_C={"Whole Tone":1,"Hirajoshi":1,"Iwato":1,"In Sen":1,"Insen":1,"In":1,"Kumoi":1,"Yo":1,"Ryukyu":1,"Pelog":1,"Augmented":1};
+function mlAtKeySig(){
+  var mode=(typeof currentMode==="string")?currentMode:"";
+  if(ML_KS_C[mode] || /dimin|whole.?tone|half.?whole|whole.?half|japan/i.test(mode)) return "C";
+  if(/chromatic/i.test(mode)) return vexKeySignature();
+  var seen={}, ns=[];
+  scale.forEach(function(n){ var m=String(n).match(/^([A-G])([#b]{0,2})/i); if(m){ var k=m[1].toUpperCase()+(m[2]||""); if(!seen[k]){ seen[k]=1; ns.push([m[1].toUpperCase(), m[2]||""]); } } });
+  if(!ns.length) return vexKeySignature();
+  var KS=["C","G","D","A","E","B","F#","C#","F","Bb","Eb","Ab","Db","Gb","Cb"], NK={C:0,G:1,D:2,A:3,E:4,B:5,"F#":6,"C#":7,F:1,Bb:2,Eb:3,Ab:4,Db:5,Gb:6,Cb:7};
+  var par=vexKeySignature(), best=null, bc=1e9;
+  KS.forEach(function(k){
+    var inl=0; ns.forEach(function(x){ if(keyAccidentalFor(x[0],k)!==x[1]) inl++; });
+    var c=inl+0.5*NK[k]-(k===par?0.01:0);
+    if(c<bc-1e-9){ bc=c; best=k; }
+  });
+  return best||par;
+}
 function keyAccidentalFor(letter, keyName){
   const L=letter.toUpperCase();
   const nS={C:0,G:1,D:2,A:3,E:4,B:5,"F#":6,"C#":7}[keyName];
@@ -3094,14 +3115,17 @@ function mlAtTuning(){
 }
 function mlAtTex(){
   var toks=[];
-  scale.forEach(function(note){ var p=positions[note]; if(p&&p[0]) toks.push(p[0][1]+"."+(p[0][0]+1)+".8"); });
+  var ACCM={"":"forcenatural","#":"forcesharp","##":"forcedoublesharp","b":"forceflat","bb":"forcedoubleflat"};
+  scale.forEach(function(note){ var p=positions[note]; if(!(p&&p[0])) return;
+    var m=String(note).match(/^([A-G])([#b]{0,2})/i), acc=m?ACCM[m[2]||""]:null;
+    toks.push(p[0][1]+"."+(p[0][0]+1)+(acc?"{acc "+acc+"}":"")+".8"); });
   if(!toks.length) return null;
   var bars=[], i;
   for(i=0;i<toks.length;i+=8) bars.push(toks.slice(i,i+8));
   var last=bars[bars.length-1], pos=last.length;           /* rests fill the final 4/4 bar */
   if(pos%2){ last.push("r.8"); pos++; }
   while(pos<8){ if(pos%4===0 && 8-pos>=4){ last.push("r.2"); pos+=4; } else { last.push("r.4"); pos+=2; } }
-  var ks=vexKeySignature();
+  var ks=mlAtKeySig();
   return "\\tempo "+(typeof bpm!=="undefined"&&bpm?bpm:100)+"\n.\n\\track \""+(instrument==="bass"?"Bass":"Guitar")+"\"\n\\staff{score tabs}\n\\tuning "+mlAtTuning()+
     "\n\\instrument "+(instrument==="bass"?"acousticbass":"acousticguitarsteel")+"\n\\ks "+ks+"\n\\ts 4 4\n"+(instrument==="bass"?"\\clef F4 ":"\\clef G2 ")+bars.map(function(b){return b.join(" ");}).join(" | ")+" |\n";
 }
@@ -3129,7 +3153,7 @@ function mlAtEnsure(wrap){
   try{ mlAt.api=new alphaTab.AlphaTabApi(mlAt.host, st); }catch(e){ mlAt.failed=true; return null; }
   mlAt.ready=false;
   try{ mlAt.api.error.on(function(err){ try{console.warn("mode notation fallback", err&&err.message||err);}catch(e){} mlAt.failed=true; mlAt.sig=""; try{ renderScore(); }catch(e){} }); }catch(e){}
-  try{ mlAt.api.renderFinished.on(function(){ mlAt.ready=true; mlAtCollect(); mlAtMark(); }); }catch(e){}
+  try{ mlAt.api.renderFinished.on(function(){ try{ mlAt.host.querySelectorAll("text").forEach(function(t){ if(/rendered by alphaTab/i.test(t.textContent)) t.style.display="none"; }); }catch(e){} mlAt.ready=true; mlAtCollect(); mlAtMark(); }); }catch(e){}
   return mlAt.api;
 }
 function mlAtCollect(){

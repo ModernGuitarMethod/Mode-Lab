@@ -3100,6 +3100,18 @@ function atTexStave(o){
     const ps=n.keys.map((k,j)=>{ const p=atPitch(k,n.accidentals?n.accidentals[j]:n.accidental); if(!p) throw new Error('pitch '+k); return p+nf; });
     beats.push((ps.length>1?`(${ps.join(' ')})`:ps[0])+'.'+d+beatFx);
   });
+  /* no time signature given: write 4/4 explicitly, bar every 4 beats and fill the last bar with rests */
+  if(!o.time && !o.notes.some(n=>n.bar) && !(o.tuplets&&o.tuplets.length)){
+    const q=n=>{ const d=AT_DUR[String(n.duration).replace('r','')]||4; return (4/d)*(n.dot?1.5:1); };
+    const out=[]; let acc=0, ok=true;
+    o.notes.forEach((n,i)=>{ if(!ok) return; const b=q(n); if(acc>0 && acc+b>4+1e-6){ ok=false; return; } out.push(beats[i]); acc+=b; if(acc>=4-1e-6){ acc=0; out.push('|'); } });
+    if(ok){
+      if(acc>0){ let r=4-acc; [[2,'r.2'],[1,'r.4'],[0.5,'r.8'],[0.25,'r.16']].forEach(([v,t])=>{ while(r>=v-1e-6){ out.push(t); r-=v; } }); out.push('|'); }
+      if(out[out.length-1]==='|') out.pop();
+      head.push('\\ts 4 4');
+      return head.join(' ')+' . '+out.join(' ');
+    }
+  }
   return head.join(' ')+' . '+beats.join(' ');
 }
 const AT_TUNE=()=> isBass()?'G2 D2 A1 E1':'E4 B3 G3 D3 A2 E2';
@@ -5874,8 +5886,8 @@ const CR1={ id:421, title:"The Two Copyrights in Every Song",
     tstep("Quick recap: copyright is automatic in Australia. Every recorded song has two copyrights: the musical work, owned by the songwriters and publishers, and the sound recording, or master, owned by the label or independent artist. The song lasts for life plus 70 years; the recording lasts 70 years from release. This is general information, not legal advice: for your own situation, contact APRA AMCOS, PPCA or the Arts Law Centre of Australia.", pts(['Musical work = publishing','Sound recording = master'],'Two copyrights')),
     tstep("Now try it. Decide which copyright each item belongs to.", say('The melody and lyrics'))
   ],
-  drill:{ title:"Song or recording?", instructions:"Does this belong to the musical work (the song) or the sound recording (the master)?",
-    pool:[['The melody and lyrics','The musical work'],['A particular recording of the song','The sound recording'],['The chord progression','The musical work'],['A label\u2019s release of the track','The sound recording'],['A cover band\u2019s new recording','The sound recording'],['The song you wrote','The musical work']],
+  drill:{ title:"Song or recording?", instructions:"Does this belong to the musical work (the song) or the sound recording (the master)? Remember: the melody and lyrics are the song; a chord progression on its own usually isn't protected.",
+    pool:[['The melody and lyrics','The musical work'],['A particular recording of the song','The sound recording'],['The lyrics you wrote','The musical work'],['A label\u2019s release of the track','The sound recording'],['A cover band\u2019s new recording','The sound recording'],['The song you wrote','The musical work']],
     generate(){ const [d,a]=rnd(this.pool); return {draw:say(d), events:[], options:['The musical work','The sound recording'], correct:a, key:d}; } }
 };
 const CR2={ id:422, title:"Publishing Rights: APRA & AMCOS",
@@ -5885,7 +5897,7 @@ const CR2={ id:422, title:"Publishing Rights: APRA & AMCOS",
     tstep("APRA AMCOS is two organisations working together. APRA, the Australasian Performing Right Association, began in 1926. AMCOS, the Australasian Mechanical Copyright Owners Society, began in 1979. They represent songwriters, composers and music publishers.", pts(['APRA: since 1926','AMCOS: since 1979','For songwriters, composers and publishers'],'APRA AMCOS')),
     tstep("APRA looks after performing and communication rights. That covers your song being played live in a venue, on the radio or TV, in a shop or café, or streamed online. APRA licenses businesses and broadcasters, then pays the royalties to its members.", pts(['Live performance','Radio and TV','Shops, cafés, gyms','Streaming'],'APRA: performance and communication')),
     tstep("AMCOS looks after reproduction rights, also called mechanical rights: royalties from your song being copied, on CDs, vinyl, downloads or streams. That's why a single stream earns two song royalties: an APRA performance royalty and an AMCOS mechanical royalty.", pts(['CDs and vinyl','Downloads','Streaming'],'AMCOS: reproduction (mechanical)')),
-    tstep("Sync, short for synchronisation, is putting music together with pictures, in a film, TV show, ad or game. APRA AMCOS doesn't license sync; it's negotiated directly with the rights holders. A sync deal usually needs permission for both the song and the recording.", say('sync = music + pictures · negotiated directly')),
+    tstep("Sync, short for synchronisation, is putting music together with pictures, in a film, TV show, ad or game. Most sync, in film, TV and ads, is negotiated directly with the publisher and the label. AMCOS offers sync licences only for some uses, such as some online and corporate videos. A sync deal usually needs permission for both the song and the recording.", say('sync = music + pictures · negotiated directly')),
     tstep("A music publisher works for songwriters: registering songs, pitching them for recordings and sync, and collecting royalties worldwide, in return for a share of the publishing income. Many independent songwriters self-publish and collect their own royalties through APRA AMCOS.", say('publisher = promotes and administers your songs')),
     tstep("Quick recap: APRA licenses performance and communication of songs, live, on radio, in businesses and online. AMCOS licenses reproduction, or mechanicals: CDs, downloads and streams. A stream earns both. Sync is negotiated directly, and a publisher, or you if you self-publish, manages it all.", pts(['APRA = performance','AMCOS = mechanical','Sync = direct'],'Publishing rights')),
     tstep("Now try it. Choose who licenses each use of a song.", say('Your song played in a café'))
@@ -6055,15 +6067,15 @@ MB.push({ id:446, title:"AI & Your Music",
   intro:{ why:"Artificial intelligence is changing how music is made and used. Australian law and policy are developing quickly, so it's worth knowing where things stand and what to watch for.",
     objectives:["Australia's position on AI training","Human authorship and copyright","Practical steps to protect your work"] },
   steps:[
-    tstep("AI companies train their systems on huge amounts of existing material, including music. In October 2025, the Australian Government ruled out creating a copyright exception that would have let AI companies use creative works for training without permission. In July 2026, it said mandatory national AI standards are coming, and that AI companies won't be allowed to train on Australian content without permission. In August 2026, National Cabinet backed the mandatory standards, with legislation expected in early 2027.", pts(['Oct 2025: no free AI-training exception','Jul 2026: mandatory AI standards coming','Permission still needed to use your work'],'Australia\u2019s position')),
+    tstep("AI companies train their systems on huge amounts of existing material, including music. In October 2025, the Australian Government ruled out creating a copyright exception that would have let AI companies use creative works for training without permission. In July 2026, it said mandatory national AI standards are coming, and that AI companies won't be allowed to train on Australian content without permission. In August 2026, National Cabinet backed the mandatory standards, with legislation expected in early 2027. Until then the law isn't fully settled, and training done overseas isn't covered.", pts(['Oct 2025: no free AI-training exception','Jul 2026: mandatory AI standards coming','Permission still needed to use your work'],'Australia\u2019s position')),
     tstep("Copyright protects work created by people. In Australia, material generated by an AI with little or no human creative input may not be protected by copyright at all. The more of the creative choices that are genuinely yours, the stronger your claim to the work.", say('copyright protects human creativity')),
     tstep("Practical steps: keep records of your writing process, like voice memos, drafts and session files, so you can show what you created. Read the terms of any AI tool before you use it, especially what it does with what you upload. And be honest with co-writers, publishers and labels about where AI was used.", pts(['Keep your drafts and voice memos','Read AI tools\u2019 terms','Be open about AI use'],'Protecting your work')),
     tstep("This area is changing fast. Follow APRA AMCOS, ARIA and the Arts Law Centre of Australia for updates. Quick recap: Australia has ruled out a free AI-training exception, copyright protects human creativity, and good records protect you. This is general information, not legal advice.", pts(['Changing fast','Human creativity','Keep records'],'AI and your music')),
     tstep("Now try it. Answer each question about AI and music.", say('Can AI companies train on Australian music without permission?'))
   ],
   drill:{ title:"AI and your music", instructions:"Choose the best answer.",
-    pool:[['Can AI companies train on Australian music without permission?','No: the government ruled out that exception'],['What does copyright protect?','Human creative work'],['How can you show what you created?','Keep drafts, voice memos and session files'],['What should you check before using an AI tool?','What it does with what you upload']],
-    generate(){ const [q,a]=rnd(this.pool), w=['Yes, freely','Anything an AI makes','Nothing','Keep drafts, voice memos and session files','No: the government ruled out that exception','Human creative work','What it does with what you upload','Its colour scheme']; return {draw:say(q), events:[], options:shuffle([a,...shuffle(w.filter(x=>x!==a)).slice(0,3)]), correct:a, key:q}; } }
+    pool:[['Can AI companies train on Australian music without permission?','Not under the Government\u2019s position, but the law isn\u2019t settled yet'],['What does copyright protect?','Human creative work'],['How can you show what you created?','Keep drafts, voice memos and session files'],['What should you check before using an AI tool?','What it does with what you upload']],
+    generate(){ const [q,a]=rnd(this.pool), w=['Yes, freely','Anything an AI makes','Nothing','Keep drafts, voice memos and session files','Yes, it\u2019s already fully legal','Human creative work','What it does with what you upload','Its colour scheme']; return {draw:say(q), events:[], options:shuffle([a,...shuffle(w.filter(x=>x!==a)).slice(0,3)]), correct:a, key:q}; } }
 });
 Object.assign(LESSON_TIPS,{441:'Make a release checklist and tick it off for every single. The tenth release goes as smoothly as the first.',
   442:'If you want to use a sample, find out who owns the master and the song before you build the track around it.',443:'Check every credit when your song is released or played. Attribution is your right.',
@@ -6216,9 +6228,9 @@ const LIB_INFO={
  'Half-Whole Dim':"Eight notes alternating semitone and tone, starting with a semitone. It's symmetrical, so there are only three different diminished scales. It's the classic sound over dominant 7\u266D9 and 13\u266D9 chords: tense but organised.",
  'Whole-Half Dim':"Eight notes alternating tone and semitone, starting with a tone. Its home chord is a diminished 7th, and it's the scale to play over diminished chords.",
  /* world: Japan */
- 'Hirajoshi':"A Japanese pentatonic, adapted from shamisen music as a tuning for the koto, a long zither. With two semitones in five notes, it sounds wistful and melancholy. Australian composer Peter Sculthorpe built his orchestral work Earth Cry around it.",
+ 'Hirajoshi':"A Japanese pentatonic, adapted from shamisen music as a tuning for the koto, a long zither. With two semitones in five notes, it sounds wistful and melancholy. Australian composer Peter Sculthorpe drew on koto tunings like this throughout his music.",
  'Iwato':"A dark Japanese pentatonic, with both a \u266D2 and a \u266D5. It's built from the same intervals as Hirajoshi, starting from a different note, and it sounds stark and mysterious.",
- 'In Sen':"A Japanese pentatonic from the same koto family, differing from Hirajoshi by one note. The \u266D2 against a strong 5th gives it a haunting, open sound.",
+ 'In Sen':"A Japanese pentatonic from the same koto family, differing from In (1 \u266D2 4 5 \u266D6) by one note: In Sen has \u266D7 where In has \u266D6. The \u266D2 against a strong 5th gives it a haunting, open sound.",
  'Yo':"A Japanese folk scale with no semitones at all, close to the major pentatonic. Open and bright, it's used in folk songs and festival music.",
  'In':"A Japanese scale, the darker partner of Yo, with a \u266D2 and \u266D6. It's associated with traditional koto music and has a solemn, refined colour.",
  /* world: Arabic maqam, Turkish, North Africa */
@@ -6271,7 +6283,7 @@ function libLesson(id,title,why,objectives,fam,names,introSteps,recap){
   return { id, title, intro:{why,objectives}, steps,
     drill:{ title:'Name the scale: '+title.replace(/^The /,''), instructions:'Which scale has the formula shown?',
       pool:names.map(n=>[ML_FORMULAS[fam][n].join(' '),n]),
-      generate(){ const [f,a]=rnd(this.pool); return {draw:say(f), events:[], options:mcOptions(a,[...new Set(this.pool.map(p=>p[1]))],4), correct:a, key:f}; } } }; }
+      generate(){ const [f,a]=rnd(this.pool); /* names that share this formula (Bayati = Kurd, Hijaz Kar = Double Harmonic …) are never offered as wrong answers */ return {draw:say(f), events:[], options:mcOptions(a,[...new Set(this.pool.filter(p=>p[0]!==f).map(p=>p[1]))],4), correct:a, key:f}; } } }; }
 const LIB=[];
 LIB.push({ id:601, title:"How the Scale Library Works",
   intro:{ why:"Beyond the major scale and its modes lies a whole library of scales. They're organised into families, and every one can be read as a formula against the major scale, exactly as you've learned.",
@@ -6321,9 +6333,9 @@ WORLD_GROUPS.forEach(([id,title,names,why,recap])=>{
   const lessonNames=names.filter(n=>ML_FORMULAS['World'][n]);
   LIB.push(libLesson(id,title,why,['Where each scale comes from','What makes each one unique','How each one sounds'],'World',lessonNames,[tstep(why,say(title.replace('World Scales: ','')))],recap)); });
 Object.assign(LESSON_TIPS,{601:'Pick one scale a week from the library. Play it over a drone on its root, then open it in Mode Lab and try it in other keys.',
-  602:'Play A Phrygian dominant over an E7 chord going to Am. That\u2019s the sound of a minor-key V7 chord resolving.',
+  602:'Play E Phrygian dominant (the 5th mode of A harmonic minor) over an E7 chord going to Am. That\u2019s the sound of a minor-key V7 chord resolving.',
   603:'Over a G7 chord resolving to C, try G altered just before the C. Hear the tension snap into place.',
-  604:'Learn the minor pentatonic in all five positions up the neck. It\u2019s the most useful scale you\u2019ll ever learn.',
+  604:'Learn the major pentatonic in all five positions up the neck. They\u2019re the same shapes as the relative minor\u2019s.',
   605:'Play the bebop dominant scale in descending quavers from the root on beat one. Count along and check that the chord tones land on each beat.',
   606:'Listen to oud players and Arabic singers. You\u2019ll hear notes bend between the frets, the true sound these scales sketch.',
   607:'Listen to a raga performance and notice how the musician lingers on certain notes. A raga is a way of moving, not just a scale.',
@@ -7836,7 +7848,7 @@ const GLOSSARY=[
  ['Publishing','','The business of the song itself: its copyright, licensing and song royalties.','sw-rights'],
  ['Split','','Each writer\u2019s percentage share of a song. Splits must total 100 per cent.','sw-cowrite'],
  ['Split sheet','','A signed record of who wrote a song and each writer\u2019s percentage.','sw-cowrite'],
- ['Sync','synchronisation','Using music with pictures, in film, TV, ads or games. Negotiated directly with the rights holders.','sw-rights']
+ ['Sync','synchronisation','Using music with pictures, in film, TV, ads or games. Mostly negotiated directly with the rights holders.','sw-rights']
 ];
 function renderGlossary(){
   const box=$('hubGrid'), inst=isBass()?'bass':'guitar';

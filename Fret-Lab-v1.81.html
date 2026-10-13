@@ -1332,8 +1332,9 @@ let studyTimer=null, studyPlayGen=0, studyWalk=0;
 /* Authoritative Mode-box state (shared with Mode Lab IIFE + GLShared) */
 var scaleShape=2, rootStringChoice=0, register="low", rangeMode="two", tuningName="Standard";
 
-function opens(){return instrument==="bass"?(strCount()===5?OPEN_BASS5.slice():OPEN_BASS.slice()):OPEN_GUITAR.slice();}
-function strNames(){return instrument==="bass"?(strCount()===5?["G","D","A","E","B"]:STR_NAMES_B.slice()):STR_NAMES_G.slice();}
+function _fsc(){return window.fretStrCount?window.fretStrCount():(instrument==="bass"?4:6);}
+function opens(){return instrument==="bass"?(_fsc()===5?OPEN_BASS5.slice():OPEN_BASS.slice()):OPEN_GUITAR.slice();}
+function strNames(){return instrument==="bass"?(_fsc()===5?["G","D","A","E","B"]:STR_NAMES_B.slice()):STR_NAMES_G.slice();}
 function nFrets(){return 12;}
 function pcOf(midi){return ((midi%12)+12)%12;}
 function spellUp(pc){ // ascending sharps except E→F, B→C natural
@@ -1398,6 +1399,8 @@ function playMidi(midi, dur=0.35, vel){
   /* v1.81 Batch 3 B: the mic ignores input while an app note sounds + 300 ms (release ~0.28 s) */
   try{ const until=performance.now()+(dur+0.28)*1000+300; if(!(window._fretMicMuteUntil>until)) window._fretMicMuteUntil=until; }catch(e){}
   if(!synth) return;
+  /* bass opens are stored at written pitch (G3=55); bass sounds an octave lower (G2 D2 A1 E1 = 43 38 33 28, low B 23) */
+  if(instrument==="bass") midi-=12;
   const name=NOTE_SHARP[pcOf(midi)]+(Math.floor(midi/12)-1);
   try{ if(vel!=null) synth.triggerAttackRelease(name, dur, undefined, vel); else synth.triggerAttackRelease(name, dur); }catch(e){}
 }
@@ -3098,6 +3101,7 @@ function bind(){
   $("btnPlay").onclick=async()=>{
     await unlockAudio();
     if(currentQ && currentQ.type==="study"){ playStudySequence(); return; }
+    if(phase==="test" && currentQ && /^scale-(deg|next)$/.test(currentQ.type)){ playMidi(fretRefRootMidi(currentQ), 0.9, 1); setStatus("Reference: the root.", "ask"); return; }
     if(currentQ&&currentQ.promptMidi!=null){ playMidi(currentQ.promptMidi); return; }
     if(currentQ&&currentQ.midi!=null){ playMidi(currentQ.midi); return; }
     if(currentQ && currentQ.type==="multi") playScaleRef(currentQ);
