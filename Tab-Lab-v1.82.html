@@ -2192,7 +2192,7 @@ body.tl-notepad .tl-sound-row .tl-field select{min-width:0!important;width:7rem!
 </div>
 <div id="dkMorePanel" class="dk-pop" hidden role="dialog" aria-label="More">
   <div class="dk-pop-top"><b>More</b><button type="button" class="dk-x" data-close="dkMorePanel" aria-label="Close">&#10005;</button></div>
-  <div class="dk-sec"><h4>File</h4><div class="dk-row" id="dkFileRow"><button type="button" class="dk-pill" id="dkReopen" hidden>Reopen last file</button><button type="button" class="dk-pill" id="dkNew">New blank tab</button></div></div>
+  <div class="dk-sec"><h4>File</h4><div class="dk-row" id="dkFileRow"><button type="button" class="dk-pill" id="dkOpenFile">Open file</button><button type="button" class="dk-pill" id="dkReopen" hidden>Reopen last file</button><button type="button" class="dk-pill" id="dkNew">New blank tab</button></div></div>
   <div class="dk-sec"><h4>Practice</h4><div class="dk-row" id="dkPracRow"></div></div>
   <div class="dk-sec dk-phone-only"><h4>View</h4><div class="dk-row"><label class="dk-dd"><small>View</small><select id="dkView2" aria-label="View"><option value="scoretab">Notation + Tab</option><option value="tab">Tab</option><option value="score">Notation</option></select></label><label class="dk-dd"><small>Zoom</small><select id="dkZoom2" aria-label="Zoom"><option value="0.75">75%</option><option value="0.9">90%</option><option value="1" selected>100%</option><option value="1.15">115%</option><option value="1.3">130%</option><option value="1.5">150%</option></select></label></div></div>
   <div class="dk-sec"><h4>Instrument</h4><div class="dk-row" id="dkInstRow"></div></div>
@@ -2257,7 +2257,7 @@ body.tl-notepad .tl-sound-row .tl-field select{min-width:0!important;width:7rem!
       <span class="tempo-chip" id="posChip">00:00 / 00:00</span>
       <button class="action ghost tl-pad" type="button" id="speedBtn">⏱<span id="speedLbl">100%</span></button>
       <label class="tl-upload">Upload GP/XML
-        <input id="tlFile" type="file" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gpif,.xml,.musicxml,.mxl,.alphatex,.atex,.mid,.midi,*/*"/>
+        <input id="tlFile" type="file" />
       </label>
       <button type="button" class="tl-download" id="tlDownload">Download</button>
       <button type="button" class="action tl-pad" id="sendBtn" title="Send to Songwriter Lab">↗<span>Song</span></button>
@@ -7868,5 +7868,39 @@ body.tl-sheet .dk-edit .dk-pop-top{cursor:default}
 })();
 </script>
 
+<script id="tl-v182-openfix">
+(function(){
+  /* Fresh input each time: no stale value, no accept filter (iOS greys out .gp files it cannot map). */
+  function pick(){
+    var inp=document.createElement("input"); inp.type="file";
+    inp.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+    document.body.appendChild(inp);
+    inp.addEventListener("change", function(){
+      var f=inp.files&&inp.files[0];
+      try{ if(f) handleFile(f); }catch(e){}
+      setTimeout(function(){ try{ inp.remove(); }catch(e){} }, 1000);
+    });
+    inp.click();
+  }
+  window.tlOpenFile=pick;
+  var b=document.getElementById("dkOpenFile");
+  if(b) b.addEventListener("click", function(){ pick(); var mp=document.getElementById("dkMorePanel"); if(mp){ mp.hidden=true; var m=document.getElementById("dkMore"); if(m) m.setAttribute("aria-expanded","false"); } });
+  /* Reset transport, loop, follow and dock after every file load. */
+  var orig=window.loadBytes||loadBytes;
+  var wrapped=function(name, buf, opts){
+    try{ if(api && api.playerState===1) api.pause(); }catch(e){}
+    try{ if(typeof clearLoopRange==="function") clearLoopRange(); }catch(e){}
+    try{ api.playbackRange=null; }catch(e){}
+    var r=orig.apply(this, arguments);
+    try{ api.tickPosition=0; window.__tlStartTick=0; window.__tlFollow=true; }catch(e){}
+    try{ var v=document.getElementById("atViewport"); if(v) v.scrollTop=0; }catch(e){}
+    setTimeout(function(){ try{ api.tickPosition=0; }catch(e){} try{ window.tlDockRefresh&&window.tlDockRefresh(); }catch(e){} }, 400);
+    setTimeout(function(){ try{ window.tlDockRefresh&&window.tlDockRefresh(); }catch(e){} }, 1500);
+    return r;
+  };
+  try{ loadBytes=wrapped; }catch(e){}
+  window.loadBytes=wrapped;
+})();
+</script>
 </body>
 </html>
