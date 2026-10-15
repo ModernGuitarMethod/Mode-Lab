@@ -4958,6 +4958,7 @@ function collectNotes(track){
         bar.voices.forEach(function(voice){
           voice.beats.forEach(function(beat){
             (beat.notes||[]).forEach(function(note){
+              if(note.isTieDestination) return; /* v1.82: a tied note is one note for Song */
               let midi=null;
               try{ midi=(typeof note.realValue==="number")?note.realValue:(note.octave*12+note.tone);}catch(e){}
               notes.push({bar:bi+1, fret:note.fret, string:note.string, midi:midi});
@@ -7900,6 +7901,546 @@ body.tl-sheet .dk-edit .dk-pop-top{cursor:default}
   };
   try{ loadBytes=wrapped; }catch(e){}
   window.loadBytes=wrapped;
+})();
+</script>
+<style id="tl-v182-editor-css">
+/* v1.82 editor */
+.ed-hidden, #dkEditBody #notePad.ed-hidden, #dkEditBody .note-pad.ed-hidden, #dkMorePanel .ed-hidden, #tlDock .ed-hidden{display:none !important}
+#atViewport{isolation:isolate}
+.dk-pop{z-index:1200 !important}
+#tlCaret.is-on{background:rgba(212,160,23,.13) !important; border:0 !important; border-left:2px solid rgba(212,160,23,.55) !important; border-right:2px solid rgba(212,160,23,.55) !important; border-radius:6px !important}
+#tlCaretNote{border:2.5px solid #e8590c !important; box-shadow:0 0 0 2px rgba(255,255,255,.75) !important}
+#tlCurStr,#tlCurGhost,#tlCurLab{position:absolute; display:none; pointer-events:none; z-index:32; box-sizing:border-box}
+#tlCurStr.on,#tlCurGhost.on,#tlCurLab.on{display:block}
+#tlCurStr{border:2.5px solid #e8590c; border-radius:5px; background:rgba(232,89,12,.08); animation:tlPulse 1.4s ease-out 1}
+#tlCurStr.empty{border-style:dashed; background:rgba(255,255,255,.75)}
+#tlCurGhost{border:2px dashed #e8590c; border-radius:50%; background:rgba(232,89,12,.10)}
+#tlCurLab{font:700 11px/1 system-ui,sans-serif; color:#c2410c; white-space:nowrap}
+@keyframes tlPulse{0%{box-shadow:0 0 0 0 rgba(232,89,12,.6)}100%{box-shadow:0 0 0 10px rgba(232,89,12,0)}}
+.tl-badge{position:absolute; z-index:33; background:#dc2626; color:#fff; font:800 10px/1 system-ui,sans-serif; padding:3px 6px; border-radius:9px; pointer-events:auto; cursor:help}
+/* tabbed edit panel */
+#edWrap{display:flex; flex-direction:column; gap:4px}
+#edTabs{display:flex; gap:4px; margin:0 0 4px}
+#edTabs button{background:none; border:0; color:#9a9aa3; font:700 12.5px system-ui,sans-serif; padding:6px 11px; border-radius:14px; cursor:pointer}
+#edTabs button.on{background:#2a2410; color:#d4a017}
+.ed-pane{display:none; flex-direction:column; gap:5px}
+.ed-pane.on{display:flex}
+.ed-row{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.ed-l{font:700 9px system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8d8d98; width:46px; flex:0 0 46px}
+.ed-k{min-width:34px; height:34px; padding:0 7px; border:1.5px solid #4a4a52; background:#1b1b1f; color:#ececf0; border-radius:8px; font:700 15px system-ui,sans-serif; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-sizing:border-box}
+.ed-k.g,.ed-dur,#edDot,#edTri,#edRest{border-color:#d4a017; color:#d4a017}
+.ed-k.w{font-size:12.5px; padding:0 10px; border-color:#d4a017; color:#d4a017}
+.ed-k.on{background:#d4a017 !important; color:#111 !important; border-color:#d4a017 !important}
+.ed-x{color:#ff6b6b !important}
+#edFretBox{display:inline-flex; gap:3px}
+#edFretBox input{width:46px; height:34px; box-sizing:border-box; background:#222226; color:#f2f2f2; border:1.5px solid #4a4a52; border-radius:8px; text-align:center; font:700 13px system-ui; min-height:0 !important}
+#edFretBox button,#edGoRow button,#edGoRow input,#edGoRow select{height:34px !important; min-height:0 !important; min-width:34px; border-radius:8px !important; margin:0 !important}
+#edGoRow input{width:56px; background:#222226; color:#f2f2f2; border:1.5px solid #4a4a52; text-align:center}
+#edGoRow select{background:#222226; color:#f2f2f2; -webkit-text-fill-color:#f2f2f2; border:1.5px solid #4a4a52; appearance:none; -webkit-appearance:none; padding:0 10px}
+#edKeyRow label{display:flex; align-items:center; gap:5px; font:700 10px system-ui; color:#8d8d98; text-transform:uppercase; letter-spacing:.06em}
+#edKeyRow select{appearance:none; -webkit-appearance:none; background:#222226; color:#f2f2f2; -webkit-text-fill-color:#f2f2f2; border:1.5px solid #4a4a52; border-radius:8px; height:34px; padding:0 10px; font:700 13px system-ui; max-width:170px; min-height:0 !important}
+.ed-sub{font:600 11px system-ui; color:#8d8d98; padding-left:51px}
+#edChordPane{gap:6px}
+#edFoot{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font:700 11.5px system-ui,sans-serif; background:#221d0c; color:#d4a017; border-radius:7px; padding:6px 9px; margin-top:4px}
+#edFoot .ok{color:#7ddc8c} #edFoot .bad{color:#ff6b6b}
+#dkHudSlot{display:none !important}
+#dkEditBody{overflow:auto}
+/* dock drop-downs: no clipping */
+#tlDock .dk-dd select{padding:13px 24px 0 9px !important; line-height:15px !important; font-size:12.5px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important}
+#tlDock .dk-dd small{top:3px !important}
+#tlDock .dk-ctrl{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) !important}
+#tlDock .dk-ctrl .dk-view{grid-column:span 2}
+@media (max-width:1239px){ #tlDock .dk-ctrl{grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,.8fr) minmax(0,.8fr) !important} #tlDock .dk-ctrl .dk-view{grid-column:auto} }
+@media (max-width:640px){ #tlDock .dk-ctrl{grid-template-columns:repeat(4,minmax(0,1fr)) !important} }
+/* menu */
+#dkMorePanel .dk-sec h4{font-size:11px !important}
+#dkMorePanel .tl-time-chip select, #dkMorePanel select{appearance:none !important; -webkit-appearance:none !important; background:#222226 !important; color:#f2f2f2 !important; -webkit-text-fill-color:#f2f2f2 !important; border:1px solid #44444b !important; border-radius:7px !important; min-height:34px; padding:4px 12px !important}
+#dkMorePanel .dk-keys{font:600 11px/1.4 system-ui; color:#8d8d98; flex-basis:100%}
+#dkMorePanel #dkInstRow,#dkMorePanel #dkMixRow{flex-basis:100%}
+@media (max-width:640px){ .dk-edit{max-height:46dvh !important} .ed-k{min-width:32px; height:34px} .ed-l{width:40px; flex-basis:40px} .ed-sub{padding-left:0} }
+</style>
+<script id="tl-v182-editor">
+/* v1.82 editor: bar maths, cursor, tabbed Edit panel, Menu, key picker */
+(function(){
+"use strict";
+var $=function(id){ return document.getElementById(id); };
+var W=3840;
+/* ---------- bar maths (ticks; quarter = 960) ---------- */
+function bt(b){ var t=W/(b.dur||4); var d=b.dots|0; if(d===1) t*=1.5; else if(d>=2) t*=1.75; if(b.tu && b.tu[0]>0) t=t*(b.tu[1]||2)/b.tu[0]; return Math.round(t); }
+function tsOf(bar){ return (bar && bar.ts) ? bar.ts : [model.tsN||4, model.tsD||4]; }
+function cap(bar){ var ts=tsOf(bar); return Math.round(ts[0]*W/ts[1]); }
+function sum(bar){ return bar.beats.reduce(function(a,b){ return a+bt(b); },0); }
+function compound(bar){ var ts=tsOf(bar); return ts[1]>=8 && ts[0]%3===0 && ts[0]>3; }
+var PLAIN=[[1,0],[2,0],[4,0],[8,0],[16,0],[32,0],[64,0]];
+var DOTTED=[[1,1],[2,1],[4,1],[8,1],[16,1],[32,1]];
+function vt(v){ return bt({dur:v[0],dots:v[1]}); }
+/* beat-aligned rests from pos for len ticks */
+function fillRests(len, pos, bar){
+  var out=[], comp=compound(bar), cands;
+  cands=comp ? DOTTED.slice(1,3).concat([[8,0],[16,0],[32,0],[64,0]]) : PLAIN.slice();
+  if(!comp && pos===0 && len===cap(bar) && len===W) cands=PLAIN.slice();
+  cands.sort(function(a,b){ return vt(b)-vt(a); });
+  var guard=0;
+  while(len>0 && guard++<64){
+    var pick=null;
+    for(var i=0;i<cands.length;i++){ var t=vt(cands[i]); if(t<=len && pos%t===0){ pick=cands[i]; break; } }
+    if(!pick){ for(var j=0;j<cands.length;j++){ var t2=vt(cands[j]); if(t2<=len){ pick=cands[j]; break; } } }
+    if(!pick) break;
+    var r={dur:pick[0], notes:[], chord:null}; if(pick[1]) r.dots=pick[1];
+    out.push(r); pos+=vt(pick); len-=vt(pick);
+  }
+  return out;
+}
+/* note values for len ticks (tied pieces) */
+function noteVals(len){
+  var c=PLAIN.concat(DOTTED).sort(function(a,b){ return vt(b)-vt(a); }), out=[], g=0;
+  while(len>0 && g++<32){ var p=null; for(var i=0;i<c.length;i++){ if(vt(c[i])<=len){ p=c[i]; break; } } if(!p) break; out.push(p); len-=vt(p); }
+  return out;
+}
+function cloneBeat(b, v, tie){
+  var nb=JSON.parse(JSON.stringify(b)); nb.dur=v[0]; if(v[1]) nb.dots=v[1]; else delete nb.dots; delete nb.tu;
+  if(tie){ nb.notes.forEach(function(n){ n.tie=true; }); nb.chord=null; }
+  return nb;
+}
+function isRest(b){ return !b.notes || !b.notes.length; }
+/* express a beat of len ticks as 1+ tied beats */
+function asBeats(b, len, tieFirst){
+  if(b.tu) return [b];
+  var vs=noteVals(len); if(!vs.length) return [];
+  if(isRest(b)) return vs.map(function(v){ var r={dur:v[0],notes:[],chord:null}; if(v[1]) r.dots=v[1]; return r; });
+  return vs.map(function(v,i){ return cloneBeat(b, v, i>0||tieFirst); });
+}
+function normalize(bar){
+  var out=[], pos=0, i=0, B=bar.beats;
+  while(i<B.length){
+    var b=B[i];
+    if(isRest(b) && !b.tu && !b.chord){
+      var len=0, st=pos; while(i<B.length && isRest(B[i]) && !B[i].tu && !B[i].chord){ len+=bt(B[i]); i++; }
+      fillRests(len, st, bar).forEach(function(r){ out.push(r); }); pos+=len; continue;
+    }
+    out.push(b); pos+=bt(b); i++;
+  }
+  bar.beats=out.length?out:fillRests(cap(bar),0,bar);
+}
+function ensureBarAt(ti, bi){
+  while(model.tracks[ti].bars.length<=bi){
+    model.tracks.forEach(function(tr){ tr.bars.push({beats:emptyBarBeats()}); });
+  }
+  return model.tracks[ti].bars[bi];
+}
+/* squeeze bar so it sums to cap: eat rests after index p, else overflow into the next bar (tied) */
+function fit(ti, bi, p, depth){
+  depth=depth||0; if(depth>64) return;
+  var bar=model.tracks[ti].bars[bi], C=cap(bar), ex=sum(bar)-C;
+  if(ex>0){
+    for(var j=p+1;j<bar.beats.length && ex>0;j++){
+      var b=bar.beats[j]; if(!isRest(b) || b.tu) continue;
+      var L=bt(b), take=Math.min(L, ex); ex-=take;
+      if(take===L){ bar.beats.splice(j,1); j--; }
+      else { var rp=asBeats(b, L-take); bar.beats.splice.apply(bar.beats,[j,1].concat(rp)); j+=rp.length-1; }
+    }
+  }
+  if(ex>0 && bar.beats.some(function(x){ return x.tu; })){
+    var kp=bar.beats[p]; bar.beats=bar.beats.filter(function(x){ return !(x.tu && isRest(x)); }); bar.beats.forEach(function(x){ delete x.tu; });
+    return fit(ti, bi, Math.max(-1, bar.beats.indexOf(kp)), depth+1);
+  }
+  if(ex>0){
+    var pos=0, k=0, over=[];
+    for(k=0;k<bar.beats.length;k++){ var L2=bt(bar.beats[k]); if(pos+L2>C) break; pos+=L2; }
+    if(k<bar.beats.length){
+      var cut=bar.beats[k], head=C-pos, tail=bt(cut)-head;
+      var rest=bar.beats.splice(k);
+      var hb=head>0?asBeats(cut, head):[];
+      bar.beats=bar.beats.concat(hb);
+      over=asBeats(cut, tail, !isRest(cut) && head>0).concat(rest.slice(1));
+      var nx=ensureBarAt(ti, bi+1);
+      nx.beats=over.concat(nx.beats);
+      fit(ti, bi+1, over.length-1, depth+1);
+    }
+  } else if(ex<0){
+    bar.beats=bar.beats.concat(fillRests(-ex, C+ex, bar));
+  }
+  normalize(bar);
+}
+/* change the selected beat to a new rhythm (props: dur, dots, tu) */
+function setBeatLen(props){
+  pushUndo(); ensureEditModel();
+  var ti=sel.track, bar=curBar(), b=curBeat(), idx=sel.beat;
+  var keep=b;
+  if(b.tu && !props.tu){ bar.beats=bar.beats.filter(function(x){ return !(x.tu && x!==b && isRest(x)); }); bar.beats.forEach(function(x){ delete x.tu; }); idx=bar.beats.indexOf(b); sel.beat=idx; }
+  b.dur=props.dur; if(props.dots) b.dots=props.dots; else delete b.dots;
+  if(props.tu) b.tu=props.tu; else delete b.tu;
+  if(props.tu && props.tuGroup){
+    var mates=[]; for(var m=1;m<props.tu[0];m++) mates.push({dur:props.dur, notes:[], chord:null, tu:props.tu.slice()});
+    bar.beats.splice.apply(bar.beats,[idx+1,0].concat(mates));
+    idx+=mates.length;
+  }
+  var C=cap(bar), start=0; for(var i=0;i<sel.beat;i++) start+=bt(bar.beats[i]);
+  fit(ti, sel.bar, idx);
+  var ni=bar.beats.indexOf(keep); if(ni<0) ni=Math.min(sel.beat, bar.beats.length-1); sel.beat=ni;
+  if(start+bt(keep)>C) toast("Tied into the next bar");
+  refreshAll(true); afterEdit();
+}
+window.tlBar={bt:bt,cap:cap,sum:sum,fillRests:fillRests,normalize:normalize,fit:fit,setBeatLen:setBeatLen};
+window.setDur=function(d){ var b=curBeat(); setBeatLen({dur:d, dots:b?b.dots:0}); };
+window.tlToggleDot=function(){ var b=curBeat(); if(!b.dots && (b.dur>=64 || b.tu)){ toast("That note can\u2019t be dotted"); return; } setBeatLen({dur:b.dur, dots:b.dots?0:1}); };
+window.tlToggleTriplet=function(){
+  var b=curBeat(), bar=curBar();
+  if(b.tu){ pushUndo(); var i=sel.beat; var g=[]; bar.beats.forEach(function(x){ if(x.tu) g.push(x); });
+    bar.beats.forEach(function(x){ delete x.tu; }); bar.beats=bar.beats.filter(function(x){ return !(g.indexOf(x)>=0 && x!==b && isRest(x)); });
+    sel.beat=bar.beats.indexOf(b); fit(sel.track, sel.bar, sel.beat); refreshAll(true); afterEdit(); return; }
+  var C=cap(bar), st=0, i2; for(i2=0;i2<sel.beat;i2++) st+=bt(bar.beats[i2]);
+  var L=bt(b), free=0; for(i2=sel.beat+1;i2<bar.beats.length;i2++){ if(isRest(bar.beats[i2]) && !bar.beats[i2].tu) free+=bt(bar.beats[i2]); }
+  if(b.dots || st+2*L>C || free<L || (L*2)%3){ toast("No room for a triplet here"); return; }
+  setBeatLen({dur:b.dur, tu:[3,2], tuGroup:true});
+};
+window.addBeat=function(){
+  pushUndo(); ensureEditModel(); var bar=curBar(), b=curBeat();
+  var half=Math.round(bt(b)/2), vs=noteVals(half);
+  if(b.tu || !vs.length || half<60){ toast("That beat is too short to split"); return; }
+  var r={dur:vs[0][0], notes:[], chord:null}; if(vs[0][1]) r.dots=vs[0][1];
+  var hb=asBeats(b, bt(b)-bt(r)); bar.beats.splice.apply(bar.beats,[sel.beat,1].concat(hb).concat([r]));
+  sel.beat=sel.beat+hb.length; fit(sel.track, sel.bar, sel.beat); refreshAll(true); afterEdit();
+};
+window.delBeat=function(){
+  pushUndo(); ensureEditModel(); var bar=curBar(), b=curBeat();
+  b.notes=[]; b.chord=null; delete b.gr; normalize(bar); sel.beat=Math.min(sel.beat, bar.beats.length-1);
+  refreshAll(true); afterEdit();
+};
+var _ir=window.insertRest;
+window.insertRest=function(){ _ir(); try{ normalize(curBar()); sel.beat=Math.min(sel.beat, curBar().beats.length-1); refreshAll(true); }catch(e){} afterEdit(); };
+window.tlFixBar=function(){ pushUndo(); ensureEditModel(); fit(sel.track, sel.bar, -1); sel.beat=Math.min(sel.beat, curBar().beats.length-1); refreshAll(true); afterEdit(); };
+/* ties in alphaTex */
+var _nt=window.noteTex;
+window.noteTex=function(n, extra){ if(n && n.tie && !n.dead){ var s=_nt(Object.assign({},n,{tie:false}), extra); return s.replace(/^\d+\./,"-."); } return _nt(n, extra); };
+function toast(t){ try{ setBanner(t); setTimeout(function(){ setBanner(""); }, 2200); }catch(e){} }
+
+/* ---------- key signature: fewest accidentals (Mode Lab chooser) ---------- */
+var KS_C={"Whole Tone":1,"Hirajoshi":1,"Iwato":1,"In Sen":1,"Insen":1,"In":1,"Kumoi":1,"Yo":1,"Ryukyu":1,"Pelog":1,"Augmented":1,"Chromatic":1};
+var KEYS=["C","G","D","A","E","B","F#","C#","F","Bb","Eb","Ab","Db","Gb","Cb"], NK={C:0,G:1,D:2,A:3,E:4,B:5,"F#":6,"C#":7,F:1,Bb:2,Eb:3,Ab:4,Db:5,Gb:6,Cb:7};
+var PCN={C:0,"C#":1,Db:1,D:2,"D#":3,Eb:3,E:4,Fb:4,F:5,"E#":5,"F#":6,Gb:6,G:7,"G#":8,Ab:8,A:9,"A#":10,Bb:10,B:11,Cb:11};
+function majorPcs(k){ var r=PCN[k]; return [0,2,4,5,7,9,11].map(function(i){ return (r+i)%12; }); }
+function tlKeySigName(st){
+  st=st||tabSharedState()||{};
+  var mode=st.mode||"Ionian", fam=st.family||"Major";
+  if(KS_C[mode] || /dimin|whole.?tone|half.?whole|whole.?half|japan|chromatic/i.test(mode)) return "C";
+  var F=(window.MODE_THEORY&&MODE_THEORY.FAMILIES)||{}, e=(F[fam]&&F[fam][mode]);
+  var par=parentMajorNameFromShared(st);
+  if(!e || !e.iv) return par;
+  var r=PCN[st.root||"C"]; if(r==null) return par;
+  var pcs=e.iv.map(function(i){ return (r+i)%12; });
+  var best=par, bc=1e9;
+  KEYS.forEach(function(k){ var M=majorPcs(k), inl=0; pcs.forEach(function(p){ if(M.indexOf(p)<0) inl++; });
+    var c=inl+0.5*NK[k]-(k===par?0.01:0)-((e.flats && /b/.test(k))?0.005:0); if(c<bc-1e-9){ bc=c; best=k; } });
+  return best;
+}
+window.tlKeySigName=tlKeySigName;
+window.texKeySig=function(){
+  if(window.__tlFileKs!=null) return "\\ks "+window.__tlFileKs;
+  return "\\ks "+tlKeySigName(tabSharedState());
+};
+/* GP files keep their own key: never write the shared selection on import */
+window.publishImportLock=function(score){
+  try{
+    var cur=JSON.parse(localStorage.getItem("modelab.shared.v1")||"{}");
+    if(cur.lockedFromImport){ var pre=localStorage.getItem("modelab.shared.preImport.v1"); if(pre){ localStorage.setItem("modelab.shared.v1", pre); } else { cur.lockedFromImport=false; localStorage.setItem("modelab.shared.v1", JSON.stringify(cur)); } }
+  }catch(e){}
+  if(!score || !(lastFile && lastFile.bytes) || lastFile.isDemo || lastFile.isBlank){ window.__tlFileKs=null; window.__tlFileKey=null; setTimeout(syncKeyUi,50); return; }
+  try{
+    var mb=score.masterBars&&score.masterBars[0]; var ks=mb&&(mb.keySignature!=null?mb.keySignature:score.keySignature); ks=(typeof ks==="number")?ks:0;
+    var maj=["Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#"]; window.__tlFileKs=maj[Math.max(0,Math.min(14,ks+7))];
+    var k=importKeyFromScore(score); window.__tlFileKey=k;
+  }catch(e){ window.__tlFileKs=null; }
+  try{
+    var tempo=readScoreTempo(score); userTempo=tempo; origTempo=tempo; if(model) model.tempo=tempo;
+    if($("tempoVal")) $("tempoVal").textContent=String(Math.round(tempo));
+    if($("songTitle")) $("songTitle").innerHTML=escapeHtml(score.title||lastFile.name||"Imported")+" <em>· from your file</em>";
+  }catch(e){}
+  try{ renderBarChords(); }catch(e){} try{ wireLabHrefs(); }catch(e){}
+  setTimeout(syncKeyUi, 50);
+};
+var _lbs=window.loadBlankScore;
+window.loadBlankScore=function(){ window.__tlFileKs=null; window.__tlFileKey=null; var r=_lbs.apply(this, arguments); setTimeout(syncKeyUi,50); return r; };
+window.glParityChanged=function(k, p){
+  if(!/^(root|family|mode)$/.test(k)) return;
+  window.__tlFileKs=null; window.__tlFileKey=null;
+  try{ localStorage.setItem("modelab.shared.ping", String(Date.now())); }catch(e){}
+  try{ var u=new URL(location.href); u.searchParams.set("root",p.root); u.searchParams.set("family",p.family); u.searchParams.set("mode",p.mode); history.replaceState(null,"",u.toString()); }catch(e){}
+  try{ wireLabHrefs(); }catch(e){} try{ renderBarChords(); }catch(e){}
+  try{ if(lastFile && (lastFile.isBlank || modelDirty)) refreshAll(false); }catch(e){}
+  syncKeyUi();
+};
+function syncKeyUi(){
+  var s=$("edKeySum"); if(!s) return;
+  var st=tabSharedState()||{};
+  if(window.__tlFileKey){ s.textContent="File key: "+window.__tlFileKey.root+" "+(window.__tlFileKey.mode==="Aeolian"?"minor":"major")+" · pick to change the shared key"; }
+  else s.textContent="Key sig: "+tlKeySigName(st)+" · shared with every lab";
+  try{ GLParity.refresh(); }catch(e){}
+}
+
+/* ---------- cursor ---------- */
+var PC=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"], LET=[0,0,1,1,2,3,3,4,4,5,5,6];
+function midiOf(nm){ var m=String(nm).match(/^([A-G]#?b?)(-?\d+)$/); if(!m) return 64; return (parseInt(m[2],10)+1)*12+(PCN[m[1]]||0); }
+function el(id, cls){ var e=$(id); if(!e){ e=document.createElement("div"); e.id=id; e.className=cls||""; e.setAttribute("aria-hidden","true"); var vp=$("atViewport"); if(vp) vp.appendChild(e); } return e; }
+var _ecv=window.ensureCaretVisible;
+window.ensureCaretVisible=function(scroll){
+  _ecv(scroll);
+  try{ placeCursor(); }catch(e){}
+};
+function placeCursor(){
+  var box=el("tlCurStr"), gh=el("tlCurGhost"), lab=el("tlCurLab");
+  [box,gh,lab].forEach(function(x){ x.classList.remove("on"); });
+  var caret=$("tlCaret"); var beat=selAtBeat(); var L=api&&api.boundsLookup; if(!beat||!L||!caret||!caret.classList.contains("is-on")) return;
+  var all=(L.findBeats?L.findBeats(beat):[L.findBeat(beat)])||[]; if(!all.length) return;
+  var vp=$("atViewport"), surf=document.querySelector("#atMain .at-surface")||$("atMain");
+  var sr=surf.getBoundingClientRect(), vr=vp.getBoundingClientRect();
+  var oX=sr.left-vr.left-(vp.clientLeft||0)+vp.scrollLeft, oY=sr.top-vr.top-(vp.clientTop||0)+vp.scrollTop;
+  var y0=1e9,y1=-1e9; all.forEach(function(b){ var bb=b.barBounds&&b.barBounds.visualBounds; if(bb){ y0=Math.min(y0,bb.y); y1=Math.max(y1,bb.y+bb.h); } });
+  var vb=all[0].visualBounds, cx=vb.x+vb.w/2;
+  caret.style.top=(oY+y0-8)+"px"; caret.style.height=(y1-y0+16)+"px";
+  var staff=beat.voice.bar.staff, nStr=(staff.tuning&&staff.tuning.length)||6;
+  var tabB=null, scoreB=null;
+  all.forEach(function(b){ var bb=b.barBounds&&b.barBounds.visualBounds; if(!bb) return; if(!scoreB || bb.y<scoreB.bar.y) {} });
+  if(all.length>=2){ scoreB={b:all[0], bar:all[0].barBounds.visualBounds}; tabB={b:all[all.length-1], bar:all[all.length-1].barBounds.visualBounds}; }
+  else { var only={b:all[0], bar:all[0].barBounds.visualBounds}; if(staveView==="tab") tabB=only; else scoreB=only; }
+  var tr=curTrack(), m=curBeat(), has=m && m.notes && m.notes.find(function(n){ return n.str===sel.str; });
+  if(tabB){
+    var sp=tabB.bar.h/Math.max(1,nStr-1), y=tabB.bar.y+(sel.str-1)*sp, x=(tabB.b.visualBounds.x+tabB.b.visualBounds.w/2);
+    var w=Math.max(20, sp*1.5), h=Math.max(16, sp*1.25);
+    box.style.left=(oX+x-w/2)+"px"; box.style.top=(oY+y-h/2)+"px"; box.style.width=w+"px"; box.style.height=h+"px";
+    box.classList.toggle("empty", !has); box.classList.add("on");
+    lab.textContent="String "+sel.str+" · Beat "+(sel.beat+1); lab.style.left=(oX+x-30)+"px"; lab.style.top=(oY+tabB.bar.y+tabB.bar.h+10)+"px"; lab.classList.add("on");
+  }
+  if(scoreB && !has && !(isRest(m) && false)){
+    var tun=tuningFor(tr.kind==="bass"?"bass":"guitar", tr.strings||6).split(" ");
+    var midi=midiOf(tun[Math.max(0,Math.min(tun.length-1,sel.str-1))]||"E4")+12;
+    var dia=Math.floor(midi/12-1)*7+LET[midi%12], spc=scoreB.bar.h/4;
+    var topDia=(tr.clef==="bass")?(3*7+5):(5*7+3);
+    var gy=scoreB.bar.y+(topDia-dia)*spc/2, gx=scoreB.b.visualBounds.x+scoreB.b.visualBounds.w/2;
+    var d=spc*1.6; gh.style.left=(oX+gx-d/2)+"px"; gh.style.top=(oY+gy-d/2)+"px"; gh.style.width=d+"px"; gh.style.height=d+"px"; gh.classList.add("on");
+    gh.title="Open "+PC[midi%12];
+  }
+  badges();
+  keepAbove(box.classList.contains("on")?box:caret);
+}
+function keepAbove(t){
+  try{
+    var pn=$("dkEditPanel"); if(!pn || pn.hidden) { document.body.style.paddingBottom=""; var v0=$("atViewport"); if(v0) v0.style.paddingBottom=""; return; }
+    var pr=pn.getBoundingClientRect(); if(pr.top<innerHeight*0.35) return; /* floating panel, not a sheet */
+    if(pr.left>innerWidth*0.3) return;
+    document.body.style.paddingBottom=Math.round(pr.height+20)+"px";
+    var r=t.getBoundingClientRect(), lim=pr.top-24;
+    if(r.bottom>lim || r.top<0){
+      var d=r.bottom>lim ? (r.bottom-lim+20) : (r.top-80);
+      var vp=$("atViewport");
+      if(vp && vp.scrollHeight>vp.clientHeight+4){ vp.style.paddingBottom=Math.round(pr.height)+"px"; vp.scrollTop+=d; }
+      else window.scrollBy(0, d);
+    }
+  }catch(e){}
+}
+/* tap a tab line to pick the string */
+function wireTap(){
+  var vp=$("atViewport"); if(!vp || vp.__edTap) return; vp.__edTap=1;
+  var down=null;
+  vp.addEventListener("pointerdown", function(e){ down={x:e.clientX,y:e.clientY}; }, true);
+  vp.addEventListener("pointerup", function(e){
+    if(!down || Math.abs(e.clientX-down.x)>8 || Math.abs(e.clientY-down.y)>8) return; var cy=e.clientY;
+    setTimeout(function(){
+      try{
+        var beat=selAtBeat(), L=api.boundsLookup; if(!beat||!L) return;
+        var all=L.findBeats?L.findBeats(beat):[L.findBeat(beat)]; var tb=all[all.length-1]; if(!tb) return;
+        if(all.length<2 && staveView!=="tab") return;
+        var bb=tb.barBounds.visualBounds, surf=document.querySelector("#atMain .at-surface")||$("atMain"), sr=surf.getBoundingClientRect();
+        var y=cy-sr.top, n=(beat.voice.bar.staff.tuning||[]).length||6, sp=bb.h/Math.max(1,n-1);
+        if(y<bb.y-sp*0.7 || y>bb.y+bb.h+sp*0.7) return;
+        sel.str=Math.max(1,Math.min(n, Math.round((y-bb.y)/sp)+1));
+        paintEditUi(); refreshSelHud(); ensureCaretVisible(false); foot();
+      }catch(err){}
+    }, 60);
+  }, true);
+}
+/* bar badges: any bar that does not add up */
+function badges(){
+  var host=$("atViewport"); if(!host) return;
+  host.querySelectorAll(".tl-badge").forEach(function(b){ b.remove(); });
+  try{
+    if(!(lastFile && (lastFile.isBlank || modelDirty))) return;
+    var L=api.boundsLookup; if(!L) return; var tr=curTrack();
+    var surf=document.querySelector("#atMain .at-surface")||$("atMain"), sr=surf.getBoundingClientRect(), vr=host.getBoundingClientRect();
+    var oX=sr.left-vr.left+host.scrollLeft, oY=sr.top-vr.top+host.scrollTop;
+    L.staffSystems.forEach(function(sys){ sys.bars.forEach(function(mb){
+      var bar=tr.bars[mb.index]; if(!bar) return; var d=sum(bar)-cap(bar); if(!d) return;
+      var v=mb.visualBounds, b=document.createElement("div"); b.className="tl-badge";
+      b.textContent=(d>0?"+":"−")+fmtBeats(Math.abs(d), bar); b.title=d>0?"Bar too long: Edit › Bar › Fix bar":"Bar too short: Edit › Bar › Fix bar";
+      b.style.left=(oX+v.x+v.w-46)+"px"; b.style.top=(oY+v.y+2)+"px"; host.appendChild(b);
+    }); });
+  }catch(e){}
+}
+function fmtBeats(t, bar){ var u=W/tsOf(bar)[1], n=t/u; return (Math.round(n*100)/100)+(n===1?" beat":" beats"); }
+
+/* ---------- Edit panel: tabs ---------- */
+function P(sel){ var b=document.querySelector(sel); if(b) b.click(); }
+var NOTE_ICON={1:"𝅝",2:"𝅗𝅥",4:"♩",8:"♪",16:"𝅘𝅥𝅯"};
+function buildEdit(){
+  var eb=$("dkEditBody"); if(!eb || $("edTabs")) return;
+  var pad=$("notePad");
+  var w=document.createElement("div"); w.id="edWrap";
+  w.innerHTML=
+   '<div id="edTabs" role="tablist"><button role="tab" data-t="note" class="on">♪ Note</button><button role="tab" data-t="fx">⌁ Effects</button><button role="tab" data-t="bar">▦ Bar</button><button role="tab" data-t="chord">♯ Chord</button></div>'+
+   '<div class="ed-pane on" data-p="note">'+
+     '<div class="ed-row"><span class="ed-l">Length</span>'+[1,2,4,8,16].map(function(d){ return '<button class="ed-k ed-dur" data-d="'+d+'" title="'+({1:"Whole",2:"Half",4:"Quarter",8:"Eighth",16:"16th"})[d]+'">'+NOTE_ICON[d]+'</button>'; }).join("")+
+     '<button class="ed-k" id="edDot" title="Dotted">•</button><button class="ed-k" id="edTri" title="Triplet">³</button><button class="ed-k" id="edRest" title="Rest">𝄽</button></div>'+
+     '<div class="ed-row"><span class="ed-l">Fret</span>'+[0,1,2,3,4,5,6,7,8,9].map(function(f){ return '<button class="ed-k ed-f" data-f="'+f+'">'+f+'</button>'; }).join("")+
+     '<span id="edFretBox"></span><button class="ed-k ed-x" id="edDead" title="Dead note">✕</button><button class="ed-k" id="edDel" title="Clear note (Delete)">⌫</button></div>'+
+     '<div class="ed-row"><span class="ed-l">Move</span><button class="ed-k g" data-n="beat-" title="Previous beat (←)">◀</button><button class="ed-k g" data-n="str-" title="String up (↑)">▲</button><button class="ed-k g" data-n="str+" title="String down (↓)">▼</button><button class="ed-k g" data-n="beat+" title="Next beat (→)">▶</button>'+
+     '<button class="ed-k g" id="edUndo" title="Undo">↶</button><button class="ed-k g" id="edRedo" title="Redo">↷</button></div>'+
+   '</div>'+
+   '<div class="ed-pane" data-p="fx"><div class="ed-row">'+
+     '<button class="ed-k w" data-a="hp">h/p</button><button class="ed-k w" data-a="slide">Slide</button><button class="ed-k w" id="edBend">Bend</button><button class="ed-k w" data-a="vib">Vibrato</button>'+
+     '<button class="ed-k w" id="edAcc">Accent</button><button class="ed-k w" data-tg="pm">Palm mute</button><button class="ed-k w" data-tg="lr">Let ring</button></div></div>'+
+   '<div class="ed-pane" data-p="bar">'+
+     '<div class="ed-row"><button class="ed-k w" id="edAddBeat" title="Split this beat in two">Split beat</button><button class="ed-k w" id="edDelBeat" title="Turn this beat into a rest">Clear beat</button><button class="ed-k w" id="edAddBar">+ Bar</button><button class="ed-k w" id="edDelBar">Del bar</button><button class="ed-k w" id="edFix">Fix bar</button></div>'+
+     '<div class="ed-row" id="edGoRow"><span class="ed-l">Go to</span></div>'+
+     '<div class="ed-row" id="edLoopRow"><span class="ed-l">Loop</span></div>'+
+     '<div class="ed-row" id="edKeyRow"><span class="ed-l">Key</span></div><div class="ed-sub" id="edKeySum"></div>'+
+   '</div>'+
+   '<div class="ed-pane" data-p="chord" id="edChordPane"></div>'+
+   '<div id="edFoot"><span id="edPos"></span><span id="edLeft"></span></div>';
+  eb.insertBefore(w, eb.firstChild);
+  if(pad) pad.classList.add("ed-hidden");
+  /* real inputs moved in, so their own handlers keep working */
+  var fb=$("edFretBox"); [$("fretType"),$("fretTypeGo")].forEach(function(n){ if(n) fb.appendChild(n); }); if($("fretType")) $("fretType").placeholder="10+";
+  var gr=$("edGoRow"); ["barJump","barJumpGo","sectionSel"].forEach(function(id){ if($(id)) gr.appendChild($(id)); });
+  var lr=$("edLoopRow"); ["loopFromBtn","loopToBtn"].forEach(function(id){ var b=$(id); if(b){ b.classList.add("ed-k","w"); lr.appendChild(b); } });
+  var kr=$("edKeyRow"); ["root","family","mode"].forEach(function(k){ var l=document.querySelector('[data-glp="'+k+'"]'); if(l){ l.classList.add("ed-dd"); kr.appendChild(l); } });
+  var cp=$("edChordPane"); if($("tlChords")) cp.appendChild($("tlChords"));
+  var cn=document.querySelector("#notePad .np-chord, #chordName"); if(cn){ var row=cn.closest(".np-row")||cn.parentNode; if(row && row!==pad) cp.appendChild(row); }
+  w.addEventListener("click", function(e){
+    var b=e.target.closest("button"); if(!b || !w.contains(b)) return;
+    if(b.dataset.t){ w.querySelectorAll("#edTabs button").forEach(function(x){ x.classList.toggle("on", x===b); }); w.querySelectorAll(".ed-pane").forEach(function(p){ p.classList.toggle("on", p.dataset.p===b.dataset.t); }); try{ localStorage.setItem("tl-edtab", b.dataset.t); }catch(_){ } try{ placePops(); }catch(_){ } return; }
+    if(b.dataset.d){ setDur(parseInt(b.dataset.d,10)); return; }
+    if(b.dataset.f!=null){ P('#notePad [data-fret="'+b.dataset.f+'"]'); return; }
+    if(b.dataset.n){ P('#notePad [data-nav="'+b.dataset.n+'"]'); afterMove(); return; }
+    if(b.dataset.a){ P('#notePad [data-art="'+b.dataset.a+'"]'); return; }
+    if(b.dataset.tg){ toggleArt(b.dataset.tg); afterEdit(); return; }
+    var map={edDot:tlToggleDot, edTri:tlToggleTriplet, edRest:function(){ P("#restBtn"); }, edDead:function(){ P('#notePad [data-fret="x"]'); }, edDel:function(){ P('#notePad [data-fret="del"]'); },
+      edUndo:function(){ P("#undoBtn"); }, edRedo:function(){ P("#redoBtn"); }, edBend:function(){ P("#bendBtn"); }, edAcc:function(){ P("#accentBtn"); },
+      edAddBeat:addBeat, edDelBeat:delBeat, edAddBar:function(){ P("#addBarBtn"); }, edDelBar:function(){ P("#delBarBtn"); }, edFix:tlFixBar};
+    if(map[b.id]){ map[b.id](); setTimeout(afterEdit, 30); }
+  });
+  try{ var t=localStorage.getItem("tl-edtab"); if(t){ var tb=w.querySelector('#edTabs [data-t="'+t+'"]'); if(tb) tb.click(); } }catch(_){}
+  syncKeyUi(); foot();
+}
+function afterMove(){ setTimeout(function(){ try{ ensureCaretVisible(true); }catch(e){} foot(); }, 20); }
+function afterEdit(){ setTimeout(function(){ foot(); }, 30); }
+function foot(){
+  try{
+    var p=$("edPos"), l=$("edLeft"); if(!p) return;
+    var tr=curTrack(), bar=curBar(), b=curBeat(); if(!bar||!b) return;
+    var tun=tuningFor(tr.kind==="bass"?"bass":"guitar", tr.strings||6).split(" "), sn=(tun[sel.str-1]||"").replace(/\d/g,"");
+    p.textContent="Bar "+(sel.bar+1)+" · Beat "+(sel.beat+1)+"/"+bar.beats.length+" · String "+sel.str+(sn?" ("+sn+")":"");
+    var d=sum(bar)-cap(bar), free=0, s=0;
+    for(var i=bar.beats.length-1;i>sel.beat;i--){ if(isRest(bar.beats[i])) free+=bt(bar.beats[i]); else break; }
+    if(d){ l.textContent=(d>0?"Over by ":"Short by ")+fmtBeats(Math.abs(d),bar)+" · Fix bar"; l.className="bad"; }
+    else { l.textContent=free?("Free after: "+fmtBeats(free,bar)):"Bar full ✓"; l.className="ok"; }
+    document.querySelectorAll("#edWrap .ed-dur").forEach(function(x){ x.classList.toggle("on", +x.dataset.d===b.dur); });
+    var dt=$("edDot"); if(dt) dt.classList.toggle("on", !!b.dots); var tt=$("edTri"); if(tt) tt.classList.toggle("on", !!b.tu);
+    var n=b.notes.find(function(x){ return x.str===sel.str; });
+    document.querySelectorAll("#edWrap .ed-f").forEach(function(x){ x.classList.toggle("on", !!n && !n.dead && +x.dataset.f===n.fret); });
+    document.querySelectorAll("#edWrap [data-tg]").forEach(function(x){ x.classList.toggle("on", !!(n&&n[x.dataset.tg])); });
+    document.querySelectorAll("#edWrap [data-a]").forEach(function(x){ x.classList.toggle("on", !!(n&&n[x.dataset.a])); });
+  }catch(e){}
+}
+var _rsh=window.refreshSelHud;
+if(typeof _rsh==="function") window.refreshSelHud=function(){ var r=_rsh.apply(this, arguments); foot(); return r; };
+/* keyboard while Edit is open */
+function editOpen(){ var p=$("dkEditPanel"); return p && !p.hidden; }
+window.addEventListener("keydown", function(e){
+  if(!editOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  var t=e.target, tag=((t&&t.tagName)||"").toUpperCase(); if(tag==="INPUT"||tag==="SELECT"||tag==="TEXTAREA") return;
+  var k=e.key, done=true;
+  if(k==="ArrowLeft") P('#notePad [data-nav="beat-"]');
+  else if(k==="ArrowRight") P('#notePad [data-nav="beat+"]');
+  else if(k==="ArrowUp") P('#notePad [data-nav="str-"]');
+  else if(k==="ArrowDown") P('#notePad [data-nav="str+"]');
+  else if(/^[0-9]$/.test(k)) P('#notePad [data-fret="'+k+'"]');
+  else if(k==="Backspace"||k==="Delete") P('#notePad [data-fret="del"]');
+  else if(k==="+"||k==="="){ var b=curBeat(), o=[1,2,4,8,16], i=o.indexOf(b.dur); if(i>0) setDur(o[i-1]); }
+  else if(k==="-"||k==="_"){ var b2=curBeat(), o2=[1,2,4,8,16], j=o2.indexOf(b2.dur); if(j>=0&&j<4) setDur(o2[j+1]); }
+  else if(k===".") tlToggleDot();
+  else if(k==="r"||k==="R") P("#restBtn");
+  else if(k==="x"||k==="X") P('#notePad [data-fret="x"]');
+  else done=false;
+  if(done){ e.preventDefault(); e.stopPropagation(); afterMove(); }
+}, true);
+
+/* ---------- Menu ---------- */
+function buildMenu(){
+  var mp=$("dkMorePanel"); if(!mp || mp.__ed) return; mp.__ed=1;
+  var mb=$("dkMore"); if(mb){ mb.innerHTML="☰ Menu"; mb.setAttribute("aria-label","Menu"); }
+  mp.setAttribute("aria-label","Menu"); var tb=mp.querySelector(".dk-pop-top b"); if(tb) tb.textContent="Menu";
+  function sec(icon, title, id){ var s=document.createElement("div"); s.className="dk-sec"; s.innerHTML='<h4>'+icon+' '+title+'</h4><div class="dk-row" id="'+id+'"></div>'; return s; }
+  var file=$("dkFileRow"), prac=$("dkPracRow");
+  var fs=file.closest(".dk-sec"); fs.querySelector("h4").textContent="📂 File";
+  var ps=prac.closest(".dk-sec"); ps.querySelector("h4").textContent="🎯 Practice";
+  var ss=sec("⏱","Score","dkScoreRow"), xs=sec("🎚","Mix","dkMix2"), hs=sec("❓","Help","dkHelp2");
+  ps.parentNode.insertBefore(ss, ps.nextSibling);
+  var instSec=$("dkInstRow").closest(".dk-sec"), mixSec=$("dkMixRow").closest(".dk-sec"), helpSec=$("dkHelpRow").closest(".dk-sec");
+  mixSec.parentNode.insertBefore(xs, instSec);
+  xs.querySelector(".dk-row").appendChild($("dkInstRow")); xs.querySelector(".dk-row").appendChild($("dkMixRow"));
+  $("dkInstRow").className="dk-row"; $("dkMixRow").className="dk-row";
+  instSec.remove(); mixSec.remove();
+  helpSec.parentNode.insertBefore(hs, helpSec); hs.querySelector(".dk-row").appendChild($("dkHelpRow")); helpSec.remove();
+  var sc=document.createElement("span"); sc.className="dk-keys"; sc.textContent="Keys: Space play · ← → beat · ↑ ↓ string · 0–9 fret · + − length · . dot · R rest · E edit";
+  hs.querySelector(".dk-row").appendChild(sc);
+  var sr=$("dkScoreRow");
+  var tb2=document.querySelector("label.tl-tempo"); if(tb2) sr.appendChild(tb2);
+  var tc=document.querySelector(".tl-time-chip"); if(tc) sr.appendChild(tc);
+  /* duplicates out */
+  [document.querySelector("#dkMorePanel .tl-upload"), $("stopBtn"), $("posChip"), document.querySelector("#dkMorePanel .tl-tempo-chip")].forEach(function(n){ if(n) n.classList.add("ed-hidden"); });
+  var lc=$("loopClearBtn"); if(lc){ lc.textContent="Clear loop"; lc.title="Clear the loop"; }
+  var dl=$("tlDownload"); if(dl) dl.textContent="⬇ Download";
+  var of=$("dkOpenFile"); if(of) of.textContent="📂 Open file…";
+}
+/* ---------- View folds Zoom ---------- */
+function foldZoom(){
+  var v=$("dkView"), z=$("dkZoom"); if(!v||!z||v.__ed) return; v.__ed=1;
+  var g=document.createElement("optgroup"); g.label="Zoom";
+  [].slice.call(z.options).forEach(function(o){ var n=document.createElement("option"); n.value="z:"+o.value; n.textContent="Zoom "+o.textContent; g.appendChild(n); });
+  v.appendChild(g);
+  var lab=v.closest("label");
+  lab.addEventListener("change", function(e){
+    if(e.target!==v || !/^z:/.test(v.value)) return;
+    e.stopPropagation();
+    z.value=v.value.slice(2); z.dispatchEvent(new Event("change",{bubbles:true}));
+    v.value=curViewVal(); label();
+  }, true);
+  z.addEventListener("change", function(){ setTimeout(label,0); });
+  v.addEventListener("change", function(){ setTimeout(label,0); });
+  function curViewVal(){ return staveView==="tab"?"tab":staveView==="score"?"score":"scoretab"; }
+  function label(){ var pct=Math.round(parseFloat(z.value||"1")*100)+"%"; var nm={scoretab:"Tab + Staff",tab:"Tab",score:"Staff"};
+    [].slice.call(v.options).forEach(function(o){ if(nm[o.value]) o.textContent=nm[o.value]+" · "+pct; }); }
+  label();
+  z.closest("label").classList.add("ed-hidden");
+}
+function boot(){
+  if(!$("dkEditBody") || !$("dkPracRow") || !$("dkPracRow").children.length){ return setTimeout(boot, 120); }
+  try{ buildMenu(); }catch(e){ console.warn(e); }
+  try{ foldZoom(); }catch(e){}
+  try{ buildEdit(); }catch(e){ console.warn(e); }
+  wireTap();
+  boot2();
+}
+function boot2(){
+  var a=(typeof api!=="undefined")?api:null; if(!a || !a.postRenderFinished){ return setTimeout(boot2, 300); }
+  if(a.__ed) return; a.__ed=1;
+  try{ new MutationObserver(function(){ if($("dkEditPanel").hidden){ document.body.style.paddingBottom=""; var v0=$("atViewport"); if(v0) v0.style.paddingBottom=""; } else setTimeout(function(){ try{ placeCursor(); }catch(e){} }, 80); }).observe($("dkEditPanel"),{attributes:true,attributeFilter:["hidden"]}); }catch(e){}
+  a.postRenderFinished.on(function(){ setTimeout(function(){ try{ placeCursor(); }catch(e){} foot(); }, 30); });
+  var mo=$("dkMore"); if(mo) mo.addEventListener("click", function(){ if(editOpen()){ var x=document.querySelector('#dkEditPanel .dk-x'); if(x) x.click(); } }, true);
+  var dk=$("dkEdit"); if(dk) dk.addEventListener("click", function(){ setTimeout(function(){ try{ ensureCaretVisible(false); }catch(e){} foot(); }, 60); });
+  window.addEventListener("keydown", function(e){ if((e.key==="e"||e.key==="E") && !e.ctrlKey && !e.metaKey){ var t=(e.target.tagName||"").toUpperCase(); if(t==="INPUT"||t==="SELECT"||t==="TEXTAREA") return; if(!editOpen() && $("dkEdit")){ e.preventDefault(); $("dkEdit").click(); } } });
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot); else setTimeout(boot, 50);
 })();
 </script>
 </body>
