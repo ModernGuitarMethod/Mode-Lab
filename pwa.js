@@ -96,7 +96,7 @@
   var box=null;
   function close(){ if(!box) return; var b=box; box=null; b.classList.remove("in"); setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); },300); document.removeEventListener("keydown",onKey,true); }
   function onKey(e){ if(e.key==="Escape"){ ss("ml-pwa-later","1"); close(); } }
-  function speak(){ try{ if(!window.speechSynthesis) return; if(navigator.userActivation&&!navigator.userActivation.hasBeenActive) return; var u=new SpeechSynthesisUtterance(SAY); u.lang="en-AU"; speechSynthesis.speak(u); }catch(e){} }
+  function speak(){ try{ if(!window.speechSynthesis) return; if(navigator.userActivation&&!navigator.userActivation.hasBeenActive) return; var u=new SpeechSynthesisUtterance(SAY); u.lang="en-AU"; var vs=speechSynthesis.getVoices().filter(function(v){ return /^en[-_]AU/i.test(v.lang); }); var R=[/Matilda.*(Premium|Enhanced)/i,/Matilda/i,/Natasha.*(Natural|Online)/i,/^Google/i,/Karen/i,/Catherine/i]; for(var i=0;i<R.length;i++){ var f=vs.filter(function(v){ return R[i].test(v.name); })[0]; if(f){ u.voice=f; break; } } u.pitch=1.05; speechSynthesis.speak(u); }catch(e){} }
   function open(force){
     if(box) return;
     if(!force&&(standalone||ls("modelab.installed")==="1"||ss("ml-pwa-later")==="1")) return;
