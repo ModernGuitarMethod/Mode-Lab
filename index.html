@@ -6,9 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta http-equiv="Permissions-Policy" content="microphone=*"/>
 <title>Mode Lab</title>
-<meta name="application-name" content="ModeLab"/>
-<meta name="apple-mobile-web-app-title" content="ModeLab"/>
-<link rel="manifest" href="manifest.webmanifest"/><link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<meta name="application-name" content="Mode Lab"/>
+<meta name="apple-mobile-web-app-title" content="Mode Lab"/>
 </head>
 <body>
 <script>
@@ -16,13 +15,13 @@ const p = new URLSearchParams(location.search);
 const lab = (p.get("lab")||"").toLowerCase();
 p.delete("lab");
 /* Landing = Mode. Pill order: Study · Mode · Fret · Jam · Chord · Tab · Song */
-const file = lab==="jam" ? "Jam-Lab-v1.85.html"
-  : lab==="fret" ? "Fret-Lab-v1.85.html"
-  : lab==="chord" ? "Chord-Lab-v1.85.html"
-  : lab==="tab" || lab==="player" ? "Tab-Lab-v1.85.html"
-  : lab==="song" || lab==="songwriter" ? "Songwriter-Lab-v1.85.html"
-  : lab==="study" || lab==="know" ? "Study-Lab-v1.85.html"
-  : "Mode-Lab-v1.85.html";
+const file = lab==="jam" ? "Jam-Lab-v1.84.html"
+  : lab==="fret" ? "Fret-Lab-v1.84.html"
+  : lab==="chord" ? "Chord-Lab-v1.84.html"
+  : lab==="tab" || lab==="player" ? "Tab-Lab-v1.84.html"
+  : lab==="song" || lab==="songwriter" ? "Songwriter-Lab-v1.84.html"
+  : lab==="study" || lab==="know" ? "Study-Lab-v1.84.html"
+  : "Mode-Lab-v1.84.html";
 const q = p.toString();
 location.replace(q ? file+"?"+q : file);
 </script>
