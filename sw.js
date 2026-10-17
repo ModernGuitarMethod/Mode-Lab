@@ -1,7 +1,7 @@
 /* ModeLab service worker. Pages, version.json, pwa.js and the manifest are network first (no-store),
    so a new build shows on the next open; the cache is only an offline fallback.
    It never touches localStorage, so progress and settings survive every update. */
-const VERSION = "1.88";
+const VERSION = "1.89";
 const CACHE = "modelab-" + VERSION + ".1";
 const LABS = ["Study","Mode","Fret","Jam","Chord","Tab","Songwriter"].map(n => n + "-Lab-v" + VERSION + ".html");
 const PRECACHE = ["index.html", "manifest.webmanifest", "pwa.js", "icon-192.png", "icon-512.png", "apple-touch-icon.png", ...LABS];
