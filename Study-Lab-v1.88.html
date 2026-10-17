@@ -2052,9 +2052,9 @@ function pickVoice(pref){
   if(v){ voiceNote=pref==='m'
       ?`No Australian male voice is installed, so you\u2019re hearing ${v.name.replace(/^(Microsoft|Google) /,'')} instead. To hear an Australian man, download <b>Lee</b>: Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices \u2192 English \u2192 English (Australia).`
       :`No Australian female voice is installed, so you\u2019re hearing ${v.name.replace(/^(Microsoft|Google) /,'')} instead. For the best voice, download <b>Matilda</b>: Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices \u2192 English \u2192 English (Australia).`; return v; }
-  v=bestFor(pref==='m'?'f':'m')||rankedVoices()[0]||null;
-  if(v) voiceNote=`There\u2019s no ${pref==='m'?'male':'female'} voice installed on this device, so you\u2019ll hear ${v.name.replace(/^(Microsoft|Google) /,'')} for now.`;
-  return v;
+  /* v1.88.1: never cross genders. No voice of the chosen gender: leave it to the system default voice. */
+  voiceNote=`There\u2019s no ${pref==='m'?'male':'female'} voice installed on this device, so you\u2019ll hear the device\u2019s default voice for now.`;
+  return null;
 }
 window.ModeLabVoices=function(){ const f=bestFor('f'), m=bestFor('m'); return {female:f&&f.name, male:m&&m.name, using:window.__klVoice||null}; };
 function updateInstructor(){
@@ -2142,7 +2142,7 @@ function speak(text,mood){
     if(i>=parts.length){ klNowText=''; klTalking(false); return; }
     const k=i++, txt=parts[k];
     const v=(v0&&liveVoice(v0.voiceURI))||pickVoice()||null;
-    const u=new SpeechSynthesisUtterance(txt); if(v){ u.voice=v; u.lang=v.lang; } else u.lang='en-AU';
+    const u=new SpeechSynthesisUtterance(txt); if(v){ u.voice=v; u.lang=v.lang; }
     const vn=v?v.name+' ('+v.lang+')':'system default (en-AU)'; window.__klVoice=vn; if(vn!==klLoggedVoice){ klLoggedVoice=vn; try{ console.info('[ModeLab narrator] voice: '+vn); }catch(_){} }
     const pr=prosody(txt,k,parts.length,mood); u.rate=pr.rate; u.pitch=pr.pitch; u.volume=1;
     let done=false; const fin=()=>{ if(done) return; done=true; clearTimeout(klDog); if(id===talkId) setTimeout(next,pr.pause); };
@@ -2228,7 +2228,7 @@ let started=false, kicked=false, kickedByGesture=false;
 function kick(gesture){
   if(gesture){ if(kickedByGesture) return; kickedByGesture=true; if(started) return; }
   else if(kicked) return;
-  if(voiceOn && hasTTS && pickVoice()){ kicked=true; speakCurrent(); }
+  if(voiceOn && hasTTS && (pickVoice()||allVoices().length)){ kicked=true; speakCurrent(); }
 }
 if(hasTTS){
   try{ speechSynthesis.getVoices(); }catch(e){}
@@ -9768,6 +9768,6 @@ html[data-theme="light"] #mlArtBox,body.light #mlArtBox{background:rgba(245,240,
     if(e.key==="Escape"&&b&&b.classList.contains("show")){ b.classList.remove("show"); e.stopPropagation(); return; }
     if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("ml-art-zoom")) hit(e); },true);
 })();
-</script><script src="pwa.js?v=1.88" defer></script>
+</script><script src="pwa.js?v=1.88.1" defer></script>
 </body>
 </html>
