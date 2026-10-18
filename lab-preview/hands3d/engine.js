@@ -3,7 +3,9 @@
 (function(G){
 const MAXP=22;
 const C={ stretch1:1.6, stretch2:4.5, barreIdx:0.2, barreOther:0.9, offShape:0.7, nearShape:0.3, height:0.025,
-  shiftBase:2.2, shiftPerFret:1.1, easyShift:0.35, openFree:0.3, slideShift:0.25, legatoShift:1.8, bMismatch:0.8, bRoll:0.15, boxBonus:0.5, fanCross:4, bigShiftPerFret:1.2 };
+  shiftBase:2.2, shiftPerFret:1.1, easyShift:0.35, openFree:0.3, slideShift:0.25, legatoShift:1.8, bMismatch:0.8, bRoll:0.15, boxBonus:0.5, fanCross:4, bigShiftPerFret:1.2, lowIdx:6.0, legIdx:5.0 };
+/* SOLVER v26 (Dale, Little Wing vs lessons): no index barre across a gap of unpressed strings; chords prefer the index on their lowest fret */
+const gapBarre=(ev,fg)=>{ const ks=[]; fg.forEach((f,k)=>{ if(f===1&&ev.notes[k].f>0) ks.push(k); }); if(ks.length<2) return false; const fr1=ev.notes[ks[0]].f; const ss=ks.map(k=>ev.notes[k].s); for(let s=Math.min(...ss);s<=Math.max(...ss);s++){ if(ss.includes(s)) continue; if(!ev.notes.some(n=>n.s===s&&n.f>fr1)) return true; } return false; };
 /* Mode Lab shape positions for a key centre: index-finger fret for shape 1 (root under 4th), 2 (root under 2nd), 3 (root under 1st),
    from roots on the lowest three strings. */
 function shapePositions(rootPc, opens){
@@ -35,6 +37,17 @@ function assign(ev, p, b, BS){
   if(lo&&hi) return null; // hand can't stretch both ways at once
   /* standard chord grips: a middle/ring finger doubled on one fret hands the higher string to the next free finger (F barre: A3 ring, D3 pinky) */
   for(const f0 of [3,2]){ const ks=[]; fing.forEach((f,k)=>{ if(f===f0) ks.push(k); }); if(ks.length===2 && !fing.includes(f0+1) && f0+1<=4){ const hiK=ev.notes[ks[0]].s<ev.notes[ks[1]].s?ks[0]:ks[1]; fing[hiK]=f0+1; } }
+  /* a middle/ring finger mapped onto non-adjacent strings at one fret (gap with unpressed strings): hand the extra strings to the next free fingers, thicker string = lower finger (e.g. 5x545x: 2-3-4 with the index on the 4th fret) */
+  for(const f0 of [2,3]){ const ks=[]; fing.forEach((f,k)=>{ if(f===f0) ks.push(k); }); if(ks.length<2) continue; const fr0=ev.notes[ks[0]].f; if(!ks.every(k=>ev.notes[k].f===fr0)) continue; const S=ks.map(k=>ev.notes[k].s);
+    let gap=false; for(let s=Math.min(...S);s<=Math.max(...S);s++){ if(!S.includes(s)&&!ev.notes.some(n=>n.s===s&&n.f>fr0)) gap=true; } if(!gap) continue;
+    ks.sort((x,y)=>ev.notes[y].s-ev.notes[x].s); let nf=f0; for(let j=1;j<ks.length;j++){ nf++; while(nf<=4&&fing.includes(nf)) nf++; if(nf>4) return null; fing[ks[j]]=nf; } cost+=0.3; }
+  /* no index barre across non-adjacent strings with unpressed strings in between (they would be muted or sound open):
+     keep the index on the thickest group and give the other contiguous groups separate fingers (ring for a 2-string group, middle for one) */
+  { const iK=[]; fing.forEach((f,k)=>{ if(f===1) iK.push(k); }); if(iK.length>1){ const fr1=ev.notes[iK[0]].f; if(iK.every(k=>ev.notes[k].f===fr1)){ const ss=iK.map(k=>ev.notes[k].s).sort((a,b)=>a-b);
+      let gap=false; for(let s=ss[0];s<=ss[ss.length-1];s++){ if(ss.includes(s)) continue; if(!ev.notes.some(n=>n.s===s&&n.f>fr1)) gap=true; }
+      if(gap){ const groups=[]; ss.forEach(s=>{ const g=groups[groups.length-1]; if(g&&s===g[g.length-1]+1) g.push(s); else groups.push([s]); }); groups.sort((A,B)=>Math.max(...B)-Math.max(...A));
+        const free=[3,2,4].filter(f=>!fing.includes(f)); for(let gi=1;gi<groups.length;gi++){ const G2=groups[gi]; let f=G2.length===2?free.find(x=>x===3||x===2):free.find(x=>x===2||x===3); if(G2.length>3) return null; if(G2.length===3) f=free.includes(3)?3:null; if(f==null) f=free[0]; if(f==null) return null; free.splice(free.indexOf(f),1);
+          iK.forEach(k=>{ if(G2.includes(ev.notes[k].s)) fing[k]=f; }); } cost+=0.4; } } } }
   // barres: same finger on several strings
   const cnt={}; fing.forEach(f=>{ if(f>0) cnt[f]=(cnt[f]||0)+1; });
   /* a non-index finger can only flatten across neighbouring strings (2, or 3 for the ring finger, as in an A-shape); never across a gap */
@@ -68,7 +81,10 @@ function solve(events, opts){
     let c=a.cost + (nonMono(ev,a.fingers)?C.fanCross:0) + (SP[p]?0:(SP[p-1]||SP[p+1])?C.nearShape:C.offShape) + C.height*p;
     if(p===0 && !SP[0]) c+=2;
     if(opts.onlyBoxes && !SP[p]) c+=3;           // index over the nut only for a Mode Lab shape
-    const ib=inBox(ev,p); if(ib){ c=C.height*p-C.boxBonus; if(usesB(ev)){ const want=(SP[p]===1||SP[p]===3)?1:0; if(b!==want) c+=C.bMismatch; } return {c,a,ib}; }
+    const lowIdx=(fg)=>{ const fr=ev.notes.filter(n=>n.f>0); if(fr.length<2) return 0; const mn=Math.min(...fr.map(n=>n.f)); return ev.notes.some((n,j)=>n.f===mn&&fg[j]===1)?0:C.lowIdx; };
+    c+=lowIdx(a.fingers);
+    if(i>0&&ev.notes.length===1&&ev.notes[0].f>0&&(ev.notes[0].legato||ev.legatoArrive)){ const pv=events[i-1]; if(pv.notes.length===1&&pv.notes[0].s===ev.notes[0].s&&pv.notes[0].f>0){ const d=Math.abs(ev.notes[0].f-pv.notes[0].f), lo=Math.min(ev.notes[0].f,pv.notes[0].f); if((d===2||d===3)&&p!==lo) c+=C.legIdx; } }
+    const ib=inBox(ev,p); if(ib){ c=C.height*p-C.boxBonus+lowIdx(ib)+(gapBarre(ev,ib)?50:0); if(usesB(ev)){ const want=(SP[p]===1||SP[p]===3)?1:0; if(b!==want) c+=C.bMismatch; } return {c,a,ib}; }
     if(usesB(ev)){ const want=(SP[p]===1||SP[p]===3)?1:0; if(b!==want) c+=C.bMismatch; }
     return {c,a}; };
   let prev=new Array(K).fill(Infinity); const back=[];

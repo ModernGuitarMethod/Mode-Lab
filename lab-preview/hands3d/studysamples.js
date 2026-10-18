@@ -3,8 +3,8 @@
    higher frets reuse the nearest recorded fret below, pitch-shifted by playbackRate = 2^((f-g)/12) (exactly as Study Lab's sampleFor). */
 (function(){
   const TONE={acoustic:{lp:17200,gain:1},electric:{lp:9000,gain:1.35},bass:{lp:5200,gain:1.3}}, MAXF={acoustic:9,electric:9,bass:12};
-  let ac=null, master=null; const BANK={}, LOADING={};
-  function ctx(){ if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=0.8; master.connect(ac.destination); } return ac; }
+  let ac=null, master=null, OUT=null; const BANK={}, LOADING={};
+  function ctx(){ if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=0.8; master.connect(OUT||ac.destination); } return ac; }
   function load(inst){ if(LOADING[inst]) return LOADING[inst]; const M=window.KL_AUDIO.manifest[inst], B=BANK[inst]={};
     return LOADING[inst]=(async()=>{ const a=ctx(); for(const part of ['open','rest']){ const p=M[part]; const ab=await (await fetch(window.KL_AUDIO.base+p.file)).arrayBuffer();
         await Promise.all(p.items.filter(([nm])=>/^s\d+f\d+$/.test(nm)).map(async([nm,o,l])=>{ try{ const buf=await a.decodeAudioData(ab.slice(o,o+l)); const d=buf.getChannelData(0); let pk=0,k=0;
@@ -23,5 +23,6 @@
   function playPitch(inst,midi,prefI,when,dur,vel){ const O=OPN[inst]; let best=null;
     for(let i=0;i<O.length;i++) for(let g=0;g<=MAXF[inst];g++){ if(!(BANK[inst]||{})['s'+i+'f'+g]) continue; const d=Math.abs(midi-(O[i]+g))+0.25*Math.abs(i-Math.min(O.length-1,Math.max(0,prefI))); if(!best||d<best.d) best={d,i,g}; }
     if(!best) return play(inst,prefI,0,when,dur,vel); const lg=play(inst,best.i,best.g,when,dur,vel,Math.pow(2,(midi-(O[best.i]+best.g))/12)); lg.midi=midi; return lg; }
-  window.StudySamples={ctx,load,play,playPitch,pick,stopAll(){ if(master){ master.disconnect(); master=ac.createGain(); master.gain.value=0.8; master.connect(ac.destination); } }};
+  window.StudySamples={ctx,load,play,playPitch,pick,stopAll(){ if(master){ master.disconnect(); master=ac.createGain(); master.gain.value=0.8; master.connect(OUT||ac.destination); } },
+    setOutput(n){ OUT=n; if(master){ master.disconnect(); master.connect(n||ac.destination); } }};
 })();
