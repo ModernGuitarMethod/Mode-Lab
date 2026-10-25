@@ -1,7 +1,7 @@
 /* Hand skin: physical material with per-vertex tone (warmer fingertips/palm), darker knuckle creases, lighter pink nails on the dorsal tip of each distal phalanx,
    and a cheap subsurface term (red wrap-around light) injected into the shader. Self-made, no textures. */
 window.HSKIN=(function(){
-  function apply(){ if(!window.S3||!S3.group) return false; let done=false; S3.group.traverse(o=>{ if(!o.isSkinnedMesh||o.userData.skin) return; o.userData.skin=1; done=true; const T=S3.THREE, g=o.geometry, P=g.attributes.position, N=g.attributes.normal, si=g.attributes.skinIndex, sw=g.attributes.skinWeight, B=o.skeleton.bones, n=P.count;
+  function apply(){ if(!window.S3||!S3.group) return false; if(window.HANDHD&&!/[?&]hd=0/.test(location.search)) return false; let done=false; S3.group.traverse(o=>{ if(!o.isSkinnedMesh||o.userData.skin) return; o.userData.skin=1; done=true; const T=S3.THREE, g=o.geometry, P=g.attributes.position, N=g.attributes.normal, si=g.attributes.skinIndex, sw=g.attributes.skinWeight, B=o.skeleton.bones, n=P.count;
     const fOf=nm=>/index/i.test(nm)?1:/middle/i.test(nm)?2:/ring/i.test(nm)?3:/pinky|little/i.test(nm)?4:/thumb/i.test(nm)?5:0;
     const bp=o.skeleton.boneInverses.map(m=>new T.Vector3().setFromMatrixPosition(m.clone().invert()));
     const isDistal=B.map((b,i)=>fOf(b.name)&&!b.children.some(c=>fOf(c.name)===fOf(b.name)));

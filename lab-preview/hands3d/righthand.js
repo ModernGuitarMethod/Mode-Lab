@@ -16,15 +16,20 @@ const isBass=()=>INSTR[INST].bass;
 function grip(){ const g=R.group; g.position.set(0,0,0); g.quaternion.identity(); g.scale.set(-1,1,1); g.updateMatrixWorld(true); const wp=R.wpos;
   if(isBass()){ pick.visible=false; [1,2].forEach(n=>R.setFinger(n,{m:0.55,p:0.5,d:0.3,a:0})); [3,4].forEach(n=>R.setFinger(n,{m:0.9,p:1.1,d:0.7,a:0})); R.setThumb({y:0.3,p:-0.1,f:0.1}); g.updateMatrixWorld(true);
     loc.tip=g.worldToLocal(wp('index-finger-tip')); loc.tipM=g.worldToLocal(wp('middle-finger-tip')); loc.wrist=g.worldToLocal(wp('wrist')); loc.thumb=g.worldToLocal(wp('thumb-tip')); return; }
-  R.setFinger(1,{m:1.0,p:1.35,d:0.75,a:0}); [2,3,4].forEach(n=>R.setFinger(n,{m:1.25,p:1.55,d:0.95,a:0})); g.updateMatrixWorld(true);
-  const dip=wp('index-finger-phalanx-distal'), tip=wp('index-finger-tip');
-  const side=wp('index-finger-phalanx-proximal').sub(wp('pinky-finger-phalanx-proximal')).normalize();
-  const dir=tip.clone().sub(dip).normalize(); const nrm=side.clone().sub(dir.clone().multiplyScalar(side.dot(dir))).normalize(); const x=new THREE.Vector3().crossVectors(dir,nrm).normalize();
-  const point=tip.clone().add(dir.clone().multiplyScalar(0.006)); const M=new THREE.Matrix4().makeBasis(x,dir,nrm);
-  const pos=point.clone().sub(dir.clone().multiplyScalar(0.0135)).add(nrm.clone().multiplyScalar(0.007)); M.setPosition(pos);
-  R.solveThumb(pos.clone().add(nrm.clone().multiplyScalar(0.0075))); g.updateMatrixWorld(true);
+  /* plectrum grip: pick flat against the thumb-side of the index's last segment, thumb pad clamping it from the other face,
+     middle/ring/pinky relaxed and progressively more curled (natural cascade), not a fist */
+  R.setFinger(1,{m:0.85,p:1.30,d:0.85,a:0}); R.setFinger(2,{m:0.70,p:1.05,d:0.62,a:0}); R.setFinger(3,{m:0.80,p:1.15,d:0.70,a:0}); R.setFinger(4,{m:0.92,p:1.25,d:0.78,a:0}); g.updateMatrixWorld(true);
+  const dip=wp('index-finger-phalanx-distal'), tip=wp('index-finger-tip'); const dir=tip.clone().sub(dip).normalize();
+  let side=wp('index-finger-phalanx-proximal').sub(wp('pinky-finger-phalanx-proximal')); side.sub(dir.clone().multiplyScalar(side.dot(dir))).normalize();
+  const c=dip.clone().lerp(tip,0.5); const cen=['index','middle','ring','pinky'].map(f=>wp(f+'-finger-phalanx-proximal')).reduce((s,v)=>s.add(v),new THREE.Vector3()).multiplyScalar(0.25).add(wp('wrist')).multiplyScalar(0.5);
+  let a=new THREE.Vector3().crossVectors(dir,side).normalize(); if(a.dot(c.clone().sub(cen))<0) a.negate(); a.add(dir.clone().multiplyScalar(0.35)).normalize();   /* tip angled slightly toward the fingertip, as players hold it */
+  const ny=a.clone().negate(), nz=side.clone(), nx=new THREE.Vector3().crossVectors(ny,nz).normalize(); const M=new THREE.Matrix4().makeBasis(nx,ny,nz);
+  const face=0.0068;   /* half the finger thickness at the distal pad */
+  const pos=c.clone().add(side.clone().multiplyScalar(face+0.0006)).add(a.clone().multiplyScalar(0.0045)); M.setPosition(pos);
+  R.solveThumb(pos.clone().add(side.clone().multiplyScalar(0.0072)).sub(a.clone().multiplyScalar(0.002)).add(dir.clone().multiplyScalar(0.004))); g.updateMatrixWorld(true);
   const L=new THREE.Matrix4().copy(g.matrixWorld).invert().multiply(M); pick.matrixAutoUpdate=false; pick.matrix.copy(L); pick.visible=true;
-  loc.tip=g.worldToLocal(pos.clone().add(dir.clone().multiplyScalar(0.0135))); loc.dir=g.worldToLocal(pos.clone().add(dir)).sub(g.worldToLocal(pos.clone())).normalize(); loc.wrist=g.worldToLocal(wp('wrist')); }
+  const ptip=pos.clone().add(a.clone().multiplyScalar(0.0135)); RH.gripInfo={thumbToPickMm:+(wp('thumb-tip').distanceTo(pos)*1000).toFixed(1),tipOutMm:+(ptip.distanceTo(c)*1000).toFixed(1)};
+  loc.tip=g.worldToLocal(ptip.clone()); loc.dir=g.worldToLocal(pos.clone().add(a)).sub(g.worldToLocal(pos.clone())).normalize(); loc.wrist=g.worldToLocal(wp('wrist')); }
 /* place the hand so the pick tip (bass: index tip) sits at world point T with the forearm along A */
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 function place(T,useM){ const k=R.axes.scale*RH.SCALE, g=R.group; const Sv=v=>V(-v.x*k,v.y*k,v.z*k); const TL=useM&&loc.tipM?loc.tipM:loc.tip;
@@ -56,7 +61,7 @@ function tipAt(P,u,e){ const I=INSTR[INST]; const att=RH.ATT, n=P.s.length; cons
     RH.pickSlide={w:+ww.toFixed(2),dxCm:+dx.toFixed(2)}; return V(CM(I,P.px)+dx,sy,P.z-0.03); }
   if(e&&e.tremolo&&u>att){ const w=Math.sin((u-att)/1000*2*Math.PI*12); y=yc+w*(P.sp||0.4)*0.4; z=P.z; }
   return V(CM(I,P.px),y,z); }
-RH.show=(i,e)=>{ if(!RH.ready) return; if(RH.gi!==INST){ grip(); RH.gi=INST; } if(!isBass()) [2,3,4].forEach(n=>R.setFinger(n,{m:1.25,p:1.55,d:0.95,a:0})); cur={i,e,P:plan(e),t0:performance.now(),from:RH.lastTip?RH.lastTip.clone():null}; if(isBass()) cur.f=e&&e.pick&&e.pick.f==='m'?2:1; };
+RH.show=(i,e)=>{ if(!RH.ready) return; if(RH.gi!==INST){ grip(); RH.gi=INST; } if(!isBass()){ R.setFinger(2,{m:0.70,p:1.05,d:0.62,a:0}); R.setFinger(3,{m:0.80,p:1.15,d:0.70,a:0}); R.setFinger(4,{m:0.92,p:1.25,d:0.78,a:0}); } cur={i,e,P:plan(e),t0:performance.now(),from:RH.lastTip?RH.lastTip.clone():null}; if(isBass()) cur.f=e&&e.pick&&e.pick.f==='m'?2:1; };
 function bassFinger(T,n){ /* small IK: the plucking finger's tip onto T, the other stays relaxed */ const wp=R.wpos; let best=null,be=1e9;
   for(let m=0.1;m<=1.4;m+=0.1) for(let p=0.1;p<=1.4;p+=0.15){ R.setFinger(n,{m,p,d:p*0.6,a:0}); const e=wp((n===1?'index':'middle')+'-finger-tip').distanceToSquared(T); if(e<be){ be=e; best={m,p}; } }
   R.setFinger(n,{m:best.m,p:best.p,d:best.p*0.6,a:0}); return Math.sqrt(be); }

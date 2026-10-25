@@ -74,14 +74,15 @@ button,select,.file{min-height:36px;touch-action:manipulation}
 <script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js"></script>
 <script src="klaudio.js"></script><script src="studysamples.js"></script>
 <script src="mlbox.js"></script>
-<script src="engine.js"></script><script src="strokes.js"></script><script src="righthand.js"></script>
+<script src="engine.js"></script><script src="strokes.js"></script><script src="righthand.js?v=g6"></script>
 <script src="handglb.js"></script>
 <script src="handstudio.js"></script>
 <script src="photoreal.js"></script>
 <script src="lpglb.js?v=hd1629"></script>
 <script src="controls.js"></script>
 <script src="collide.js?v=v10"></script>
-<script src="skin.js"></script>
+<script src="handhd.js?v=hd6"></script>
+<script src="skin.js?v=hd6"></script>
 <script>
 if(/[?&]debug=1/.test(location.search)) document.body.classList.add('debug');
 /* iPad Safari: unlock the AudioContext on the very first touch/click */
@@ -213,7 +214,7 @@ function solve(){
   $('issues').innerHTML=iss.filter(x=>x.kind!=='note').concat(iss.filter(x=>x.kind==='note')).slice(0,60).map(x=>`<li data-i="${x.i}">Bar ${E[x.i].bar}: ${x.msg}</li>`).join('')||'<li>No rule breaks</li>';
   $('issues').querySelectorAll('li[data-i]').forEach(li=>li.onclick=()=>{ const e=E[+li.dataset.i]; api.tickPosition=e.tick; showEvent(+li.dataset.i); });
   window.RES=RES; window.ISSUES=iss;
-  POSES={}; CUR=null; showEvent(0); if(typeof warm==='function') setTimeout(warm,30);
+  POSES={}; CUR=MIDP=null; showEvent(0); if(typeof warm==='function') setTimeout(warm,30);
 }
 api.renderFinished.on(()=>{ setTimeout(drawOverlay,30); if(!SP.on) $('status').textContent='Ready'; });
 function drawOverlay(){
@@ -244,7 +245,7 @@ function setStrings(){ const I=INSTR[INST]; if(!I.nut0){ I.nut0=I.nut.map(p=>p.s
   const n=opens.length, n0=I.nut0.length, lerp=(A,t)=>[A[0][0]+(A[n0-1][0]-A[0][0])*t, A[0][1]+(A[n0-1][1]-A[0][1])*t];
   I.nut=[]; I.sad=[]; I.gauge=[]; for(let i=0;i<n;i++){ const t=n===1?0:i/(n-1); I.nut.push(n===n0?I.nut0[i].slice():lerp(I.nut0,t)); I.sad.push(n===n0?I.sad0[i].slice():lerp(I.sad0,t));
     const m=opens[n-1-i]; /* photo index 0 = lowest string */ I.gauge.push(I.bass?0.2*Math.pow(0.11/0.2,(m-28)/15):0.115*Math.pow(0.025/0.115,(m-40)/24)); } }
-let INST='electric', S3=null, GUIT=null, POSES={}, CUR=null, TGT=null, CURI=0;
+let INST='electric', S3=null, GUIT=null, POSES={}, CUR=null, MIDP=null, TGT=null, CURI=0;
 const CM=(I,px)=>px/I.S*2.54;
 /* photo geometry → world (cm). Photo string index 0 = lowest string. */
 function fretR(I,n){ return fretPx(I,n+CAPO); }   /* fret relative to the capo (capo = nut) */
@@ -731,7 +732,7 @@ function blend(A,B,t){ if(!A) return B; const THREE=S3.THREE;
 /* animation loop: eased approach to the target pose (critically-damped feel), labels follow the fingertips */
 let lastT=performance.now();
 function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
-  const k=1-Math.exp(-dt*(window.SNAP?1e3:22)); CUR=blend(CUR,TGT,CUR?k:1); applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
+  const k=1-Math.exp(-dt*(window.SNAP?1e3:40)); MIDP=blend(MIDP,TGT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1);   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
 let SHOWT=0, BENT=false;
 function applyBend(now){ const e=RES&&RES.events[CURI]; if(!e) return; const tps=SP&&SP.on?SP.tps:960*((typeof api!=='undefined'&&api.score&&api.score.tempo)||70)/60; const durMs=e.dur/tps*1000; window.EVDURMS=durMs;
   const u=window.BENDU!=null?window.BENDU:Math.max(0,(now-SHOWT-60)/durMs); const B=bendState(e,u);
@@ -763,7 +764,7 @@ window.techFX=techFX;
 /* deterministic frame stepper for videos: t seconds from event i0 at the score tempo */
 window.renderAt=(tSec,i0)=>{ const E=RES.events, bpm=(api.score&&api.score.tempo)||70, tps=960*bpm/60; window.FREEZE=1; const tick=E[i0].tick+tSec*tps; let i=i0; while(i+1<E.length&&E[i+1].tick<=tick) i++;
   if(i!==CURI||!TGT){ window.PREVP=CUR||poseFor(i); showEvent(i); } const msIn=(tick-E[i].tick)/tps*1000; const k=Math.min(1,msIn/90), kk=k*k*(3-2*k);
-  CUR=blend(window.PREVP||TGT,TGT,kk); applyPose(CUR); window.RHT=msIn+60; window.BENDU=msIn/(E[i].dur/tps*1000); const now=performance.now(); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); return {i,bar:E[i].bar}; };
+  CUR=MIDP=blend(window.PREVP||TGT,TGT,kk); applyPose(CUR); window.RHT=msIn+60; window.BENDU=msIn/(E[i].dur/tps*1000); const now=performance.now(); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); return {i,bar:E[i].bar}; };
 function updateBracket(){ const I=INSTR[INST], br=GUIT.userData.br, b=TGT.base; const xa=CM(I,fretR(I,b-1)), xb=CM(I,fretR(I,Math.min(b+3,22-CAPO)));
   const y=-CM(I,strY(I,0,fretR(I,b+1)))+0.9; br.scale.x=Math.abs(xa-xb)-0.3; br.position.set((xa+xb)/2,y,0.1); }
 const COL=['#22d3ee','#22c55e','#d4a017','#ef4444'];
@@ -785,7 +786,7 @@ function showEvent(i){
 }
 window.showEvent=showEvent;
 window.showCustom=(notes,label)=>{ const ev=[{tick:0,dur:960,restBefore:true,notes:notes.map(n=>({s:n[0],f:n[1]})),bar:0,beats:[]}];
-  const r=FingerEngine.solve(ev,{opens:opens.map(x=>x+CAPO),rootPc:null}); const e=r.events[0]; const sg=evSig(e); TGT=POSEC[sg]?Object.assign({},POSEC[sg],{ev:e}):(POSEC[sg]=bestPose(e,null)); debugDots(); pressStrings(e); CUR=null; window.SNAP=1;
+  const r=FingerEngine.solve(ev,{opens:opens.map(x=>x+CAPO),rootPc:null}); const e=r.events[0]; const sg=evSig(e); TGT=POSEC[sg]?Object.assign({},POSEC[sg],{ev:e}):(POSEC[sg]=bestPose(e,null)); debugDots(); pressStrings(e); CUR=MIDP=null; window.SNAP=1;
   $('posTag').textContent=label+' · Position '+e.pos+' · '+INSTR[INST].name;
   $('now').innerHTML=label+' · '+e.notes.map((n,k)=>'s'+(n.s+1)+'/f'+n.f+'→'+e.fingers[k]).join('  '); return e; };
 window.measure=()=>{ applyPose(TGT); const out=[]; for(let k=1;k<=4;k++){ const F=TGT.fing[k]; if(!F.on) continue; const pad=padPoint(k); const sn=F.str?skinNearest(k,F.str):null;
@@ -829,7 +830,7 @@ $('sim').onclick=()=>simPlay(RES.events[CURI]?RES.events[CURI].bar:1);
 /* instrument switch: pick the matching track (bass track for the bass) and rebuild */
 function pickTrackFor(inst){ if(!score) return; const want=INSTR[inst].nut.length; let idx=score.tracks.findIndex(t=>!t.staves[0].isPercussion&&t.staves[0].tuning.length===want&&(inst!=='bass'||/bass/i.test(t.name)));
   if(idx<0) idx=score.tracks.findIndex(t=>!t.staves[0].isPercussion&&(inst==='bass'?t.staves[0].tuning.length<=5:t.staves[0].tuning.length>=6)); if(idx>=0&&+$('track').value!==idx){ $('track').value=idx; selectTrack(); return true; } return false; }
-$('inst').onchange=()=>{ INST=$('inst').value; if(window.GCTL) GCTL.onInstrument(); FILEOPENS=null; if(S3){ buildGuitar(); frameCam(); } CUR=null; if(!pickTrackFor(INST)){ solve(); drawOverlay(); } setTimeout(warm,50); };
+$('inst').onchange=()=>{ INST=$('inst').value; if(window.GCTL) GCTL.onInstrument(); FILEOPENS=null; if(S3){ buildGuitar(); frameCam(); } CUR=MIDP=null; if(!pickTrackFor(INST)){ solve(); drawOverlay(); } setTimeout(warm,50); };
 window.setInstrument=v=>{ $('inst').value=v; $('inst').onchange(); };
 /* boot the 3D hand (Study Lab's hand studio: same model and joint engine) */
 KL_HANDSTUDIO.make($('stage'),{}).then(S=>{ S3=S; $('stageMsg').remove();
