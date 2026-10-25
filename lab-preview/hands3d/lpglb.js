@@ -6,7 +6,7 @@ window.LPGLB=(function(){
   function addScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
   function load(T){ if(P) return P; P=(async()=>{ if(!T.DRACOLoader) await addScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js');
       const L=new T.GLTFLoader(), D=new T.DRACOLoader(); D.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/'); L.setDRACOLoader(D);
-      const g=await new Promise((res,rej)=>L.load('assets/lp.glb',res,undefined,rej)); return g.scene; })(); return P; }
+      const g=await new Promise((res,rej)=>L.load('assets/lp.glb?v=hd1629',res,undefined,rej)); return g.scene; })(); return P; }
   const G0=()=>typeof GUIT!=='undefined'?GUIT:null;
   function hide(G){ G.children.forEach(c=>{ if(c===G.userData.strG||c.name==='LP_GLB'||c.name==='capo') return;
     c.traverse(o=>{ if(!o.material) return; (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m&&!m.isMeshBasicMaterial) m.visible=false; }); }); }); }

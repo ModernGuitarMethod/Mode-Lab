@@ -78,9 +78,9 @@ button,select,.file{min-height:36px;touch-action:manipulation}
 <script src="handglb.js"></script>
 <script src="handstudio.js"></script>
 <script src="photoreal.js"></script>
-<script src="lpglb.js"></script>
+<script src="lpglb.js?v=hd1629"></script>
 <script src="controls.js"></script>
-<script src="collide.js"></script>
+<script src="collide.js?v=v10"></script>
 <script src="skin.js"></script>
 <script>
 if(/[?&]debug=1/.test(location.search)) document.body.classList.add('debug');
@@ -817,7 +817,7 @@ window.labelNut=()=>{ const I=INSTR[INST], nS=I.nut.length, L=$('tipLbl'); const
   L.innerHTML=h; window.NOLABEL=1; };
 window.camView=v=>{ window.CAMV=v; frameCam(); };
 /* precompute every pose in small idle chunks so playback never waits on the IK */
-let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); POSES={}; }   /* drop per-event poses solved before the file arrived */
+let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v34',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); POSES={}; }   /* drop per-event poses solved before the file arrived */
 function warm(){ if(!RES||!S3) return; if(POSEFILE===null&&!/nocache/.test(location.search)){ loadPoseFile().then(warm); return; } const inst=INST; let i=0; const tw0=performance.now(); const step=()=>{ if(inst!==INST||!RES) return; const t=performance.now(); while(i<RES.events.length&&performance.now()-t<12){ poseFor(i++); } const N=RES.events.length; if(performance.now()-tw0>300||i<N){ $('prog').style.display=i<N?'inline-flex':'none'; $('progBar').style.width=(100*i/N).toFixed(1)+'%'; $('progTxt').textContent='Solving hand poses '+i+'/'+N; } if(i<RES.events.length) setTimeout(step,0); else { $('prog').style.display='none'; window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; if(TGT) applyPose(TGT);} }; window.WARM=false; step(); }
 /* timer-driven silent preview (same clock as the player: ticks at the score tempo) */
 let simRAF=0;
