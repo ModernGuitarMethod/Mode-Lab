@@ -153,7 +153,7 @@ window.HANDHD=(function(){
     const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(pos,3)); g.setIndex(idx); g.computeVertexNormals();
     const n=pos.length/3, aB=new Float32Array(n*3), aR=new Float32Array(n*4), aJ=new Float32Array(n*4), aP=new Float32Array(n*4); for(let i=0;i<n;i++){ aB[i*3]=pos[i*3]*1000; aB[i*3+1]=pos[i*3+1]*1000; aB[i*3+2]=pos[i*3+2]*1000; aR[i*4]=0.45; aJ.set([99,99,0,0.2],i*4); }
     g.setAttribute('aB',new T.BufferAttribute(aB,3)); g.setAttribute('aR',new T.BufferAttribute(aR,4)); g.setAttribute('aJ',new T.BufferAttribute(aJ,4)); g.setAttribute('aP',new T.BufferAttribute(aP,4));
-    a.geometry=g; a.material=material(false,LOW); a.castShadow=true;
+    a.geometry=g; a.material=material(false,LOW); a.material.side=T.DoubleSide;   /* the open forearm tube end meets the wrist: render its inside too, so no dark shards show through */ a.castShadow=true;
     /* sleeve: knit cuff + sleeve over the far 45 %, with a rolled edge */
     const sl=0.45*L, sy=(wristAtTop?-1:1)*(L/2-sl/2), rr=Math.max(r0,r1)*1.22;
     const sleeve=new T.Mesh(new T.CylinderGeometry(rr*(wristAtTop?1:1.06),rr*(wristAtTop?1.06:1),sl,64,1,true),fabric()); sleeve.position.y=sy; sleeve.userData.hdArm=1; a.add(sleeve);

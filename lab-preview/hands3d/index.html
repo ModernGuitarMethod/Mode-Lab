@@ -74,14 +74,14 @@ button,select,.file{min-height:36px;touch-action:manipulation}
 <script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js"></script>
 <script src="klaudio.js"></script><script src="studysamples.js"></script>
 <script src="mlbox.js"></script>
-<script src="engine.js"></script><script src="strokes.js"></script><script src="righthand.js?v=g6"></script>
+<script src="engine.js"></script><script src="strokes.js"></script><script src="righthand.js?v=m7"></script>
 <script src="handglb.js"></script>
 <script src="handstudio.js"></script>
 <script src="photoreal.js"></script>
 <script src="lpglb.js?v=hd1629"></script>
 <script src="controls.js"></script>
-<script src="collide.js?v=v10"></script>
-<script src="handhd.js?v=hd6"></script>
+<script src="collide.js?v=v11"></script>
+<script src="handhd.js?v=hd7"></script>
 <script src="skin.js?v=hd6"></script>
 <script>
 if(/[?&]debug=1/.test(location.search)) document.body.classList.add('debug');
@@ -590,7 +590,7 @@ function bestPose(e,prev){ const sc=r=>{ const q=evQ(e,r.fing); r.Q=q; return q.
   for(const [pv,tl,rl,bh] of VAR){ window.THUMBLIFT=tl; window.RELAX=rl; window.BHY=bh||null; const r2=poseForEv(e,pv); window.RELAX=0; window.BHY=null; const c=sc(r2); if(c<best){best=c;r=r2;} if(!r.Q.bad) break; } window.THUMBLIFT=TL; }
   return r; }
 window.bestPose=bestPose;
-const POSEC={}; window.POSEC=POSEC; const SOLVER_VER='v28'; const THUMB_SKIN=+(new URLSearchParams(location.search).get('tskin')||1.05);
+const POSEC={}; window.POSEC=POSEC; const SOLVER_VER='v29'; const THUMB_SKIN=+(new URLSearchParams(location.search).get('tskin')||1.05);
 /* per-chord pose cache: solved offline (exportPoses) and shipped as poses3d.json so warm-up only solves chords it has never seen */
 window.exportPoses=()=>{ const V=v=>v&&[+v.x.toFixed(5),+v.y.toFixed(5),+v.z.toFixed(5)]; const o={}; for(const k in POSEC){ const r=POSEC[k]; const f={}; for(const j in r.fing){ const F=r.fing[j]; f[j]={m:F.m,p:F.p,d:F.d,a:F.a||0,on:!!F.on,tgt:V(F.tgt),str:V(F.str)}; }
   o[k]={G:{pos:V(r.G.pos),q:[r.G.q.x,r.G.q.y,r.G.q.z,r.G.q.w].map(x=>+x.toFixed(6)),scale:r.G.scale},fing:f,thumb:r.thumb,p:r.p,base:r.base,Q:r.Q}; } return o; };
@@ -624,7 +624,10 @@ function poseForEv(e,prev){
       else if(ns.length>1){ /* one finger on two neighbouring strings (double-stop): pad centred between them */ tgt=noteWorld(ns[0].s,ns[0].f,0.1+PAD).lerp(noteWorld(ns[1].s,ns[1].f,0.1+PAD),0.5); }
       else tgt=noteWorld(ns[0].s,ns[0].f,(ns[0].harm?0.35:0.1)+PAD,ns[0].harm);
     } else { const f=(p===0?k:base+k-1); const sNear=e.notes.length?e.notes.reduce((a,b)=>a+b.s,0)/e.notes.length:sMid;
-      const sv=Math.min(nStr-1,Math.max(0,sNear+(k>=3?-0.25:0.25))), s0=Math.floor(sv), s1=Math.min(nStr-1,s0+1), zh=strTopZ(Math.round(sv))+(e.mute?0.03:1.0)+PAD; tgt=noteWorld(s0,f,zh).lerp(noteWorld(s1,f,zh),sv-s0); flat='duck'; }   /* relaxed duck bill: gathered, ~1 cm over the board, nearly straight */
+      const sv=Math.min(nStr-1,Math.max(0,sNear+(k>=3?-0.25:0.25))), s0=Math.floor(sv), s1=Math.min(nStr-1,s0+1), zh=strTopZ(Math.round(sv))+(e.mute?0.03:(window.HOVERCM!=null?HOVERCM:0.40))+PAD; tgt=noteWorld(s0,f,zh).lerp(noteWorld(s1,f,zh),sv-s0);
+      /* v29 motion: a finger that just played stays hovering right over its last note (minimal lift); otherwise it hovers ~4 mm over its own fret, curved, not a straight duck bill */
+      const pf=prev&&prev.fing&&prev.fing[k]; if(!e.mute&&pf&&pf.on&&pf.tgt&&prev.base===base&&pf.tgt.isVector3){ tgt=pf.tgt.clone(); tgt.z+=window.HOVERKEEP!=null?HOVERKEEP:0.30; }
+      flat=e.mute?'duck':false; }   /* relaxed duck bill: gathered, ~1 cm over the board, nearly straight */
     T[k]={tgt,flat,on:!!used[k]}; }
   const fx=noteWorld(Math.floor(nStr/2),base+1,0).x; const yT=-CM(I,strY(I,0,fretR(I,base+1)))+0.45, yB=-CM(I,strY(I,nStr-1,fretR(I,base+1)))-0.45;
   const fx12=noteWorld(Math.floor(nStr/2),base+0.5,0).x; const thT=(()=>{ /* grip span from the neck profile at this fret: thumb pad centre sits on the C-profile surface, offset outward by the pad half-thickness (skin) */
@@ -730,9 +733,20 @@ function blend(A,B,t){ if(!A) return B; const THREE=S3.THREE;
   const ao=A.thumb.o||[0,0,0], bo=B.thumb.o||[0,0,0]; const thumb={y:A.thumb.y+(B.thumb.y-A.thumb.y)*t,p:A.thumb.p+(B.thumb.p-A.thumb.p)*t,f:A.thumb.f+(B.thumb.f-A.thumb.f)*t,o:[0,1,2].map(i=>ao[i]+(bo[i]-ao[i])*t)};
   return {G,fing,thumb,p:B.p,base:B.base,ev:B.ev}; }
 /* animation loop: eased approach to the target pose (critically-damped feel), labels follow the fingertips */
+/* v29 human motion layer (render only; the solved/verified poses are the targets it settles on):
+   anticipation (free fingers start toward their next note during the current one), ring/pinky coupling, tiny relaxed micro-motion on free fingers,
+   wrist/arm leads position shifts (faster stage than the fingers). Joint-space easing gives curved, not straight-line, fingertip paths. */
+function motionTarget(now){ if(!TGT||window.SNAP||window.NOMOTION||!RES) return TGT; const e=RES.events[CURI]; const nx=RES.events[CURI+1]; const dur=window.EVDURMS||400;
+  const u=Math.max(0,Math.min(1,(now-SHOWT)/dur)); const N=nx?poseFor(CURI+1):null; const M=blend(TGT,TGT,0); M.fing={}; for(let k=1;k<=4;k++) M.fing[k]=Object.assign({},TGT.fing[k]);
+  const ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x); const sameHand=N&&N.base===TGT.base;
+  for(let k=1;k<=4;k++){ const F=M.fing[k]; if(F.on) continue;
+    if(sameHand&&N.fing[k]){ const w=0.55*ss((u-0.35)/0.65); const Q=N.fing[k]; F.m+=(Q.m-F.m)*w; F.p+=(Q.p-F.p)*w; F.d+=(Q.d-F.d)*w; F.a=(F.a||0)+((Q.a||0)-(F.a||0))*w; }
+    const t=now/1000; F.m+=0.018*Math.sin(t*1.1+k*1.7); F.a=(F.a||0)+0.012*Math.sin(t*0.7+k); }
+  for(const [x,y] of [[3,4],[4,3]]){ const A=M.fing[x], B=M.fing[y]; if(!A.on){ const c=0.18; A.m+=(B.m-A.m)*c; A.p+=(B.p-A.p)*c*0.6; } }
+  return M; }
 let lastT=performance.now();
 function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
-  const k=1-Math.exp(-dt*(window.SNAP?1e3:40)); MIDP=blend(MIDP,TGT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1);   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
+  const k=1-Math.exp(-dt*(window.SNAP?1e3:40)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:60)); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
 let SHOWT=0, BENT=false;
 function applyBend(now){ const e=RES&&RES.events[CURI]; if(!e) return; const tps=SP&&SP.on?SP.tps:960*((typeof api!=='undefined'&&api.score&&api.score.tempo)||70)/60; const durMs=e.dur/tps*1000; window.EVDURMS=durMs;
   const u=window.BENDU!=null?window.BENDU:Math.max(0,(now-SHOWT-60)/durMs); const B=bendState(e,u);
@@ -818,7 +832,7 @@ window.labelNut=()=>{ const I=INSTR[INST], nS=I.nut.length, L=$('tipLbl'); const
   L.innerHTML=h; window.NOLABEL=1; };
 window.camView=v=>{ window.CAMV=v; frameCam(); };
 /* precompute every pose in small idle chunks so playback never waits on the IK */
-let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v34',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); POSES={}; }   /* drop per-event poses solved before the file arrived */
+let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v29m',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); POSES={}; }   /* drop per-event poses solved before the file arrived */
 function warm(){ if(!RES||!S3) return; if(POSEFILE===null&&!/nocache/.test(location.search)){ loadPoseFile().then(warm); return; } const inst=INST; let i=0; const tw0=performance.now(); const step=()=>{ if(inst!==INST||!RES) return; const t=performance.now(); while(i<RES.events.length&&performance.now()-t<12){ poseFor(i++); } const N=RES.events.length; if(performance.now()-tw0>300||i<N){ $('prog').style.display=i<N?'inline-flex':'none'; $('progBar').style.width=(100*i/N).toFixed(1)+'%'; $('progTxt').textContent='Solving hand poses '+i+'/'+N; } if(i<RES.events.length) setTimeout(step,0); else { $('prog').style.display='none'; window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; if(TGT) applyPose(TGT);} }; window.WARM=false; step(); }
 /* timer-driven silent preview (same clock as the player: ticks at the score tempo) */
 let simRAF=0;
