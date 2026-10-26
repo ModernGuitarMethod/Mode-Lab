@@ -6,7 +6,7 @@ window.LPGLB=(function(){
   function addScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
   function load(T){ if(P) return P; P=(async()=>{ if(!T.DRACOLoader) await addScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js');
       const L=new T.GLTFLoader(), D=new T.DRACOLoader(); D.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/'); L.setDRACOLoader(D);
-      const g=await new Promise((res,rej)=>L.load('assets/lp.glb',res,undefined,rej)); return g.scene; })(); return P; }
+      const g=await new Promise((res,rej)=>L.load('assets/lp.glb?v=19',res,undefined,rej)); return g.scene; })(); return P; }
   const G0=()=>typeof GUIT!=='undefined'?GUIT:null;
   function hide(G){ G.children.forEach(c=>{ if(c===G.userData.strG||c.name==='LP_GLB'||c.name==='capo') return;
     c.traverse(o=>{ if(!o.material) return; (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m&&!m.isMeshBasicMaterial) m.visible=false; }); }); }); }
@@ -50,6 +50,9 @@ window.LPGLB=(function(){
     const inv=new Map(); refs.forEach(([o,i,nd])=>{ if(!nd.ring) return; let M=inv.get(o); if(!M){ M=new T.Matrix4().copy(o.matrixWorld).invert(); inv.set(o,M); } v.copy(nd.p).applyMatrix4(M); o.geometry.attributes.position.setXYZ(i,v.x,v.y,v.z); });
     parts.forEach(o=>{ o.geometry.attributes.position.needsUpdate=true; o.geometry.computeBoundingBox(); o.geometry.computeBoundingSphere(); }); }
   function smoothBody(m,T){ if(window.BODYSMOOTH===0) return; /* the thin black ply rings coincide with binding and finish and speckle through them: hide them */ if(window.PLY!==1) m.traverse(o=>{ if(o.isMesh&&/^body_(top|back|side)_3$/.test(o.name)) o.visible=false; }); /* binding drawn in front of the coincident ply/finish layers (no dotted z-fighting along the edge) */ m.traverse(o=>{ if(o.isMesh&&/^body_/.test(o.name)&&o.material&&o.material.name==='bind'){ o.material=o.material.clone(); o.material.polygonOffset=true; o.material.polygonOffsetFactor=-2; o.material.polygonOffsetUnits=-8; } }); parts0(m).forEach(o=>{ o.geometry=o.geometry.clone(); }); try{ smoothOutline(m,T); }catch(e){ window.OUTLINE_ERR=String(e&&e.stack||e); } m.traverse(o=>{ if(o.isMesh&&/^(body_(top|side|back)|neck$)/.test(o.name)) try{ creaseNormals(o,T,/^body_side/.test(o.name)?(window.SIDECREASE||80):(window.CREASE||55),/^body_side/.test(o.name)?(window.SIDEQ||25):500); }catch(e){} }); }
+  /* v19: pickup covers and rings sat exactly in the plane of the pole pieces, slugs and ring screws, so they flickered: draw covers/rings slightly behind their hardware, smooth the cover chamfers, and add a normal bias so curved gold and the carved top don't self-shadow (shadow acne) */
+  function fixPickups(m,T){ m.traverse(o=>{ if(!o.isMesh) return; if(/^pu_.*_(cover|ring)$/.test(o.name)||/^cover_(control|toggle)$|^jack_plate$|^switch_ring$/.test(o.name)){ o.material=o.material.clone(); o.material.polygonOffset=true; o.material.polygonOffsetFactor=1; o.material.polygonOffsetUnits=window.PUOFF||6; try{ creaseNormals(o,T,40,2000); }catch(e){} } });
+    if(window.S3&&S3.scene) S3.scene.traverse(l=>{ if(l.isLight&&l.castShadow&&l.shadow){ if(!l.shadow.normalBias) l.shadow.normalBias=window.NBIAS||0.04; } }); }
   const parts0=m=>{ const a=[]; m.traverse(o=>{ if(o.isMesh&&/^(body_(top|side|back)|neck$)/.test(o.name)) a.push(o); }); return a; };
   function apply(G,I,inst){ if(inst!=='electric'||!on()||!window.S3||!G) return; const T=S3.THREE; wrap();
     load(T).then(src=>{ if(G!==G0()||G.userData.lpglb) return; const m=src.clone(true); m.name='LP_GLB';
@@ -57,6 +60,6 @@ window.LPGLB=(function(){
       const lev=m.getObjectByName('switch_lever'), tip=m.getObjectByName('switch_tip'); let piv=null;
       if(lev&&tip){ piv=new T.Group(); piv.position.copy(lev.position); lev.parent.add(piv); lev.position.set(0,0,0); lev.rotation.set(0,0,0); tip.position.set(0,0,1.65); tip.rotation.set(0,0,0); piv.add(lev); piv.add(tip); }
       G.userData.lpglb={root:m,piv,knobs:[1,2,3,4].map(k=>[m.getObjectByName('knob'+k),m.getObjectByName('knob'+k+'_cap')])};
-      G.add(m); smoothBody(m,T); placeKnobs(G,I,m,T); window._shN=-1; window.LPGLB_READY=1; window.render3d(); }).catch(e=>console.warn('lp.glb not loaded, keeping the code guitar',e)); }
+      G.add(m); smoothBody(m,T); fixPickups(m,T); placeKnobs(G,I,m,T); window._shN=-1; window.LPGLB_READY=1; window.render3d(); }).catch(e=>console.warn('lp.glb not loaded, keeping the code guitar',e)); }
   return {apply,on,sync};
 })();

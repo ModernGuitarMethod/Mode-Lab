@@ -59,7 +59,7 @@ button,select,.file{min-height:36px;touch-action:manipulation}
   <label>Capo <select id="capo"></select></label>
   <label>Picking <select id="picking"><option value="standard">Standard</option><option value="metal">All downstrokes (metal)</option></select></label>
   <label class="dbg">Shape <select id="shape"><option value="0">Any (engine picks)</option><option value="1">Shape 1</option><option value="2">Shape 2</option><option value="3">Shape 3</option></select></label>
-  <button class="play" id="play">▶ Play</button><button id="stop">■</button><button id="resetView" title="Back to the audience view">⟲ Audience view</button><button id="dots" title="Debug: show the target contact points" style="display:none">•</button><button id="sim" class="dbg" title="Timer-driven silent preview">◷ Silent preview</button>
+  <button id="rew" title="Back to the start">⏮</button><button class="play" id="play">▶ Play</button><button id="stop" title="Stop">■</button><input type="range" id="seek" min="0" max="0" value="0" step="1" title="Drag to move through the song" aria-label="Song position" style="width:160px;vertical-align:middle;accent-color:#c9a227"><button id="resetView" title="Back to the audience view">⟲ Audience view</button><button id="dots" title="Debug: show the target contact points" style="display:none">•</button><button id="sim" class="dbg" title="Timer-driven silent preview">◷ Silent preview</button>
   <label class="dbg" title="Finger numbers on the tab"><input type="checkbox" id="fnum"> Finger numbers</label>
   <label>Quality <select id="quality"><option value="auto">Auto</option><option value="high">High</option><option value="low">Low (iPad/phone)</option></select></label>
   <label>Speed <select id="speed"><option>0.5</option><option>0.75</option><option selected>1</option></select></label>
@@ -78,7 +78,7 @@ button,select,.file{min-height:36px;touch-action:manipulation}
 <script src="handglb.js"></script>
 <script src="handstudio.js"></script>
 <script src="photoreal.js"></script>
-<script src="lpglb.js?v=hd17"></script>
+<script src="lpglb.js?v=hd19"></script>
 <script src="controls.js"></script>
 <script src="collide.js?v=v16"></script>
 <script src="handhd.js?v=hd15"></script>
@@ -142,19 +142,24 @@ $('speed').onchange=()=>api.playbackSpeed=+$('speed').value;
 /* playback = Study Lab's recordings for the chosen instrument, scheduled on the AudioContext clock from the SAME event list the hand follows;
    alphaTab is only the tab display (its own synth is not used) */
 let SP={on:false,raf:0};
-async function samplePlay(fromBar,toBar){ sampleStop(); const inst=INST, a=StudySamples.ctx(); if(window.GCTL) GCTL.build(); if(a.resume) await a.resume(); $('status').textContent='Loading Study Lab '+INSTR[inst].name+' samples…';
+async function samplePlay(fromBar,toBar,fromI){ sampleStop(); const inst=INST, a=StudySamples.ctx(); if(window.GCTL) GCTL.build(); if(a.resume) await a.resume(); $('status').textContent='Loading Study Lab '+INSTR[inst].name+' samples…';
   const n=await StudySamples.load(inst); $('status').textContent=INSTR[inst].name+' · Study Lab samples ('+n+')'; if(inst!==INST) return;
   const E=RES.events, bpm=api.score.tempo||70, tps=960*bpm/60*(+$('speed').value), nS=opens.length; window.NOTELOG=[];
-  let i0=Math.max(0,E.findIndex(e=>e.bar>=(fromBar||1))); let i1=toBar?E.findIndex(e=>e.bar>toBar):-1; if(i1<0) i1=E.length;
+  let i0=fromI!=null?Math.max(0,Math.min(E.length-1,fromI)):Math.max(0,E.findIndex(e=>e.bar>=(fromBar||1))); let i1=toBar?E.findIndex(e=>e.bar>toBar):-1; if(i1<0) i1=E.length;
   const t0=a.currentTime+0.25, tick0=E[i0].tick; const at=e=>t0+(e.tick-tick0)/tps;
   for(let i=i0;i<i1;i++){ const e=E[i]; e.notes.forEach((nn,k)=>{ if(nn.tie||nn.support) return; const lg=StudySamples.playPitch(inst,nn.pitch!=null?nn.pitch:opens[nn.s]+CAPO+nn.f,nS-1-nn.s,at(e),nn.dead?0.035:e.dur/tps,nn.dead?0.3:nn.ghost?0.4:0.8); lg.ev=i; lg.bar=e.bar; lg.s=nn.s+1; lg.finger=e.fingers[k]; if((nn.bend||nn.vib)&&lg.src){ const r0=lg.src.playbackRate.value, D=e.dur/tps; for(let q=0;q<=24;q++){ const u=q/24; lg.src.playbackRate.setValueAtTime(r0*Math.pow(2,bendSemis(nn,u)/12),lg.t0+u*D); } lg.bent=true; } }); }
-  SP={on:true,i:i0,i1,t0,tick0,tps,raf:0}; window.SIM=1; $('play').textContent='❚❚ Pause'; showEvent(i0);
-  const step=()=>{ if(!SP.on) return; const now=a.currentTime; while(SP.i+1<SP.i1&&at(E[SP.i+1])<=now+0.06){ SP.i++; showEvent(SP.i); (window.HANDLOG=window.HANDLOG||[]).push({ev:SP.i,audioT:+now.toFixed(3),noteT:+at(E[SP.i]).toFixed(3)}); }
-    if(SP.i+1<SP.i1||now<at(E[SP.i1-1])+E[SP.i1-1].dur/tps) SP.raf=requestAnimationFrame(step); else { SP.on=false; window.SPDONE=true; $('play').textContent='▶ Play'; } };
+  SP={on:true,i:i0,i1,t0,tick0,tps,raf:0,ts:performance.now()}; window.SIM=1; $('play').textContent='❚❚ Pause'; showEvent(i0);
+  const step=()=>{ if(!SP.on) return; const now=a.currentTime; while(SP.i+1<SP.i1&&at(E[SP.i+1])<=now+0.06){ SP.i++; showEvent(SP.i); seekShow(SP.i); (window.HANDLOG=window.HANDLOG||[]).push({ev:SP.i,audioT:+now.toFixed(3),noteT:+at(E[SP.i]).toFixed(3)}); }
+    if(SP.i+1<SP.i1||now<at(E[SP.i1-1])+E[SP.i1-1].dur/tps) SP.raf=requestAnimationFrame(step); else { SP.on=false; window.SPDONE=true; $('play').textContent='▶ Play'; StudySamples.stopAll(); toStart(); } };
   window.HANDLOG=[]; window.SPDONE=false; step(); }
 function sampleStop(){ if(SP.on){ SP.on=false; cancelAnimationFrame(SP.raf); } StudySamples.stopAll(); $('play').textContent='▶ Play'; }
 window.samplePlay=samplePlay; window.sampleStop=sampleStop;
-$('play').onclick=()=>{ if(SP.on) sampleStop(); else samplePlay(RES.events[CURI]?RES.events[CURI].bar:1); }; $('stop').onclick=()=>{ sampleStop(); api.stop(); restPose(); };
+['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,()=>{ window.LASTUI=performance.now(); },true));
+let PLAYI=0; function seekShow(i){ const k=$('seek'); if(RES&&RES.events.length) k.max=RES.events.length-1; k.value=i; }
+function toStart(){ PLAYI=0; try{ api.tickPosition=0; }catch(e){} restPose(); seekShow(0); }
+$('play').onclick=()=>{ if(SP.on){ PLAYI=SP.i; sampleStop(); } else samplePlay(null,null,PLAYI); };
+$('stop').onclick=()=>{ sampleStop(); api.stop(); toStart(); }; $('rew').onclick=()=>{ const was=SP.on; sampleStop(); toStart(); if(was) samplePlay(null,null,0); };
+$('seek').oninput=()=>{ if(!RES) return; const i=+$('seek').value; PLAYI=i; if(SP.on){ sampleStop(); clearTimeout(window.SEEKT); window.SEEKT=setTimeout(()=>samplePlay(null,null,PLAYI),120); } showEvent(i); try{ api.tickPosition=RES.events[i].tick; }catch(e){} };
 
 api.soundFontLoad.on(e=>{ if(e&&e.total) $('status').textContent='Sound '+Math.round(100*e.loaded/e.total)+'%'; });
 api.playerReady.on(()=>{ if(!SP.on) $('status').textContent='Ready'; });
@@ -226,7 +231,7 @@ function solve(){
   $('stats').innerHTML=`<span>Key / mode</span><b>${NAMES[keyPc]} ${modeName}${$('key').value==='auto'?' ('+(fileKey.src||'file')+')':''}</b><span>Beats fingered</span><b>${E.length}</b><span>Position shifts</span><b>${shifts}</b><span>Stretches (free)</span><b>${st}</b><span>Box extensions (Mode Lab shape)</span><b>${stb}</b><span>Inside a Mode Lab box</span><b>${Math.round(100*inbox/Math.max(1,E.length))}%</b><span>Positions used</span><b>${Object.keys(posHist).sort((a,b)=>posHist[b]-posHist[a]).slice(0,6).map(p=>p==='0'?'open':p).join(', ')}</b>`;
   $('issues').innerHTML=iss.filter(x=>x.kind!=='note').concat(iss.filter(x=>x.kind==='note')).slice(0,60).map(x=>`<li data-i="${x.i}">Bar ${E[x.i].bar}: ${x.msg}</li>`).join('')||'<li>No rule breaks</li>';
   $('issues').querySelectorAll('li[data-i]').forEach(li=>li.onclick=()=>{ const e=E[+li.dataset.i]; api.tickPosition=e.tick; showEvent(+li.dataset.i); });
-  window.RES=RES; window.ISSUES=iss;
+  window.RES=RES; window.ISSUES=iss; try{ PLAYI=0; seekShow(0); }catch(e){}
   POSES={}; CUR=MIDP=null; showEvent(0); if(typeof warm==='function') setTimeout(warm,30);
 }
 api.renderFinished.on(()=>{ setTimeout(drawOverlay,30); if(!SP.on) $('status').textContent='Ready'; });
@@ -337,7 +342,7 @@ function buildGuitar(){
   if(GUIT){ S3.scene.remove(GUIT); }
   GUIT=new THREE.Group();
   const br=new THREE.Mesh(new THREE.BoxGeometry(1,0.22,0.05),new THREE.MeshBasicMaterial({color:0xd4a017,transparent:true,opacity:0.9,side:THREE.DoubleSide}));
-  GUIT.add(br); GUIT.userData.br=br;
+  br.visible=window.BRACKET===1; GUIT.add(br); GUIT.userData.br=br; /* the gold position bar read as a stray line popping above the neck: hidden */
   const nS=I.nut.length, xN=I.nut[0][0];
   const MG=x=>{ if(!I.neckMarg) return 0.45; const t=Math.max(0,(xN-x)/(I.S*I.SL/2)); return I.neckMarg[0]+(I.neckMarg[1]-I.neckMarg[0])*t; }; const yTop=x=>-CM(I,strY(I,0,x))+MG(x), yBot=x=>-CM(I,strY(I,nS-1,x))-MG(x); GUIT.userData.yTop=yTop; GUIT.userData.yBot=yBot;
   GUIT.userData.neck={x0:CM(I,fretPx(I,I.join)),x1:CM(I,xN),yT:yTop(xN),yB:yBot(xN),dep:I.bass?2.4:2.1};
@@ -641,7 +646,14 @@ window.exportPoses=()=>{ const V=v=>v&&[+v.x.toFixed(5),+v.y.toFixed(5),+v.z.toF
 window.importPoses=o=>{ const T=S3.THREE, V=a=>a&&new T.Vector3(a[0],a[1],a[2]); for(const k in o){ if(k.startsWith('__')) continue;   /* file poses replace any pose solved live before the file arrived (those were never collision-fixed) */ const r=o[k]; const f={}; for(const j in r.fing){ const F=r.fing[j]; f[j]=Object.assign({},F,{tgt:V(F.tgt),str:V(F.str)}); }
   POSEC[k]={G:{pos:V(r.G.pos),q:new T.Quaternion(...r.G.q),scale:r.G.scale},fing:f,thumb:r.thumb,p:r.p,base:r.base,Q:r.Q}; } };
 const evSig=e=>[SOLVER_VER,INST,CAPO,(typeof opens!=='undefined'?opens.join(','):''),e.pos,e.notes.map((n,j)=>n.s+'/'+n.f+'/'+e.fingers[j]+(n.harm?'h':'')).join(' ')].join('|');
-function poseFor(i){ const key=INST+':'+i; if(POSES[key]) return POSES[key]; const e=RES.events[i], sg=evSig(e); if(POSEC[sg]) return POSES[key]=Object.assign({},POSEC[sg],{ev:e}); const r=bestPose(e,POSES[INST+':'+(i-1)]); POSEC[sg]=r; window.UNIQ=(window.UNIQ||0)+1; return POSES[key]=r; }
+/* v19 fast path: a shape the library hasn't seen is never solved on the spot. The same fingering shape (string, finger, fret relative to the hand position) from the library is slid to the new position at once, and the full solve runs in the background and replaces it. */
+const shapeOf=sg=>{ const a=sg.split('|'); const pos=+a[4]; const notes=(a[5]||'').split(' ').filter(Boolean).map(t=>t.split('/')); return {pre:a[1]+(a[3]||'').split(',').length,same:a.slice(0,4).join('|'),pos,key:notes.map(([s0,f,k])=>s0+'/'+(+f>0?(+f-pos):'o')+'/'+k).join(' '),ref:notes.find(([s0,f])=>+f>0)}; };
+let SHIX=null, SHN=-1; function shapeIndex(){ const n=Object.keys(POSEC).length; if(SHIX&&n===SHN) return SHIX; SHIX=new Map(); SHN=n; for(const sg in POSEC){ const h=shapeOf(sg); const k=h.pre+'#'+h.key; let L=SHIX.get(k); if(!L) SHIX.set(k,L=[]); L.push({pos:h.pos,sg,ref:h.ref,same:h.same}); } return SHIX; }
+function quickPose(e,i){ const sg=evSig(e), h=shapeOf(sg); const L=shapeIndex().get(h.pre+'#'+h.key); if(!L||!L.length){ /* no such shape yet: borrow the nearest-position library pose (held, solved properly in the background) */ let best=null,bd=1e9; for(const [k2,L2] of shapeIndex()) { if(!k2.startsWith(h.pre+'#')) continue; for(const c of L2){ const d=Math.abs(c.pos-h.pos); if(d<bd){ bd=d; best=c; } } } if(!best) return null; const P2=POSEC[best.sg]; return Object.assign({},P2,{ev:e,_quick:1,_hold:1,G:{pos:P2.G.pos.clone(),q:P2.G.q.clone(),scale:P2.G.scale}}); } const sc=c=>Math.abs(c.pos-h.pos)+(c.same===h.same?0:0.5); let b=L[0]; for(const c of L) if(sc(c)<sc(b)) b=c; const P=POSEC[b.sg];
+  const r=Object.assign({},P,{ev:e,_quick:1,G:{pos:P.G.pos.clone(),q:P.G.q.clone(),scale:P.G.scale}}); if(h.ref&&b.ref&&b.pos!==h.pos){ const d=noteWorld(+h.ref[0],+h.ref[1],0).sub(noteWorld(+b.ref[0],+b.ref[1],0)); S3.group.parent&&S3.group.parent.updateMatrixWorld(true); r.G.pos.add(d); } return r; }
+function poseFor(i,full){ const key=INST+':'+i; const have=POSES[key]; if(have&&!(full&&have._quick)) return have; const e=RES.events[i], sg=evSig(e); if(POSEC[sg]) return POSES[key]=Object.assign({},POSEC[sg],{ev:e});
+  if(!full&&!window.NOQUICK){ let q=quickPose(e,i)||have; if(q){ window.QUICKN=(window.QUICKN||0)+1; return POSES[key]=q; } }
+  const r=bestPose(e,POSES[INST+':'+(i-1)]); POSEC[sg]=r; window.UNIQ=(window.UNIQ||0)+1; return POSES[key]=r; }
 /* per-event quality, same rules as verify(): counts pads off the string line (>0.5 mm), outside 2-4 mm behind the fret, or sunk */
 function evQ(e,fing){ const I=INSTR[INST], nS=I.nut.length; for(let j=1;j<=4;j++) if(fing[j]) S3.setFinger(j,fing[j]); S3.group.updateMatrixWorld(true); let bad=0,w=0;
   e.notes.forEach((n,k)=>{ const f=e.fingers[k]; if(f<1||!fing[f]) return; const F=fing[f]; const P=noteWorld(n.s,n.f,strTopZ(n.s)); const cntF=e.fingers.filter(x=>x===f).length, isBarre=!!barreInfo(e,f), isDbl=cntF===2&&!isBarre;
@@ -669,7 +681,7 @@ window.tipAudit=()=>{ const I=INSTR[INST]; const ang=[], mutes=[], R=[], TH=[]; 
 function barreInfo(e,f){ f=f||1; const ns=e.notes.filter((n,j)=>e.fingers[j]===f&&n.f>0); if(ns.length<2) return null; const ss=ns.map(n=>n.s); const lo=Math.min(...ss), hi=Math.max(...ss);
   if(ns.length===2&&hi-lo<2) return null; return {lo,hi,f:ns[0].f}; }
 window.barreInfo=barreInfo;
-{ const _pf=poseFor; poseFor=function(i){ const P=_pf(i); if(P&&!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
+{ const _pf=poseFor; poseFor=function(i,full){ const P=_pf(i,full); if(P&&P._quick) return P; if(P&&!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
 function poseForEv(e,prev){
   const I=INSTR[INST], p=e.pos, base=Math.max(p,1), nStr=I.nut.length, THREE=S3.THREE;
   const used={};
@@ -899,10 +911,20 @@ window.labelNut=()=>{ const I=INSTR[INST], nS=I.nut.length, L=$('tipLbl'); const
   L.innerHTML=h; window.NOLABEL=1; };
 window.camView=v=>{ window.CAMV=v; frameCam(); };
 /* precompute every pose in small idle chunks so playback never waits on the IK */
-let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v35',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); POSES={}; }   /* drop per-event poses solved before the file arrived */
+let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v35',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); try{ const L=JSON.parse(localStorage.getItem('h3dposes_'+SOLVER_VER)||'null'); if(L) importPoses(L); }catch(_){} POSES={}; }   /* drop per-event poses solved before the file arrived */
 /* idle/stopped: rest in the solved pose of the first fretted event (same rules as playing), never the unposed bind hand */
 function restPose(){ if(!RES||!S3) return; const i=RES.events.findIndex(e=>e.notes.some(n=>n.f>0)); if(i<0) return; window.CURI=i; showEvent(i); }
-function warm(){ if(!RES||!S3) return; if(/nowarm/.test(location.search)){ window.WARM=true; return; } if(POSEFILE===null&&!/nocache/.test(location.search)){ loadPoseFile().then(warm); return; } const inst=INST; let i=0; const tw0=performance.now(); const step=()=>{ if(inst!==INST||!RES) return; const t=performance.now(); while(i<RES.events.length&&performance.now()-t<12){ poseFor(i++); } const N=RES.events.length; if(performance.now()-tw0>300||i<N){ $('prog').style.display=i<N?'inline-flex':'none'; $('progBar').style.width=(100*i/N).toFixed(1)+'%'; $('progTxt').textContent='Solving hand poses '+i+'/'+N; } if(i<RES.events.length) setTimeout(step,0); else { $('prog').style.display='none'; window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; if(TGT) applyPose(TGT); else restPose();} }; window.WARM=false; step(); }
+function warm(){ if(!RES||!S3) return; if(/nowarm/.test(location.search)){ window.WARM=true; window.HEADREADY=true; return; } if(POSEFILE===null&&!/nocache/.test(location.search)){ loadPoseFile().then(warm); return; }
+  /* v19: no up-front solving. Every event is looked up in the shipped pose library (keyed by position + string/fret/finger pattern); only shapes the library has never seen are solved, in small idle slices just ahead of the playhead (or a new seek point), and cached. */
+  const inst=INST, N=RES.events.length, done=new Uint8Array(N); let left=N; const tw0=performance.now(); const gen=(window._warmGen=(window._warmGen||0)+1); window.WARM=false;
+  for(let i=0;i<N;i++){ if(POSEC[evSig(RES.events[i])]){ poseFor(i); done[i]=1; left--; } } window.LIBHIT=N-left; window.LIBMISS=left; window.LOOKUPMS=Math.round(performance.now()-tw0);
+  const solve=i=>{ if(i<0||i>=N||done[i]) return false; const was=POSES[INST+':'+i]; const P=poseFor(i,true); done[i]=1; left--; if(was&&was._quick&&i===CURI&&!SP.on){ TGT=P; } return true; };
+  let fill=0; const head=()=>SP&&SP.on?SP.i:(typeof PLAYI!=='undefined'?Math.max(PLAYI,CURI||0):0);
+  window.LASTUI=performance.now(); window.HEADREADY=true; window.HEADMS=Math.round(performance.now()-tw0); $('prog').style.display='none';
+  const step=()=>{ if(gen!==window._warmGen||inst!==INST||!RES) return; if(!(SP&&SP.on)&&performance.now()-(window.LASTUI||0)<1500){ setTimeout(step,250); return; } const t=performance.now(); const budget=1;
+    while(left>0&&performance.now()-t<budget){ let did=false; const h=head(); if(SP&&SP.on) break; /* never solve while playing: the music and the hand stay in step */ if(false){ /* while playing, only shapes with no library match (held as the last pose) are solved, just ahead of the playhead */ for(let j=h;j<Math.min(N,h+40);j++){ if(done[j]) continue; const q=poseFor(j); if(!q._hold){ continue; } solve(j); did=true; break; } if(!did) break; } else { for(let j=Math.max(0,h-1);j<Math.min(N,h+60);j++){ if(solve(j)){ did=true; break; } } if(!did){ while(fill<N&&done[fill]) fill++; if(fill<N) solve(fill); } } }
+    if(left>0) setTimeout(step,SP&&SP.on?8:30); else { window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; try{ if(window.UNIQ&&!/nocache/.test(location.search)){ const o=exportPoses(); const f=POSEFILE||{}; const add={}; let n=0; for(const k in o) if(!f[k]){ add[k]=o[k]; n++; } if(n) localStorage.setItem('h3dposes_'+SOLVER_VER,JSON.stringify(add)); } }catch(_){} if(!SP.on){ if(TGT) applyPose(TGT); else restPose(); } } };
+  step(); }
 /* timer-driven silent preview (same clock as the player: ticks at the score tempo) */
 let simRAF=0;
 function simPlay(fromBar,toBar){ cancelAnimationFrame(simRAF); window.SIM=1; const E=RES.events; const bpm=api.score.tempo||70, tps=960*bpm/60*(+$('speed').value);
