@@ -6,7 +6,9 @@
    lunula and free edge, reddened tips/knuckles, wrap-lighting subsurface with red scatter and thin-finger back-light.
    Quality: ?q=low / mobile = 1 tessellation level, no pores; high = 2 levels. No external textures (all self-made). */
 window.HANDHD=(function(){
-  const PRESS={x:0,y:0,z:0,w:0,set(a,b,c,d){this.x=a;this.y=b;this.z=c;this.w=d;}};   /* per-finger pressure 0..1 -> fingertip pad spreads sideways (render mesh only) */
+  const PRESS={x:0,y:0,z:0,w:0,set(a,b,c,d){this.x=a;this.y=b;this.z=c;this.w=d;}};
+  /* v11 pressure flattening: per pressing finger, the pad skin that would go below the string top is flattened onto it (guitar frame, cm). Shared with collide.js/tipAudit via window.FLATP */
+  const FLAT={}; const flatInit=()=>{ if(!FLAT.v){ FLAT.v=new THREE.Vector4(-1e4,-1e4,-1e4,-1e4); FLAT.g=new THREE.Matrix4(); FLAT.gi=new THREE.Matrix4(); } return FLAT; }; window.FLATP=FLAT;   /* per-finger pressure 0..1 -> fingertip pad spreads sideways (render mesh only) */
   const LOW=window.PR?PR.Q==='low':/Mobi|iPad|Android/.test(navigator.userAgent);
   const fOf=nm=>/index/i.test(nm)?1:/middle/i.test(nm)?2:/ring/i.test(nm)?3:/pinky|little/i.test(nm)?4:/thumb/i.test(nm)?5:0;
   /* ---------- Phong tessellation of a skinned indexed geometry ---------- */
@@ -33,7 +35,7 @@ window.HANDHD=(function(){
     const bp=mesh.skeleton.boneInverses.map(m=>new T.Vector3().setFromMatrixPosition(m.clone().invert())); const bi=nm=>B.findIndex(b=>b.name===nm);
     const J=nm=>bp[bi(nm)]; const wr=J('wrist'), mI=J('index-finger-phalanx-proximal'), mM=J('middle-finger-phalanx-proximal'), mR=J('ring-finger-phalanx-proximal'), mP=J('pinky-finger-phalanx-proximal'), tM=J('thumb-metacarpal');
     const ax=mM.clone().sub(wr); const LEN=ax.length(); ax.normalize(); let lat=mI.clone().sub(mP); lat.sub(ax.clone().multiplyScalar(lat.dot(ax))).normalize(); let pn=new T.Vector3().crossVectors(ax,lat).normalize();
-    const cen=mI.clone().add(mM).add(mR).add(mP).multiplyScalar(0.25).add(wr).multiplyScalar(0.5); if(tM.clone().sub(cen).dot(pn)>0) pn.negate();   /* pn points to the palm (checked on renders: veins/nails must land on the back) */
+    const cen=mI.clone().add(mM).add(mR).add(mP).multiplyScalar(0.25).add(wr).multiplyScalar(0.5); if(tM.clone().sub(cen).dot(pn)>0) pn.negate(); if(window.PNSIGN) pn.multiplyScalar(PNSIGN);   /* pn points to the palm (checked on renders: veins/nails must land on the back) */
     const dThumb=lat.clone().multiplyScalar(0.7).sub(pn.clone().multiplyScalar(0.7)).normalize();   /* thumbnail faces outward + dorsal */
     const mm=LEN/95;   /* wrist→middle MCP ≈ 95 mm */
     /* the WebXR hand skeleton is flat (every joint parented to the Armature), so chain the segments by name */
@@ -77,8 +79,8 @@ window.HANDHD=(function(){
   function material(skinned,LOWQ){ const T=THREE; const m=new T.MeshPhysicalMaterial({color:0xffffff,roughness:0.5,metalness:0,clearcoat:1.0,clearcoatRoughness:0.12,skinning:skinned,side:T.FrontSide,envMapIntensity:0.55,sheen:new T.Color(0x2a1410)});
     m.extensions={derivatives:true}; m.defines={LOWQ:LOWQ?1:0};
     m.onBeforeCompile=sh=>{
-      sh.uniforms.uPress={value:PRESS}; sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform vec4 uPress; attribute vec3 aB; attribute vec4 aR; attribute vec4 aJ; attribute vec4 aP; varying vec3 vB; varying vec4 vR; varying vec4 vJ; varying vec4 vP;')
-        .replace('#include <begin_vertex>','#include <begin_vertex>\nvB=aB; vR=aR; vJ=aJ; vP=aP;\n { int fi=int(aJ.z+0.5); float pr=fi==1?uPress.x:fi==2?uPress.y:fi==3?uPress.z:fi==4?uPress.w:0.0; float pad=aR.w*smoothstep(0.35,0.75,aR.y)*smoothstep(0.1,-0.5,aR.x); float side=smoothstep(0.35,0.95,abs(aR.z)); transformed+=objectNormal*pr*pad*side*0.00055; }');
+      sh.uniforms.uPress={value:PRESS}; flatInit(); sh.uniforms.uFlat={value:FLAT.v}; sh.uniforms.uGi={value:FLAT.gi}; sh.uniforms.uG={value:FLAT.g}; sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform vec4 uPress; uniform vec4 uFlat; uniform mat4 uGi; uniform mat4 uG; attribute vec3 aB; attribute vec4 aR; attribute vec4 aJ; attribute vec4 aP; varying vec3 vB; varying vec4 vR; varying vec4 vJ; varying vec4 vP;')
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nvB=aB; vR=aR; vJ=aJ; vP=aP;\n { int fi=int(aJ.z+0.5); float pr=fi==1?uPress.x:fi==2?uPress.y:fi==3?uPress.z:fi==4?uPress.w:0.0; float pad=aR.w*smoothstep(0.35,0.75,aR.y)*smoothstep(0.1,-0.5,aR.x); float side=smoothstep(0.35,0.95,abs(aR.z)); transformed+=objectNormal*pr*pad*side*0.00055; }').replace('#include <skinning_vertex>','#include <skinning_vertex>\n { int fj=int(aJ.z+0.5); float pl=fj==1?uFlat.x:fj==2?uFlat.y:fj==3?uFlat.z:fj==4?uFlat.w:-1e4; float wd=smoothstep(0.5,0.9,aR.w); if(pl>-1e3&&wd>0.0){ vec4 gp=uGi*(modelMatrix*vec4(transformed,1.0)); float dz=pl-gp.z; if(dz>0.0){ gp.z+=dz*wd; transformed=(inverse(modelMatrix)*(uG*gp)).xyz; } } }');
       sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vB; varying vec4 vR; varying vec4 vJ; varying vec4 vP; float gNail; float gThin;'+NOISE+`
   /* returns albedo (linear), roughness, height (mm) and nail mask */
   void skinField(out vec3 alb,out float rough,out float h,out float nail){
@@ -135,9 +137,34 @@ window.HANDHD=(function(){
       .replace('#include <map_fragment>','#include <map_fragment>\n diffuseColor.rgb*=0.85+0.3*vn(vO*600.0);'); };
     return m; }
   /* ---------- apply to every hand in the scene ---------- */
-  function upgrade(root){ if(/[?&]hd=0/.test(location.search)) return 0; let k=0; const todo=[];
+  /* v8 fleshy fingertip pad: palmar skin of the distal segment bulges below the bone (max ~PB mm at 55-80% along the pad),
+     with a flattened underside (soft plateau) like a pad under light pressure. Applied in bind space to the base mesh so
+     the contact/collision mesh and the HD render mesh share the same shape. */
+  function padBulge(g,mesh){ if(g.userData&&g.userData.padBulge) return; const T=THREE, B=mesh.skeleton.bones, n=g.attributes.position.count, P=g.attributes.position.array, SI=g.attributes.skinIndex.array, SW=g.attributes.skinWeight.array;
+    const bp=mesh.skeleton.boneInverses.map(m=>new T.Vector3().setFromMatrixPosition(m.clone().invert())); const bi=nm=>B.findIndex(b=>b.name===nm); const J=nm=>bp[bi(nm)];
+    const wr=J('wrist'), mI=J('index-finger-phalanx-proximal'), mM=J('middle-finger-phalanx-proximal'), mR=J('ring-finger-phalanx-proximal'), mP=J('pinky-finger-phalanx-proximal'), tM=J('thumb-metacarpal');
+    const ax=mM.clone().sub(wr); const mm=ax.length()/95; ax.normalize(); let lat=mI.clone().sub(mP); lat.sub(ax.clone().multiplyScalar(lat.dot(ax))).normalize(); let pn=new T.Vector3().crossVectors(ax,lat).normalize();
+    const cen=mI.clone().add(mM).add(mR).add(mP).multiplyScalar(0.25).add(wr).multiplyScalar(0.5); if(tM.clone().sub(cen).dot(pn)>0) pn.negate(); if(window.PNSIGN) pn.multiplyScalar(PNSIGN);
+    const PB=(window.PADBULGE!=null?PADBULGE:1.6)*mm; const F=['index','middle','ring','pinky']; const D={}, Tp={};
+    F.forEach(f=>{ D[bi(f+'-finger-phalanx-distal')]=f; Tp[f]=[J(f+'-finger-phalanx-distal'),J(f+'-finger-tip')]; });
+    const tipB=new Set(F.map(f=>bi(f+'-finger-tip')));
+    const p=new T.Vector3();
+    const fw=i=>{ let w=0, f=null; for(let c=0;c<4;c++){ const b=SI[i*4+c]; const nm=B[b]&&B[b].name; const ff=SW[i*4+c]>0.001&&F.find(x=>nm===x+'-finger-phalanx-distal'||nm===x+'-finger-tip'); if(ff){ w+=SW[i*4+c]; f=ff; } } return [w,f]; };
+    /* per-finger skin axis: DIP joint to the centroid of the far end of the skin */
+    const AX={}; F.forEach(f=>{ const [A,E]=Tp[f]; const d0=E.clone().sub(A).normalize(); const vs=[]; for(let i=0;i<n;i++){ const [w,ff]=fw(i); if(ff!==f||w<0.5) continue; p.fromArray(P,i*3); vs.push(p.clone()); } let tm=-1e9; vs.forEach(q=>tm=Math.max(tm,q.clone().sub(A).dot(d0))); const far=vs.filter(q=>q.clone().sub(A).dot(d0)>tm-2*mm); const c=far.reduce((a,q)=>a.add(q),new T.Vector3()).multiplyScalar(1/Math.max(1,far.length)); const d=c.sub(A).normalize(); let te=-1e9; vs.forEach(q=>te=Math.max(te,q.clone().sub(A).dot(d))); const pf=pn.clone().sub(d.clone().multiplyScalar(pn.dot(d))).normalize(); AX[f]={A,d,d0,te,pf0:pn.clone().sub(d0.clone().multiplyScalar(pn.dot(d0))).normalize(),pf,nvs:vs.length,nfar:far.length,tm:tm/mm}; });
+    const PBD={n:0,maxAmt:0,maxRet:0,nv:n,te:F.map(f=>[AX[f].te/mm,AX[f].nvs,AX[f].nfar,AX[f].tm])}; (window._PBD=window._PBD||[]).push(PBD);
+    for(let i=0;i<n;i++){ const [w,f]=fw(i); if(i===400) PBD.pre400=[w,f,[0,1,2,3].map(c=>[B[SI[i*4+c]].name,SW[i*4+c]])]; if(!f||w<0.05) continue;
+      const {A,d,d0,te,pf,pf0}=AX[f]; p.fromArray(P,i*3); const r=p.clone().sub(A); const t=r.dot(d)/te; const rp=r.clone().sub(d0.clone().multiplyScalar(r.dot(d0))); const rl=rp.length(); if(rl<1e-6) continue; const s=(window.RSIGN!=null?RSIGN:-1)*rp.dot(pf0)/rl;   /* -1: pad side = the side that faces the board when the distal is shallow (checked: lowest point moves off the nail end) */
+      /* v11 fleshy pad: palmar flesh below the distal bone, fullest a few mm behind the end; nail side of the end drawn back so the pad, not the nail, is the end of the finger */
+      const TC=window.PADTC!=null?PADTC:0.72, TW=window.PADTW!=null?PADTW:0.22; const bell=Math.exp(-Math.pow((t-TC)/TW,2)); const fade=t>0.9?Math.max(0,1-(t-0.9)/0.12):1;
+      const amt=(s>0?PB*w*Math.pow(s,1.4)*bell*fade:0); const u=Math.min(1,Math.max(0,(t-0.7)/0.3)), uu=u*u*(3-2*u);
+      const ret=(window.TIPRET!=null?TIPRET:2.2)*mm*w*uu*Math.max(0,0.4-s)/1.4, ext=(window.TIPEXT!=null?TIPEXT:0.5)*mm*w*uu*Math.max(0,s);
+      if(i===400) PBD.v400={t,s,w,f,amt:amt/mm,ret:ret/mm,ext:ext/mm,bm:mesh.bindMatrix.elements.slice(0,4)};      PBD.n++; PBD.maxAmt=Math.max(PBD.maxAmt,amt/mm); PBD.maxRet=Math.max(PBD.maxRet,ret/mm);
+      p.add(pf.clone().multiplyScalar(amt)).add(d.clone().multiplyScalar(ext-ret)); { const dd=Math.hypot(p.x-P[i*3],p.y-P[i*3+1],p.z-P[i*3+2])/mm; if(dd>(PBD.maxD||0)){ PBD.maxD=dd; PBD.maxI=i; } } P[i*3]=p.x; P[i*3+1]=p.y; P[i*3+2]=p.z; }
+    g.attributes.position.needsUpdate=true; g.computeVertexNormals(); g.computeBoundingSphere(); g.userData=g.userData||{}; g.userData.padBulge=1; }
+  function upgrade(root){ if(/[?&]hd=0/.test(location.search)){ root.traverse(o=>{ if(o.isSkinnedMesh&&o.skeleton&&o.skeleton.bones.some(b=>/index-finger/.test(b.name))) padBulge(o.geometry,o); }); return 0; } let k=0; const todo=[];
     root.traverse(o=>{ if(o.isSkinnedMesh&&!o.userData.hd&&!o.userData.hdCopy&&o.skeleton&&o.skeleton.bones.some(b=>/index-finger/.test(b.name))) todo.push(o); });
-    todo.forEach(o=>{ o.userData.hd=1; o.userData.skin=1; const g=tess(o.geometry,LOW?1:2); regions(g,o); g.computeBoundingSphere(); const hd=new THREE.SkinnedMesh(g,material(true,LOW)); hd.userData.hdCopy=1; hd.frustumCulled=false; hd.castShadow=true; hd.receiveShadow=true;
+    todo.forEach(o=>{ o.userData.hd=1; padBulge(o.geometry,o); o.userData.skin=1; const g=tess(o.geometry,LOW?1:2); regions(g,o); g.computeBoundingSphere(); const hd=new THREE.SkinnedMesh(g,material(true,LOW)); hd.userData.hdCopy=1; hd.frustumCulled=false; hd.castShadow=true; hd.receiveShadow=true;
       hd.bind(o.skeleton,o.bindMatrix); o.parent.add(hd); o.material.colorWrite=false; o.material.depthWrite=false; o.visible=true; o.material.transparent=true; o.material.opacity=0; o.renderOrder=-1; k++;
       /* forearm: skin material + sleeve on the far half */
       const arms=[]; const wb=o.skeleton.bones.find(b=>b.name==='wrist'); const ap=wb&&wb.parent; ap&&ap.traverse(a=>{ if(a.isMesh&&!a.isSkinnedMesh&&a.geometry&&a.geometry.type==='CylinderGeometry'&&a.geometry.parameters.openEnded&&!a.userData.hdArm) arms.push(a); });
@@ -153,13 +180,15 @@ window.HANDHD=(function(){
     const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(pos,3)); g.setIndex(idx); g.computeVertexNormals();
     const n=pos.length/3, aB=new Float32Array(n*3), aR=new Float32Array(n*4), aJ=new Float32Array(n*4), aP=new Float32Array(n*4); for(let i=0;i<n;i++){ aB[i*3]=pos[i*3]*1000; aB[i*3+1]=pos[i*3+1]*1000; aB[i*3+2]=pos[i*3+2]*1000; aR[i*4]=0.45; aJ.set([99,99,0,0.2],i*4); }
     g.setAttribute('aB',new T.BufferAttribute(aB,3)); g.setAttribute('aR',new T.BufferAttribute(aR,4)); g.setAttribute('aJ',new T.BufferAttribute(aJ,4)); g.setAttribute('aP',new T.BufferAttribute(aP,4));
-    a.geometry=g; a.material=material(false,LOW); a.castShadow=true;
+    a.geometry=g; a.material=material(false,LOW); a.material.side=T.DoubleSide;   /* the open forearm tube end meets the wrist: render its inside too, so no dark shards show through */ a.castShadow=true;
     /* sleeve: knit cuff + sleeve over the far 45 %, with a rolled edge */
     const sl=0.45*L, sy=(wristAtTop?-1:1)*(L/2-sl/2), rr=Math.max(r0,r1)*1.22;
     const sleeve=new T.Mesh(new T.CylinderGeometry(rr*(wristAtTop?1:1.06),rr*(wristAtTop?1.06:1),sl,64,1,true),fabric()); sleeve.position.y=sy; sleeve.userData.hdArm=1; a.add(sleeve);
     const cuffY=sy+(wristAtTop?1:-1)*(sl/2-0.006); const cuff=new T.Mesh(new T.CylinderGeometry(rr*1.05,rr*1.05,0.012,64,1,true),fabric()); cuff.position.y=cuffY; cuff.userData.hdArm=1; a.add(cuff); }
   let tries=0; const iv=setInterval(()=>{ try{ let k=0; if(window.S3&&S3.scene) k+=upgrade(S3.scene); if(window.RH&&RH.R&&RH.R.scene) k+=upgrade(RH.R.scene); if(++tries>240) clearInterval(iv); }catch(e){ console.warn('handhd',e.message); clearInterval(iv); } },500);
-  function hook(){ if(!window.applyPose||applyPose._hd) return; const ap=applyPose; window.applyPose=function(P){ const r=ap.apply(this,arguments); try{ PRESS.set(...[1,2,3,4].map(k=>P&&P.fing&&P.fing[k]&&P.fing[k].on?1:0)); }catch(e){} return r; }; window.applyPose._hd=1; }
+  function setFlat(P){ flatInit(); const G=(typeof GUIT!=='undefined')?GUIT:null; if(!G||window.NOFLAT||!window.FLATON){ FLAT.v.set(-1e4,-1e4,-1e4,-1e4); return; } G.updateMatrixWorld(true); FLAT.g.copy(G.matrixWorld); FLAT.gi.copy(G.matrixWorld).invert(); const z=[1,2,3,4].map(k=>{ const F=P&&P.fing&&P.fing[k]; if(!F||!F.on||!F.str) return -1e4; const q=new THREE.Vector3(F.str.x,F.str.y,F.str.z).applyMatrix4(FLAT.gi); return q.z-(window.FLATSINK!=null?FLATSINK:0); }); FLAT.v.set(z[0],z[1],z[2],z[3]); }
+  window.setFlat=setFlat;
+  function hook(){ if(!window.applyPose||applyPose._hd) return; const ap=applyPose; window.applyPose=function(P){ const r=ap.apply(this,arguments); try{ PRESS.set(...[1,2,3,4].map(k=>P&&P.fing&&P.fing[k]&&P.fing[k].on?1:0)); }catch(e){} try{ setFlat(P); }catch(e){} return r; }; window.applyPose._hd=1; }
   const hv=setInterval(()=>{ if(window.applyPose){ hook(); clearInterval(hv); } },300);
   return {upgrade,tess,PRESS};
 })();

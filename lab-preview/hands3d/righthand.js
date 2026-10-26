@@ -70,7 +70,7 @@ RH.pose=(u)=>{ if(!RH.ready||!cur) return null; const I=INSTR[INST];
     /* rest stroke: the plucking fingertip draws through the string toward the low E and comes to rest on the next string (or the pickup) */
     [1,2].forEach(n=>R.setFinger(n,n===f?{m:0.5,p:0.45,d:0.27,a:0}:{m:0.9,p:0.9,d:0.55,a:0})); R.group.updateMatrixWorld(true);
     const nm=(f===2?'middle':'index')+'-finger-tip'; loc.tipM=R.group.worldToLocal(R.wpos(nm)); const sp=Math.abs(sY(I,1,px)-sY(I,0,px));
-    const tr=Math.max(-0.5,Math.min(1,(u-RH.ATT)/70)); const T=V(CM(I,px),sY(I,s0,px)+tr*sp*0.9,sZ(I,s0,px)+(tr<0?0:0)-0.02);
+    const tr=Math.max(-0.5,Math.min(1,(u-RH.ATT)/70)); const T=V(CM(I,px),sY(I,s0,px)+tr*sp*0.9,sZ(I,s0,px)-0.02+(tr>0?tr*tr*0.32:tr*tr*0.12));   /* v29: shallow arc through the string, small follow-through rising away */
     if(cur.e&&cur.e.slap){ R.setThumb({y:0.3,p:-0.1,f:0.05}); R.group.updateMatrixWorld(true); loc.tipM=R.group.worldToLocal(R.wpos('thumb-tip')); const b=u<RH.ATT?(RH.ATT-u)/RH.ATT:Math.min(1,(u-RH.ATT)/80); const Ts=V(CM(I,px)+CM(I,I.S*3),sY(I,s0,px),sZ(I,s0,px)+0.05+b*1.2); place(Ts,true); RH.lastTip=Ts; RH.miss=0; RH.slapT=true; return R.group; }
     RH.slapT=false; let T2=T; if(cur.e&&cur.e.pop){ const a=Math.max(0,Math.min(1,(u-RH.ATT)/60)); T2=V(T.x,sY(I,s0,px)-0.1,sZ(I,s0,px)-0.12+a*0.9); }
     place(T2,true); RH.lastTip=T2; RH.miss=0;
