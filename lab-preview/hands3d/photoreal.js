@@ -147,7 +147,7 @@ window.PR=(function(){
   /* ---------- renderer: HDRI, tone mapping, post ---------- */
   async function boot(S0){ S=S0; T=S.THREE; maxAn=S.renderer.capabilities.getMaxAnisotropy(); const R=S.renderer;
     R.toneMapping=T.ACESFilmicToneMapping; R.toneMappingExposure=1.05; R.physicallyCorrectLights=false;
-    if(Q==='low'){ R.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1)); maxAn=Math.min(maxAn,4); const key=S.scene.children.find(o=>o.isDirectionalLight); if(key&&key.shadow){ key.shadow.mapSize.set(1024,1024); } }
+    if(Q==='low'){ R.setPixelRatio(Math.min(window.LOWDPR||2,window.devicePixelRatio||1)); maxAn=Math.min(maxAn,4); const key=S.scene.children.find(o=>o.isDirectionalLight); if(key&&key.shadow){ key.shadow.mapSize.set(1024,1024); } }
     try{ await ls(EX+'loaders/RGBELoader.js'); const hdr=await new Promise((res,rej)=>new T.RGBELoader().setDataType(T.UnsignedByteType).load('assets/studio_small_09_1k.hdr',res,undefined,rej));
       const pm=new T.PMREMGenerator(R); const env=pm.fromEquirectangular(hdr).texture; hdr.dispose(); pm.dispose(); S.scene.environment=env; S.scene.children.filter(o=>o.isLight&&!o.isDirectionalLight).forEach(l=>l.intensity*=0.6); window.PR_HDRI=true; }catch(e){ console.warn('HDRI fallback (soft-box env kept)',e&&e.message); }
     if(Q==='high'&&!/[?&]post=0/.test(qs)){ try{ for(const f of ['shaders/CopyShader','shaders/LuminosityHighPassShader','shaders/GammaCorrectionShader','postprocessing/EffectComposer','postprocessing/RenderPass','postprocessing/ShaderPass','postprocessing/UnrealBloomPass']) await ls(EX+f+'.js');
