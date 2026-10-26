@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en"><head><base href="../"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="icon-192.png"><title>Mode Lab · 3D Player demo: Holding &amp; first sound</title>
+<style>
+:root{--bg:#080808;--card:#111;--panel:#161616;--line:#2a2a2a;--gold:#d4a017;--white:#f5f5f5;--muted:#9ca3af;--f1:#22d3ee;--f2:#22c55e;--f3:#d4a017;--f4:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--white);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#141008,#080808)}
+header img{width:34px;height:34px;border-radius:8px}
+header h1{font-size:17px;letter-spacing:.14em;margin:0;color:var(--gold);font-weight:800}
+header .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 9px;margin-left:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line)}
+.bar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+select,button,.file{background:var(--panel);color:var(--white);border:1px solid var(--line);border-radius:10px;padding:7px 11px;font:inherit;font-size:13px}
+button.play{background:var(--gold);color:#111;border-color:var(--gold);font-weight:700;min-width:90px}
+button:hover,select:hover,.file:hover{border-color:var(--gold)}
+.file input{display:none}.file{cursor:pointer}
+#neckWrap{padding:10px 18px 4px;background:radial-gradient(ellipse at 50% 0,#1b1407 0,#080808 70%)}
+#stage{position:relative;width:100%;height:min(46vh,430px);border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#22180a 0,#0b0906 75%);border:1px solid #2a2a2a}#stage canvas{width:100%!important;height:100%!important;display:block}#stageMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px}#posTag{position:absolute;left:14px;top:10px;background:#d4a01722;border:1px solid #d4a017;color:#d4a017;font-weight:700;font-size:13px;border-radius:99px;padding:4px 12px}#tipLbl{position:absolute;inset:0;pointer-events:none}#tipLbl b{position:absolute;transform:translate(-50%,-50%);font:800 11px system-ui;color:#111;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #111;opacity:.92}
+#info{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:4px 18px 10px;font-size:13px;color:var(--muted)}
+#info b{color:var(--white)}
+.legend span{display:inline-flex;align-items:center;gap:4px;margin-right:10px}
+.legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+main{display:grid;grid-template-columns:1fr 290px;gap:0;min-height:0}
+#tabWrap{height:52vh;overflow:auto;background:#f6f1e6;position:relative}
+#at{position:relative}
+aside{border-left:1px solid var(--line);background:var(--card);padding:12px 14px;font-size:12.5px;height:52vh;overflow:auto}
+aside h3{margin:6px 0 6px;font-size:12px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase}
+aside ul{margin:0;padding-left:16px;color:var(--muted)}aside li{margin:2px 0;cursor:pointer}aside li:hover{color:var(--white)}
+.stat{display:grid;grid-template-columns:1fr auto;gap:2px 10px;color:var(--muted)}.stat b{color:var(--white);text-align:right}
+.fo{position:absolute;pointer-events:none;font:700 10px/1 system-ui;color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px #0006}
+.so{position:absolute;pointer-events:none;font:700 12px/1 system-ui;color:#2563eb}
+body.drag{outline:4px dashed #d4a017;outline-offset:-8px}
+.po{position:absolute;pointer-events:none;font:700 10px/1 system-ui;color:#6b4e12;background:#d4a01733;border:1px solid #d4a017;border-radius:6px;padding:2px 4px;white-space:nowrap}
+.fo.cur{transform:scale(1.7);z-index:5;box-shadow:0 0 0 2px #111,0 0 10px #d4a017}
+.f0{background:#6b7280}.f1{background:var(--f1);color:#06232a}.f2{background:var(--f2);color:#04210f}.f3{background:var(--f3);color:#231a02}.f4{background:var(--f4)}
+#status{font-size:12px;color:var(--muted)}
+@media (max-width:1100px){main{grid-template-columns:1fr}aside{height:auto;border-left:0;border-top:1px solid var(--line)}#tabWrap{height:46vh}}
+.tip{transition:transform .11s ease-out}
+.knuck{transition:all .11s ease-out}
+#ctl .ctlh{color:var(--gold);font-size:12px;letter-spacing:.1em;text-transform:uppercase}#ctl input[type=range]{width:90px;accent-color:#d4a017;touch-action:none}#ctl b{color:var(--white);font-size:12px;min-width:26px;display:inline-block}#ctl .sw3{display:inline-flex;gap:0}#ctl .sw3 button{border-radius:0;padding:6px 10px}#ctl .sw3 button:first-child{border-radius:10px 0 0 10px}#ctl .sw3 button:last-child{border-radius:0 10px 10px 0}#ctl .sw3 button.on{background:var(--gold);color:#111;border-color:var(--gold)}
+body:not(.fnum) #at .fo,body:not(.fnum) #at .po,body:not(.fnum) #tipLbl{display:none}
+body:not(.debug) aside,body:not(.debug) .dbg{display:none!important}
+body:not(.debug) main{grid-template-columns:1fr}
+button,select,.file{min-height:36px;touch-action:manipulation}
+@media (max-width:700px){header{padding:8px 12px}header h1{font-size:14px}.bar{padding:8px 10px;gap:6px}.bar label{font-size:11px}select,button,.file{font-size:12px;padding:6px 8px}#neckWrap{padding:6px 8px 2px}#stage{height:38vh}#info{padding:4px 10px 8px;font-size:11px}#tabWrap{height:44vh}#ctl{gap:6px}}
+@media (orientation:landscape) and (max-height:500px){#stage{height:62vh}}
+</style></head><body>
+<header><img src="icon-192.png" alt=""><h1>MODE LAB</h1><span style="color:var(--muted);font-size:13px">3D Tab Player</span><span class="tag">Preview</span></header>
+<div class="bar">
+  <label>Instrument <select id="inst"><option value="electric">Les Paul</option><option value="acoustic">Acoustic</option><option value="bass">Bass</option></select></label>
+  <label class="file">Load GP / MusicXML<input id="file" type="file"></label>
+  <label>Track <select id="track"></select></label>
+  <label>Key centre <select id="key"></select></label>
+  <label>Mode <select id="mode"></select></label>
+  <label>Tuning <select id="tuning"></select></label>
+  <label>Capo <select id="capo"></select></label>
+  <label>Picking <select id="picking"><option value="standard">Standard</option><option value="metal">All downstrokes (metal)</option></select></label>
+  <label class="dbg">Shape <select id="shape"><option value="0">Any (engine picks)</option><option value="1">Shape 1</option><option value="2">Shape 2</option><option value="3">Shape 3</option></select></label>
+  <button id="rew" title="Back to the start">⏮</button><button class="play" id="play">▶ Play</button><button id="stop" title="Stop">■</button><input type="range" id="seek" min="0" max="0" value="0" step="1" title="Drag to move through the song" aria-label="Song position" style="width:160px;vertical-align:middle;accent-color:#c9a227"><button id="resetView" title="Back to the audience view">⟲ Audience view</button><button id="dots" title="Debug: show the target contact points" style="display:none">•</button><button id="sim" class="dbg" title="Timer-driven silent preview">◷ Silent preview</button>
+  <label class="dbg" title="Finger numbers on the tab"><input type="checkbox" id="fnum"> Finger numbers</label>
+  <label>Quality <select id="quality"><option value="auto">Auto</option><option value="high">High</option><option value="low">Low (iPad/phone)</option></select></label>
+  <label>Speed <select id="speed"><option>0.5</option><option>0.75</option><option selected>1</option></select></label>
+  <span id="status">Loading…</span><span id="prog" style="display:none;align-items:center;gap:6px;font:12px system-ui"><span style="display:inline-block;width:120px;height:8px;background:#0002;border-radius:4px;overflow:hidden"><span id="progBar" style="display:block;height:100%;width:0;background:#d4a017"></span></span><span id="progTxt"></span></span>
+</div>
+<div id="ctl" class="bar ctlbar"></div>
+<div id="neckWrap"><div id="stage"><div id="stageMsg">Loading 3D hand…</div></div></div>
+<div id="info"><span id="now">—</span><span class="legend"><span><i style="background:transparent;border:2px dashed #e2a586"></i>T thumb (behind neck)</span><span><i style="background:var(--f1)"></i>1 index</span><span><i style="background:var(--f2)"></i>2 middle</span><span><i style="background:var(--f3)"></i>3 ring</span><span><i style="background:var(--f4)"></i>4 pinky</span><span><i style="background:#6b7280"></i>0 open</span></span></div>
+<main><div id="tabWrap"><div id="at"></div></div>
+<aside><h3>Summary</h3><div class="stat" id="stats"></div><h3>Rule check</h3><ul id="issues"></ul>
+<h3>Rules used</h3><ul style="cursor:default"><li>One finger per fret in a 4-fret position (index on the position fret).</li><li>Index or pinky may stretch 1 fret (2 at most, costly).</li><li>Mode Lab shapes 1-3 for the key are preferred; inside a Mode Lab box the box's own finger numbers are used (B-string adjustment included).</li><li>Stay in position; shifts cost more with distance and are cheap on rests, long notes, open strings and slides, dear inside hammer/pull runs.</li><li>Chords: all notes fingered at once, index barres allowed, no crossed fingers.</li></ul></aside></main>
+<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js"></script>
+<script src="klaudio.js"></script><script src="studysamples.js"></script>
+<script src="mlbox.js"></script>
+<script src="engine.js"></script><script src="strokes.js"></script><script src="righthand.js?v=g15"></script>
+<script src="handglb.js"></script>
+<script src="handstudio.js"></script>
+<script src="photoreal.js?v=hd19b"></script>
+<script src="lpglb.js?v=hd19b"></script>
+<script src="controls.js"></script>
+<script src="collide.js?v=v16"></script>
+<script src="handhd.js?v=hd15"></script>
+<script src="skin.js?v=hd15"></script>
+<script>
+if(/[?&]debug=1/.test(location.search)) document.body.classList.add('debug');
+/* iPad Safari: unlock the AudioContext on the very first touch/click */
+(function(){ const u=()=>{ try{ const a=StudySamples.ctx(); if(a.resume) a.resume(); const b=a.createBuffer(1,1,22050), s=a.createBufferSource(); s.buffer=b; s.connect(a.destination); s.start(0); }catch(_){} ['touchend','pointerdown','click','keydown'].forEach(ev=>document.removeEventListener(ev,u,true)); };
+  ['touchend','pointerdown','click','keydown'].forEach(ev=>document.addEventListener(ev,u,true)); })();
+</script>
+<script>
+const NAMES=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const MODES={Ionian:[0,2,4,5,7,9,11],Dorian:[0,2,3,5,7,9,10],Phrygian:[0,1,3,5,7,8,10],Lydian:[0,2,4,6,7,9,11],Mixolydian:[0,2,4,5,7,9,10],Aeolian:[0,2,3,5,7,8,10],Locrian:[0,1,3,5,6,8,10]};
+const $=id=>document.getElementById(id);
+$('key').innerHTML='<option value="auto">Auto (file key)</option>'+NAMES.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+$('mode').innerHTML='<option value="auto">Auto</option>'+Object.keys(MODES).map(m=>`<option>${m}</option>`).join('');
+const atEl=$('at');
+const api=new alphaTab.AlphaTabApi(atEl,{
+  core:{fontDirectory:'https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/font/',engine:'svg',useWorkers:false,includeNoteBounds:true},
+  display:{staveProfile:alphaTab.StaveProfile.Tab,scale:1.05,resources:{mainGlyphColor:'#1c1812',staffLineColor:'#8a7e66',barSeparatorColor:'#8a7e66'}},
+  notation:{elements:{scoreWords:false}},
+  player:{enablePlayer:false,scrollElement:$('tabWrap'),enableCursor:true,enableAnimatedBeatCursor:true}
+});
+window.api=api;
+/* tuning presets (Mode Lab's list); arrays are high string first (engine/tab order) */
+const TUNINGS={guitar:{'Standard':[64,59,55,50,45,40],'Eb (half step down)':[63,58,54,49,44,39],'Drop D':[64,59,55,50,45,38],'DADGAD':[62,57,55,50,45,38],'Open G':[62,59,55,50,43,38],'Open D':[62,57,54,50,45,38],'Open E':[64,59,56,52,47,40],'7-string':[64,59,55,50,45,40,35]},
+  bass:{'Standard (4)':[43,38,33,28],'Eb (4)':[42,37,32,27],'Drop D (4)':[43,38,33,26],'5-string':[43,38,33,28,23]}};
+let FILEOPENS=null, FILECAPO=0, CAPO=0;
+const tName=o=>o.map(m=>NAMES[((m%12)+12)%12]).reverse().join(' ');
+function fillTuning(){ const fam=INST==='bass'?'bass':'guitar'; const fo=FILEOPENS||(fam==='bass'?TUNINGS.bass['Standard (4)']:TUNINGS.guitar.Standard);
+  let h=`<option value="file">File: ${tName(fo)}</option>`; Object.entries(TUNINGS[fam]).forEach(([k,v])=>h+=`<option value="${k}">${k} (${tName(v)})</option>`); $('tuning').innerHTML=h; $('tuning').value='file';
+  $('capo').innerHTML='<option value="0">None</option>'+Array.from({length:12},(_,i)=>`<option value="${i+1}">Fret ${i+1}</option>`).join('')+''; $('capo').value=String(FILECAPO|0);
+  if(FILECAPO) $('capo').options[FILECAPO].textContent+=' (file)'; }
+function curOpens(){ const v=$('tuning').value, fam=INST==='bass'?'bass':'guitar'; return v==='file'||!TUNINGS[fam][v]?FILEOPENS.slice():TUNINGS[fam][v].slice(); }
+let score=null, track=null, opens=[64,59,55,50,45,40], RES=null, beatMap=new Map(), fileKey={pc:4,minor:true};
+api.scoreLoaded.on(s=>{ score=s; { /* a file without tab staves (piano/voice MusicXML) renders as standard notation; tab files keep the tab view */ const anyTab=s.tracks.some(t=>t.staves.some(st=>st.tuning&&st.tuning.length)); const want=anyTab?alphaTab.StaveProfile.Tab:alphaTab.StaveProfile.Score; if(api.settings.display.staveProfile!==want){ api.settings.display.staveProfile=want; api.updateSettings(); } }
+  $('track').innerHTML=s.tracks.map((t,i)=>`<option value="${i}">${t.name||('Track '+(i+1))}${t.staves[0].isPercussion?' (drums)':''}</option>`).join('');
+  const first=pickTrack(s); $('track').value=Math.max(0,first);
+  const mb=s.masterBars[0]; const ks=mb.keySignature|0, minor=(mb.keySignatureType|0)===1;
+  fileKey={pc:(((ks*7)%12+12)%12+(minor?9:0))%12, minor, src:'file'};
+  if(ks===0&&!minor){ const d=detectKey(s.tracks[Math.max(0,first)]); if(d) fileKey=d; }
+  selectTrack(); });
+/* auto-pick the track that matches the chosen instrument: bass = 4/5 strings or named bass; guitar = 6+ strings, not bass */
+function pickTrack(s){ const ok=t=>!t.staves[0].isPercussion&&t.staves[0].tuning&&t.staves[0].tuning.length; const isB=t=>/bass/i.test(t.name||'')||t.staves[0].tuning.length<=5;
+  const want=INST==='bass'; let i=s.tracks.findIndex(t=>ok(t)&&isB(t)===want); if(i<0) i=s.tracks.findIndex(ok); if(i<0) i=s.tracks.findIndex(t=>!t.staves[0].isPercussion); /* no tab track (piano/voice MusicXML): first pitched track, played on guitar */ return i; }
+window.pickTrack=pickTrack;
+/* Krumhansl key estimate from sounding pitches (used when the file has no key signature) */
+function detectKey(t){ const h=new Array(12).fill(0);
+  t.staves[0].bars.forEach(b=>b.voices.forEach(v=>v.beats.forEach(bt=>bt.notes.forEach(n=>{ h[((n.realValue%12)+12)%12]+=bt.playbackDuration||1; }))));
+  const MA=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88], MI=[6.33,2.68,3.52,5.38,2.6,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+  const corr=(a,b)=>{ const ma=a.reduce((x,y)=>x+y)/12, mb=b.reduce((x,y)=>x+y)/12; let n=0,da=0,db=0; for(let i=0;i<12;i++){ n+=(a[i]-ma)*(b[i]-mb); da+=(a[i]-ma)**2; db+=(b[i]-mb)**2; } return n/Math.sqrt(da*db||1); };
+  let best=null; for(let r=0;r<12;r++){ const rot=h.slice(r).concat(h.slice(0,r)); [[MA,false],[MI,true]].forEach(([P,mi])=>{ const c=corr(rot,P); if(!best||c>best.c) best={c,pc:r,minor:mi,src:'detected'}; }); }
+  return best; }
+function selectTrack(){ track=score.tracks[+$('track').value]; api.renderTracks([track]); solve(); }
+$('track').onchange=selectTrack;
+$('picking').onchange=()=>{ if(RES){ Strokes.assign(RES.events,{mode:$('picking').value,bass:INST==='bass'}); drawOverlay(); } };
+['key','mode','shape','tuning','capo'].forEach(id=>$(id).onchange=()=>{ sampleStop&&sampleStop(); solve(); drawOverlay(); setTimeout(warm,30); });
+{ const q=$('quality'); try{ q.value=localStorage.getItem('h3dq')||'auto'; }catch(_){} q.onchange=()=>{ try{ if(q.value==='auto') localStorage.removeItem('h3dq'); else localStorage.setItem('h3dq',q.value); }catch(_){} location.reload(); }; }
+$('fnum').onchange=()=>document.body.classList.toggle('fnum',$('fnum').checked);
+$('speed').onchange=()=>api.playbackSpeed=+$('speed').value;
+/* playback = Study Lab's recordings for the chosen instrument, scheduled on the AudioContext clock from the SAME event list the hand follows;
+   alphaTab is only the tab display (its own synth is not used) */
+let SP={on:false,raf:0};
+async function samplePlay(fromBar,toBar,fromI){ sampleStop(); const inst=INST, a=StudySamples.ctx(); if(window.GCTL) GCTL.build(); if(a.resume) await a.resume(); $('status').textContent='Loading Study Lab '+INSTR[inst].name+' samples…';
+  const n=await StudySamples.load(inst); $('status').textContent=INSTR[inst].name+' · Study Lab samples ('+n+')'; if(inst!==INST) return;
+  const E=RES.events, bpm=api.score.tempo||70, tps=960*bpm/60*(+$('speed').value), nS=opens.length; window.NOTELOG=[];
+  let i0=fromI!=null?Math.max(0,Math.min(E.length-1,fromI)):Math.max(0,E.findIndex(e=>e.bar>=(fromBar||1))); let i1=toBar?E.findIndex(e=>e.bar>toBar):-1; if(i1<0) i1=E.length;
+  const t0=a.currentTime+0.25, tick0=E[i0].tick; const at=e=>t0+(e.tick-tick0)/tps;
+  for(let i=i0;i<i1;i++){ const e=E[i]; e.notes.forEach((nn,k)=>{ if(nn.tie||nn.support) return; const lg=StudySamples.playPitch(inst,nn.pitch!=null?nn.pitch:opens[nn.s]+CAPO+nn.f,nS-1-nn.s,at(e),nn.dead?0.035:e.dur/tps,nn.dead?0.3:nn.ghost?0.4:0.8); lg.ev=i; lg.bar=e.bar; lg.s=nn.s+1; lg.finger=e.fingers[k]; if((nn.bend||nn.vib)&&lg.src){ const r0=lg.src.playbackRate.value, D=e.dur/tps; for(let q=0;q<=24;q++){ const u=q/24; lg.src.playbackRate.setValueAtTime(r0*Math.pow(2,bendSemis(nn,u)/12),lg.t0+u*D); } lg.bent=true; } }); }
+  SP={on:true,i:i0,i1,t0,tick0,tps,raf:0,ts:performance.now()}; window.SIM=1; $('play').textContent='❚❚ Pause'; showEvent(i0);
+  const step=()=>{ if(!SP.on) return; const now=a.currentTime; while(SP.i+1<SP.i1&&at(E[SP.i+1])<=now+0.06){ SP.i++; showEvent(SP.i); seekShow(SP.i); (window.HANDLOG=window.HANDLOG||[]).push({ev:SP.i,audioT:+now.toFixed(3),noteT:+at(E[SP.i]).toFixed(3)}); }
+    if(SP.i+1<SP.i1||now<at(E[SP.i1-1])+E[SP.i1-1].dur/tps) SP.raf=requestAnimationFrame(step); else { SP.on=false; window.SPDONE=true; $('play').textContent='▶ Play'; StudySamples.stopAll(); toStart(); } };
+  window.HANDLOG=[]; window.SPDONE=false; step(); }
+function sampleStop(){ if(SP.on){ SP.on=false; cancelAnimationFrame(SP.raf); } StudySamples.stopAll(); $('play').textContent='▶ Play'; }
+window.samplePlay=samplePlay; window.sampleStop=sampleStop;
+['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,()=>{ window.LASTUI=performance.now(); },true));
+let PLAYI=0; function seekShow(i){ const k=$('seek'); if(RES&&RES.events.length) k.max=RES.events.length-1; k.value=i; }
+function toStart(){ PLAYI=0; try{ api.tickPosition=0; }catch(e){} restPose(); seekShow(0); }
+$('play').onclick=()=>{ if(SP.on){ PLAYI=SP.i; sampleStop(); } else samplePlay(null,null,PLAYI); };
+$('stop').onclick=()=>{ sampleStop(); api.stop(); toStart(); }; $('rew').onclick=()=>{ const was=SP.on; sampleStop(); toStart(); if(was) samplePlay(null,null,0); };
+$('seek').oninput=()=>{ if(!RES) return; const i=+$('seek').value; PLAYI=i; if(SP.on){ sampleStop(); clearTimeout(window.SEEKT); window.SEEKT=setTimeout(()=>samplePlay(null,null,PLAYI),120); } showEvent(i); try{ api.tickPosition=RES.events[i].tick; }catch(e){} };
+
+api.soundFontLoad.on(e=>{ if(e&&e.total) $('status').textContent='Sound '+Math.round(100*e.loaded/e.total)+'%'; });
+api.playerReady.on(()=>{ if(!SP.on) $('status').textContent='Ready'; });
+/* any Guitar Pro (gp3/4/5, gpx, gp7/8 .gp) or MusicXML (.xml/.musicxml, compressed .mxl). No accept filter: iOS greys out unknown extensions. */
+async function unzipMxl(u8){ const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength); let eocd=-1; for(let i=u8.length-22;i>=Math.max(0,u8.length-65557);i--) if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } if(eocd<0) return null;
+  const n=dv.getUint16(eocd+10,true); let p=dv.getUint32(eocd+16,true); const ents=[]; const td=new TextDecoder();
+  for(let k=0;k<n;k++){ const meth=dv.getUint16(p+10,true), cs=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), off=dv.getUint32(p+42,true); ents.push({name:td.decode(u8.subarray(p+46,p+46+nl)),meth,cs,off}); p+=46+nl+xl+cl; }
+  const read=async e=>{ const o=e.off, nl=dv.getUint16(o+26,true), xl=dv.getUint16(o+28,true); const d=u8.subarray(o+30+nl+xl,o+30+nl+xl+e.cs); if(e.meth===0) return d; const st=new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); };
+  let root=null; const c=ents.find(e=>e.name==='META-INF/container.xml'); if(c){ const m=/full-path="([^"]+)"/.exec(td.decode(await read(c))); if(m) root=m[1]; }
+  const e=ents.find(e=>e.name===root)||ents.find(e=>/\.(xml|musicxml)$/i.test(e.name)&&!e.name.startsWith('META-INF')); return e?await read(e):null; }
+function loadScoreFile(f){ if(!f) return; sampleStop&&sampleStop(); $('status').textContent='Loading '+f.name+'...';
+  f.arrayBuffer().then(async b=>{ let u=new Uint8Array(b); const isZip=u[0]===0x50&&u[1]===0x4b;
+    if(isZip&&(/\.mxl$/i.test(f.name)||!/\.gp$/i.test(f.name))){ try{ const x=await unzipMxl(u); if(x) u=x; }catch(err){} }
+    window.LOADERR=null; window.WARM=false; try{ api.load(u,[0]); }catch(err){ window.LOADERR=String(err); }
+    if(window.LOADERR){ $('status').textContent='Could not read '+f.name+' (Guitar Pro 3-8 or MusicXML only)'; return; } $('status').textContent=f.name; window.LOADED=f.name; }); }
+window.loadScoreFile=loadScoreFile; if(api.error) api.error.on(e=>{ const m=String(e&&(e.stack||e.message)||e).slice(0,600); if(window.score&&score.tracks&&score.tracks.length&&window.RES&&RES.events&&RES.events.length){ window.RENDERERR=m; return; } window.LOADERR=m; $('status').textContent='Could not read that file (Guitar Pro 3-8 or MusicXML only)'; });
+$('file').onchange=e=>loadScoreFile(e.target.files[0]);
+['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{ e.preventDefault(); document.body.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{ e.preventDefault(); document.body.classList.remove('drag'); if(ev==='drop'&&e.dataTransfer&&e.dataTransfer.files.length) loadScoreFile(e.dataTransfer.files[0]); }));
+fetch('Little-Wing.gp3').then(r=>r.arrayBuffer()).then(b=>api.load(new Uint8Array(b)));
+
+function buildEvents(){
+  const st=track.staves[0];
+  const fo=st.tuning.slice(); // alphaTab: index 0 = highest string (same as Mode Lab)
+  if(fo.length<4){ /* MusicXML without tab (piano, voice, etc.): play it on a standard-tuned guitar */ const std=(INST==='bass'?TUNINGS.bass['Standard (4)']:TUNINGS.guitar.Standard); fo.length=0; fo.push(...std); }
+  if(!FILEOPENS||FILEOPENS.join()!==fo.join()||FILECAPO!==(st.capo|0)){ FILEOPENS=fo; FILECAPO=st.capo|0; fillTuning(); }
+  opens=curOpens(); CAPO=+$('capo').value||0; window.REMAP={moved:0,dropped:0};
+  const n=fo.length, nN=opens.length; const ev=[]; let lastEnd=0;
+  /* sounding pitch = file tuning + the chosen capo + the tab fret (tab frets are relative to the capo, as in the file), then placed on the chosen tuning:
+     same string if it fits (0-22 above the capo), else the nearest string where it fits */
+  const place=(sF,fret)=>{ const pitch=fo[sF]+CAPO+fret;   /* a capo keeps the tab's shapes (frets relative to the capo) and raises the pitch */ let s0=Math.round(sF*(nN-1)/Math.max(1,n-1)); if(nN===n) s0=sF;
+    const fits=s=>{ const f=pitch-opens[s]-CAPO; return f>=0&&f<=22?f:null; }; if(fits(s0)!=null) return {s:s0,f:fits(s0),pitch};
+    for(let d=1;d<nN;d++) for(const s of [s0-d,s0+d]) if(s>=0&&s<nN&&fits(s)!=null){ window.REMAP.moved++; return {s,f:fits(s),pitch}; } window.REMAP.dropped++; return null; };
+  st.bars.forEach(bar=>{ const v=bar.voices[0]; if(!v) return; v.beats.forEach(b=>{
+    const start=b.absolutePlaybackStart, dur=b.playbackDuration;
+    if(b.isRest||!b.notes.length){ return; }
+    const tabOf=x=>{ if(x.isDead||(x.fret>=0&&x.string>0)) return [n-x.string,x.isDead?0:x.fret]; const v=x.realValue; if(!(v>0)) return null; let best=null; for(let i=0;i<n;i++){ const f=v-fo[i]-CAPO; if(f>=0&&f<=17&&(!best||Math.abs(f-5)<Math.abs(best[1]-5))) best=[i,f]; } return best; };   /* MusicXML without tab: pick a playable string/fret from the pitch */
+    const notes=b.notes.filter(x=>tabOf(x)).map(x=>{ const tf=tabOf(x); const q=place(tf[0],tf[1]); return q?{s:q.s, f:x.isDead?0:q.f, dead:!!x.isDead, pitch:q.pitch, fileFret:x.fret, note:x, tie:x.isTieDestination,
+      slide:!!x.slideOutType, legato:!!x.isHammerPullDestination, harm:(x.harmonicType|0)>0, harmType:x.harmonicType|0,
+      bend:(x.bendType|0)?{type:x.bendType|0,pts:(x.bendPoints||[]).map(p=>[p.offset,p.value])}:null, vib:x.vibrato|0, pm:!!x.isPalmMute, ghost:!!x.isGhost, lhTap:!!x.isLeftHandTapped,
+      trill:x.isTrill?(x.trillValue|0):0, hpOrigin:!!x.isHammerPullOrigin, slideIn:x.slideInType|0, slideOut:x.slideOutType|0, slideDest:!!x.isSlurDestination||!!(x.slideOrigin)}:null; }).filter(Boolean);
+    if(!notes.length) return;
+    if(notes.every(x=>x.tie) && ev.length){ ev[ev.length-1].dur+=dur; ev[ev.length-1].beats.push(b); lastEnd=start+dur; return; }
+    ev.push({tick:start,dur,restBefore:start-lastEnd>=120,notes,beats:[b],bar:bar.index+1, pickStroke:b.pickStroke|0, slap:!!b.slap, pop:!!b.pop, tap:!!b.tap, tremolo:!!(b.tremoloSpeed||b.isTremolo), brush:b.brushType|0,
+      deadIn:b.notes.some(x=>x.isDead), mute:notes.length>0&&notes.every(x=>x.dead), brushDur:b.brushDuration|0, pm:notes.some(x=>x.pm), legatoArrive:notes.every(x=>x.legato||x.lhTap||(x.note&&x.note.slideOrigin&&x.note.slideOrigin.slideOutType===1))}); lastEnd=start+dur; }); });
+  return ev;
+}
+function solve(){
+  if(!track) return;
+  const keyPc=$('key').value==='auto'?fileKey.pc:+$('key').value;
+  const modeName=$('mode').value==='auto'?(fileKey.minor?'Aeolian':'Ionian'):$('mode').value;
+  const shape=+$('shape').value;
+  const ev=buildEvents(); const keyS=$('key').value==='auto'?((keyPc+CAPO-FILECAPO)%12+12)%12:keyPc;   /* a capo raises the sounding key */
+  const eff=opens.map(x=>x+CAPO); const boxes=FingerEngine.boxesFor(keyS,MODES[modeName],eff,shape||undefined,INST==='bass'?'bass':'guitar'); window.BOXKIND=FingerEngine.isStandard(eff)?'Mode Lab shapes':'derived from tuning';
+  if(stringsFor()!==INSTR[INST].nut.length||GUIT&&GUIT.userData.capo!==CAPO){ if(S3){ setStrings(); buildGuitar(); } }
+  /* after a tuning/capo re-map a chord can become ungrippable: thin it (drop its lowest re-mapped notes) until one hand can hold it */
+  ev.forEach(e=>{ let guard=0; while(e.notes.length>1&&guard++<6){ try{ FingerEngine.solve([e],{opens:eff,rootPc:null}); break; }catch(_){ const k=e.notes.reduce((b,n,i)=>(n.pitch<e.notes[b].pitch?i:b),0); e.notes.splice(k,1); window.REMAP.thinned=(window.REMAP.thinned||0)+1; } } });
+  try{ RES=FingerEngine.solve(ev,{opens:eff,rootPc:keyS,boxes,onlyBoxes:!!shape,bass124:INST==='bass'}); }catch(e){ $('status').textContent=e.message; return; }
+  RES.events.forEach((e,i)=>{ if(e.mute&&i>0){ e.pos=RES.events[i-1].pos; e.shift=0; } });
+  RES.events.forEach(e=>{ e.notes.forEach((n,k)=>{ if(!n.trill||n.f<=0||n.trill>24||Math.abs(n.trill-n.f)>4) return;   /* malformed trill fret (e.g. 62 from the GP file) or out of reach: no aux finger */ const fk=e.fingers[k]||1; const d=n.trill-n.f; const f2=Math.max(1,Math.min(4,fk+Math.sign(d)*Math.max(1,Math.abs(d)))); if(f2===fk||e.fingers.includes(f2)) return; e.notes.push({s:n.s,f:n.trill,support:true,trillAux:true}); e.fingers.push(f2); e.trillF=f2; }); });
+  /* bend support: the fingers behind the bending finger press the same string (ring bends with middle and index behind) */
+  RES.events.forEach(e=>{ const add=[]; e.notes.forEach((n,k)=>{ const fk=e.fingers[k]; if(!n.bend||n.f<=0||!(fk>=2)) return; for(let j=1;j<=Math.min(fk-1,2);j++){ const f2=n.f-j; if(f2<1||e.fingers.includes(fk-j)) continue; add.push([{s:n.s,f:f2,support:true},fk-j]); } });
+    add.forEach(([n,f])=>{ e.notes.push(n); e.fingers.push(f); }); });
+  Strokes.assign(RES.events,{mode:$('picking').value,bass:INST==='bass'});
+  beatMap=new Map(); RES.events.forEach((e,i)=>e.beats.forEach(b=>beatMap.set(b.id,i)));
+  const iss=FingerEngine.audit(RES);
+  const E=RES.events, shifts=E.filter(e=>e.shift).length, st=E.filter(e=>e.stretch&&!e.modeLabBox).length, stb=E.filter(e=>e.stretch&&e.modeLabBox).length, inbox=E.filter(e=>e.modeLabBox).length;
+  const posHist={}; E.forEach(e=>{ if(e.notes.some(n=>n.f>0)) posHist[e.pos]=(posHist[e.pos]||0)+1; });
+  $('stats').innerHTML=`<span>Key / mode</span><b>${NAMES[keyPc]} ${modeName}${$('key').value==='auto'?' ('+(fileKey.src||'file')+')':''}</b><span>Beats fingered</span><b>${E.length}</b><span>Position shifts</span><b>${shifts}</b><span>Stretches (free)</span><b>${st}</b><span>Box extensions (Mode Lab shape)</span><b>${stb}</b><span>Inside a Mode Lab box</span><b>${Math.round(100*inbox/Math.max(1,E.length))}%</b><span>Positions used</span><b>${Object.keys(posHist).sort((a,b)=>posHist[b]-posHist[a]).slice(0,6).map(p=>p==='0'?'open':p).join(', ')}</b>`;
+  $('issues').innerHTML=iss.filter(x=>x.kind!=='note').concat(iss.filter(x=>x.kind==='note')).slice(0,60).map(x=>`<li data-i="${x.i}">Bar ${E[x.i].bar}: ${x.msg}</li>`).join('')||'<li>No rule breaks</li>';
+  $('issues').querySelectorAll('li[data-i]').forEach(li=>li.onclick=()=>{ const e=E[+li.dataset.i]; api.tickPosition=e.tick; showEvent(+li.dataset.i); });
+  window.RES=RES; window.ISSUES=iss; try{ PLAYI=0; seekShow(0); }catch(e){}
+  POSES={}; CUR=MIDP=null; showEvent(0); if(typeof warm==='function') setTimeout(warm,30);
+}
+api.renderFinished.on(()=>{ setTimeout(drawOverlay,30); if(!SP.on) $('status').textContent='Ready'; });
+function drawOverlay(){
+  if(!RES||!api.renderer.boundsLookup) return;
+  atEl.querySelectorAll('.fo,.po,.so').forEach(x=>x.remove()); window.OV={}; window._lastLbl=null;
+  const host=atEl.querySelector('.at-surface')||atEl; const bl=api.renderer.boundsLookup;
+  RES.events.forEach((e,i)=>{ const b=e.beats[0]; const bb=bl.findBeat(b); if(!bb) return;
+    (bb.notes||[]).forEach(nb=>{ const k=e.notes.findIndex(n=>n.note===nb.note); if(k<0) return; const r=nb.noteHeadBounds;
+      const d=document.createElement('div'); const f=e.fingers[k]; d.className='fo f'+f; d.textContent=f;
+      d.style.left=(r.x+r.w-2)+'px'; d.style.top=(r.y-9)+'px'; host.appendChild(d); (OV[i]=OV[i]||[]).push(d); });
+    if(e.pick&&e.pick.dir&&!/finger|slap|pop/.test(e.pick.kind)){ const r=bb.visualBounds, d=document.createElement('div'); d.className='so'; d.textContent=e.pick.dir==='D'?'\u2293':'\u2228'; d.title=(e.pick.dir==='D'?'Downstroke':'Upstroke')+' ('+e.pick.src+')'; d.style.left=(r.x+2)+'px'; d.style.top=(bb.barBounds.masterBarBounds.realBounds.y+16)+'px'; host.appendChild(d); }
+    if(i===0||e.shift){ const r=bb.visualBounds; let ty=bb.barBounds.masterBarBounds.realBounds.y-2; if(window._lastLbl&&Math.abs(_lastLbl.y-ty)<4&&r.x-_lastLbl.x<80) ty+=15; window._lastLbl={x:r.x,y:ty}; const d=document.createElement('div'); d.className='po';
+      d.textContent=(e.pos===0?'Open pos':'Pos '+e.pos)+(e.shape?' · S'+e.shape:''); d.style.left=r.x+'px'; d.style.top=ty+'px'; host.appendChild(d); }
+  });
+}
+api.playedBeatChanged.on(b=>{ const i=beatMap.get(b.id); if(i!=null) showEvent(i); });
+
+/* ================= 3D: Dale's instrument photo-models (Study Lab Anatomy assets) + Study Lab's 3D hand rig =================
+   World units = cm (Study Lab hand studio: PXCM=1). Built in the photo's own (audience) orientation, then the camera's
+   projection is mirrored in x, so the screen shows the player/tab view: low string on top, headstock left. */
+const INSTR={
+  electric:{name:'Les Paul',img:'assets/electric.webp',SL:24.75,W:1987,H:681,S:52.0,nut:[[1660.5,287.4],[1660.5,302.1],[1660.5,316.8],[1660.5,331.4],[1660.5,346.1],[1660.5,360.8]],sad:[[362.5,270.8],[363.6,292.1],[364.6,313.4],[365.7,334.8],[366.7,356.1],[367.7,377.4]],join:16,bass:false,T:5.1,tint:0x080809,ebony:true,fbTint:0x120d0a,carve:1.4,archTop:true,bodyScaleY:1.028,parts:[{n:'tail',b:[256,226,51,212],h:0.95,k:'gold'},{n:'bridge',b:[349,235,46,190],h:1.35,k:'gold'},{n:'ringB',b:[400,236,113,176],h:0.42,k:'ring'},{n:'puB',b:[414,259,86,145],h:0.72,k:'pu'},{n:'ringN',b:[621,236,99,171],h:0.42,k:'ring'},{n:'puN',b:[631,259,81,143],h:0.72,k:'pu'},{n:'switch',c:[768,175,19],h:0.3,k:'ring'},{n:'k1',c:[142,482,27],h:1.55,k:'knob'},{n:'k2',c:[252,500,27],h:1.55,k:'knob'},{n:'k3',c:[182,572,27],h:1.55,k:'knob'},{n:'k4',c:[302,582,27],h:1.55,k:'knob'}],radius:30.48,fretW:0.25,fretH:0.12,action:[0.05,0.18],neckMarg:[0.355,0.40],hsAngle:17,T:5.0,neckTint:0x0d0d0f,gauge:[0.115,0.09,0.06,0.042,0.03,0.025],dropIns:['back','sides'],backFrontFrame:true,neckDep:[2.062,2.476],tuners:[[1740,285],[1820,285],[1895,285],[1740,375],[1815,378],[1900,383]],logos:[[1680,306,90,46],[1920,290,44,100]]},
+  acoustic:{name:'Acoustic',boardOnly:true,boardCol:[30,20,14],img:'assets/acoustic.webp',SL:25.3,W:2295,H:881,S:56.0,nut:[[1912.6,396.3],[1912.6,412.2],[1912.6,428.1],[1912.6,444.0],[1912.6,459.9],[1912.6,475.8]],sad:[[485.8,376.4],[486.9,400.3],[488.0,424.1],[489.1,448.0],[490.2,471.8],[491.4,495.7]],join:14,bass:false,T:11.0,tint:0x7a5230,hsAngle:14,neckTint:0x8a5a2c,padL:140,padT:70,padB:70,bout:{cx:300,cy:436,rx:410,ry:500,sx:200,sy:430},hole:{x:786,y:420,r:112},bodyDrop:1.1,fbEnd:20,parts:[{n:'bridge',b:[423,270,104,330],h:0.75,k:'wood'},{n:'saddle',b:[480,362,9,156],h:1.18,k:'bone'},{n:'p1',c:[455,376,9],h:0.95,k:'pin'},{n:'p2',c:[455,400,9],h:0.95,k:'pin'},{n:'p3',c:[455,424,9],h:0.95,k:'pin'},{n:'p4',c:[455,448,9],h:0.95,k:'pin'},{n:'p5',c:[455,472,9],h:0.95,k:'pin'},{n:'p6',c:[455,496,9],h:0.95,k:'pin'}],gauge:[0.13,0.1,0.08,0.06,0.04,0.03],logos:[[2226,386,54,90]]},
+  bass:{name:'Bass',boardOnly:true,boardCol:[16,12,10],img:'assets/bass.webp',SL:34,W:1833,H:513,S:40.147,nut:[[1464,210],[1464,225.5],[1464,241],[1464,257]],sad:[[99,180.2],[99,210.5],[99,240.8],[99,271.1]],join:15,bass:true,T:4.4,bodyDrop:1.0,fbEnd:21,parts:[{n:'bridge',b:[28,153,134,160],h:0.32,k:'chrome'},{n:'s1',b:[60,172,70,18],h:1.12,k:'chromeBox'},{n:'s2',b:[60,202,70,18],h:1.12,k:'chromeBox'},{n:'s3',b:[60,232,70,18],h:1.12,k:'chromeBox'},{n:'s4',b:[60,262,70,18],h:1.12,k:'chromeBox'},{n:'pu1',b:[217,162,91,131],h:0.72,k:'pub'},{n:'pu2',b:[350,162,91,131],h:0.72,k:'pub'}],tint:0x8a6a40,hsAngle:0,neckTint:0xc8a070,gauge:[0.2,0.165,0.13,0.11],logos:[[1640,262,164,46]]}
+};
+function stringsFor(){ return opens.length; }
+function setStrings(){ const I=INSTR[INST]; if(!I.nut0){ I.nut0=I.nut.map(p=>p.slice()); I.sad0=I.sad.map(p=>p.slice()); I.gauge0=I.gauge.slice(); }
+  const n=opens.length, n0=I.nut0.length, lerp=(A,t)=>[A[0][0]+(A[n0-1][0]-A[0][0])*t, A[0][1]+(A[n0-1][1]-A[0][1])*t];
+  I.nut=[]; I.sad=[]; I.gauge=[]; for(let i=0;i<n;i++){ const t=n===1?0:i/(n-1); I.nut.push(n===n0?I.nut0[i].slice():lerp(I.nut0,t)); I.sad.push(n===n0?I.sad0[i].slice():lerp(I.sad0,t));
+    const m=opens[n-1-i]; /* photo index 0 = lowest string */ I.gauge.push(I.bass?0.2*Math.pow(0.11/0.2,(m-28)/15):0.115*Math.pow(0.025/0.115,(m-40)/24)); } }
+let INST='electric', S3=null, GUIT=null, POSES={}, CUR=null, MIDP=null, TGT=null, CURI=0;
+const CM=(I,px)=>px/I.S*2.54;
+/* photo geometry → world (cm). Photo string index 0 = lowest string. */
+function fretR(I,n){ return fretPx(I,n+CAPO); }   /* fret relative to the capo (capo = nut) */
+function neckDepAt(I,px){ if(!I.neckDep) return I.bass?2.2:1.95; const x0=fretPx(I,I.join), x1=I.nut[0][0]; const t=Math.min(1,Math.max(0,(px-x0)/(x1-x0))); return I.neckDep[0]+(I.neckDep[1]-I.neckDep[0])*(1-t); }
+function fretPx(I,n){ return I.nut[0][0]-I.S*I.SL*(1-Math.pow(2,-n/12)); }
+function strY(I,i,x){ const s=I.sad[i], n=I.nut[i]; return s[1]+(n[1]-s[1])*(x-s[0])/(n[0]-s[0]); }
+function W(I,px,py,z){ return new S3.THREE.Vector3(CM(I,px),-CM(I,py),z||0); }
+function photoStr(sEngine){ const n=INSTR[INST].nut.length; return n-1-sEngine; }      // engine s=0 is the highest string
+/* the real 3D string: centre z 0.16 cm above the board, radius = gauge/2 (+0.02 render pad); contacts aim at its TOP surface */
+/* Ebony remaster: finish areas become a clean deep black albedo (clear-coat makes the reflections);
+   only gold hardware, cream binding, pearl inlays/logos survive from the photo. */
+function remaster(I,img,mode){ const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; const x=c.getContext('2d'); x.drawImage(img,0,0); const D=x.getImageData(0,0,c.width,c.height), d=D.data, W=c.width;
+  const sc=img.width/I.W, xN=I.nut[0][0]*sc, puN=I.parts&&I.parts.find(q=>q.n==='puN'), xF=puN?(puN.b[0]+puN.b[2])*sc:fretPx(I,(I.fbEnd||20)+0.6)*sc, FB=I.boardCol||[14,10,8];
+  const y0=I.nut[0][1]*sc, y1=I.nut[I.nut.length-1][1]*sc, ys0=I.sad[0][1]*sc, ys1=I.sad[I.sad.length-1][1]*sc;
+  /* pearl mask with a 5x5 majority filter so glare speckles are not kept as inlay */ const H=c.height, PM=new Uint8Array(W*H), PK=new Uint8Array(W*H);
+  for(let k=0;k<W*H;k++){ const r=d[k*4],g=d[k*4+1],b=d[k*4+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b); PM[k]=d[k*4+3]>8&&mx>175&&(mx-mn)/mx<0.3?1:0; }
+  for(let yy=2;yy<H-2;yy++) for(let xx=2;xx<W-2;xx++){ if(!PM[yy*W+xx]) continue; let n=0; for(let j=-2;j<=2;j++) for(let i=-2;i<=2;i++) n+=PM[(yy+j)*W+xx+i]; PK[yy*W+xx]=n>=7?1:0; }
+  for(let q=0;q<d.length;q+=4){ if(d[q+3]<8) continue; const px=(q/4)%W, py=(q/4/W)|0; const r=d[q],g=d[q+1],b=d[q+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b), sat=mx?(mx-mn)/mx:0;
+    const region = mode==='hs'||(mode==='front'&&px>xN) ? 'hs' : (mode==='front'&&px>xF&&px<=xN&&(()=>{ const t=(px-I.sad[0][0]*sc)/(xN-I.sad[0][0]*sc); const a=ys0+(y0-ys0)*t, bb=ys1+(y1-ys1)*t, m=(bb-a)*0.13; return py>a-m&&py<bb+m; })()) ? 'fb' : 'body';
+    if(I.boardOnly&&region!=='fb') continue;
+    if(region==='fb'&&I.boardOnly){ if(mx>150) continue; d[q]=FB[0]; d[q+1]=FB[1]; d[q+2]=FB[2]; continue; }
+    const gold = r>g&&g>b&&r-b>38&&mx>85&&sat>0.28, cream = r>130&&r-b>12&&r-b<95&&sat<0.42&&g>100, pearl = !!PK[q/4];
+    if(gold){ const k=1.08; d[q]=Math.min(255,r*k+10); d[q+1]=Math.min(255,g*1.0+2); d[q+2]=b*0.7; continue; }
+    if(region==='hs'&&(pearl||cream)){ const L=(r+g+b)/3; d[q]=Math.min(255,L*1.02+6); d[q+1]=Math.min(255,L*0.99+4); d[q+2]=L*0.9; continue; }
+    if(region==='fb'){ if(pearl||mx>150){ continue; } d[q]=FB[0]; d[q+1]=FB[1]; d[q+2]=FB[2]; continue; }
+    if(I.boardOnly) continue;
+    if(cream&&mode!=='hs'){ const L=Math.max(150,(r+g+b)/3); d[q]=Math.min(255,L*1.04+10); d[q+1]=Math.min(255,L*0.97+6); d[q+2]=L*0.8; continue; }
+    d[q]=8; d[q+1]=8; d[q+2]=9; }
+  x.putImageData(D,0,0); c.width&&0; return c; }
+function boardDrop(I,px,wy){ if(!I.radius) return 0; const n=I.nut.length; const yc=-CM(I,(strY(I,0,px)+strY(I,n-1,px))/2); const d=wy-yc; return d*d/(2*I.radius); }
+function strTopZ(sEngine){ const I=INSTR[INST]; const i=photoStr(sEngine); if(!I.radius) return 0.16+I.gauge[i]/2+0.02;
+  /* pressed string: resting on the fret crowns (1.2 mm), on the 12in-radius board; drop evaluated at fret 5 */ const x=fretPx(I,5); return (I.fretH||0.12)+I.gauge[i]-boardDrop(I,x,-CM(I,strY(I,i,x))); }
+/* lowest skin point of finger k's tip segment within 6 mm (in-plane) of P: where the pad actually rests */
+function lowSkinZ(k,P){ if(CAPS){ updateCaps(); let mz=1e9; for(const sg of CAPS.segs){ if(sg.k!==k||sg.j<2) continue; const A=sg.A,B=sg.B; const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,((P.x-A.x)*ab.x+(P.y-A.y)*ab.y)/Math.max(1e-6,ab.x*ab.x+ab.y*ab.y))); const Q=A.clone().add(ab.multiplyScalar(t)); if(Math.hypot(Q.x-P.x,Q.y-P.y)<0.6+sg.r) mz=Math.min(mz,Q.z-sg.r); } return mz<1e8?mz:P.z; } const S=skinInit(); const v=new S3.THREE.Vector3(); let mz=1e9; S.mesh.updateMatrixWorld(true); S.mesh.skeleton.update();
+  for(const i of S.L[k]){ S.mesh.boneTransform(i,v); v.applyMatrix4(S.mesh.matrixWorld); if(Math.hypot(v.x-P.x,v.y-P.y)<0.6&&v.z<mz) mz=v.z; } return mz<1e8?mz:P.z; }
+const BEHIND=0.30; /* cm: pad centre 3 mm behind the fret wire (real players: 2-4 mm) */
+function noteWorld(sEngine,f,z,harm){ const I=INSTR[INST]; const i=photoStr(sEngine);
+  const x= f<=0 ? fretR(I,0)-(CAPO?-6:-22) : (harm ? fretR(I,f) : fretR(I,f)+Math.min(BEHIND/2.54*I.S,(fretR(I,f-1)-fretR(I,f))*0.45));  // headstock side of the wire; harmonic = over the wire
+  return W(I,x,strY(I,Math.max(0,Math.min(I.nut.length-1,i)),x),z); }
+/* resting string centre height at px: action (string bottom over the fret crown) rises linearly nut→12th */
+function restZ(I,i,px){ const xN=I.nut[0][0], L=I.S*I.SL; const t=(xN-px)/(L/2); const g=I.gauge[i]; return I.fretH+I.action[0]+(I.action[1]-I.action[0])*t+g/2-boardDrop(I,px,-CM(I,strY(I,i,px))); }
+/* strings as polylines: rest line nut→saddle, or pressed onto the fret crown in front of the pad (press[i] = absolute fret) */
+function layStrings(press,by){ const I=INSTR[INST]; if(!GUIT||!GUIT.userData.strG) return; const THREE=S3.THREE, G=GUIT.userData.strG; while(G.children.length){ const c=G.children.pop(); c.geometry.dispose(); }
+  const nS=I.nut.length, xN=I.nut[0][0]; for(let i=0;i<nS;i++){ const g=I.gauge[i]; const pf=press&&press[i]; const xs=[xN];
+    if(pf){ xs.push(fretPx(I,pf-1)+(fretPx(I,pf)-fretPx(I,pf-1))*0.72, fretPx(I,pf)); } xs.push(I.sad[i][0]);
+    const sadZ=I.fretH+I.action[0]+2*(I.action[1]-I.action[0])+g/2;
+    const bo=by&&by[i]||0; const pts=xs.map((x,k)=>{ let z; if(k===xs.length-1) z=sadZ; else if(k===0) z=I.fretH+I.action[0]+g/2-boardDrop(I,x,-CM(I,strY(I,i,x))); else z=I.fretH+g/2-boardDrop(I,x,-CM(I,strY(I,i,x))); const P=W(I,x,strY(I,i,x),z); if(bo&&pf&&k>0&&k<xs.length-1) P.y+=bo; return P; });
+    for(let k=0;k<pts.length-1;k++){ const a=pts[k], b=pts[k+1], L=a.distanceTo(b); const cg=new THREE.CylinderGeometry(g/2,g/2,L,10,1,true); if(GUIT.userData.strMat[i].bumpMap){ const uv=cg.attributes.uv; for(let q=0;q<uv.count;q++) uv.setY(q,uv.getY(q)*L/(g*1.1)); } const m=new THREE.Mesh(cg,GUIT.userData.strMat[i]); m.castShadow=true; m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize()); G.add(m); } } }
+window.layStrings=layStrings;
+/* ---- bends (file bend points: offset 0-60 across the note, value in quarter tones), vibrato ---- */
+const BENDPTS={2:[[0,0],[15,4],[60,4]],3:[[0,4],[60,0]],4:[[0,0],[15,4],[30,4],[45,0],[60,0]],5:[[0,4],[60,4]],6:[[0,4],[60,4]],7:[[0,4],[30,4],[45,8],[60,8]],8:[[0,4],[20,4],[50,0],[60,0]]};
+function bendSemis(n,u){ let v=0; if(n.bend){ const P=n.bend.pts&&n.bend.pts.length>=2?n.bend.pts:(BENDPTS[n.bend.type]||[[0,0],[60,0]]); const o=Math.max(0,Math.min(60,u*60)); for(let k=0;k<P.length-1;k++){ if(o>=P[k][0]&&o<=P[k+1][0]){ const t=(o-P[k][0])/Math.max(1e-6,P[k+1][0]-P[k][0]); v=(P[k][1]+(P[k+1][1]-P[k][1])*t)/2; break; } } if(o>P[P.length-1][0]) v=P[P.length-1][1]/2; }
+  if(n.vib&&u>0.15){ const ms=u*(window.EVDURMS||500); v+=Math.sin(ms/1000*2*Math.PI*5.5)*(n.vib===2?0.5:0.25)*Math.min(1,(u-0.15)*6); } return v; }
+/* lateral string travel per semitone: ~3.5 mm at the 12th fret on a Les Paul, less higher up (shorter vibrating length behind the bend) */
+function bendMmPerSemi(I,f){ const L=I.S*I.SL; const sp=(fretPx(I,f-1)-fretPx(I,f))/(fretPx(I,11)-fretPx(I,12)); return 0.35*Math.sqrt(Math.max(0.3,sp))*(I.bass?1.3:1); }
+function bendState(e,u){ const I=INSTR[INST]; const nS=I.nut.length; const by=new Array(nS).fill(0); let any=false, semMax=0;
+  (e&&e.notes||[]).forEach(n=>{ if(n.f<=0||(!n.bend&&!n.vib)) return; const i=photoStr(n.s); const sem=bendSemis(n,u); if(!sem) return; any=true;
+    /* treble strings (photo index 3-5 = strings 3,2,1) push toward the low E (+y); bass strings pull toward the floor (-y) */
+    const dir=i>=nS/2?1:-1; by[i]=dir*sem*bendMmPerSemi(I,n.f+CAPO); if(Math.abs(sem)>Math.abs(semMax)) semMax=sem; });
+  if(any){ /* the other pressing fingers on the same string travel with it (bend support) */ }
+  return any?{by,semMax}:null; }
+window.applyBendNow=()=>{ if(CUR) applyPose(CUR); techFX(performance.now()); applyBend(performance.now()); }; window.bendSemis=bendSemis; window.bendState=bendState;
+let PRESS=null;
+function pressStrings(ev){ const I=INSTR[INST]; if(!I.radius) return; const pr=[]; ((ev&&ev.notes)||[]).forEach(n=>{ if(n.f>0&&!n.harm){ const i=photoStr(n.s); pr[i]=Math.max(pr[i]||0,n.f+CAPO); } }); PRESS=pr.length?pr:null; layStrings(PRESS); render3d&&render3d(); }
+function boardEdge(I,f,which){ const x=fretPx(I,f); const i= which==='treble'?I.nut.length-1:0; const y=strY(I,i,x); const sp=Math.abs(strY(I,1,x)-strY(I,0,x)); return W(I,x,y+(which==='treble'?sp*0.8:-sp*0.8),0); }
+
+/* ---- 3D instrument built from the Study photo. Drop-in textures: set INSTR.<inst>.dropIns=['back','headstock'] and put assets/<inst>-{back,headstock}.webp next to the front photo,
+   pre-aligned to the front photo's pixel frame (same W x H, nut/saddle in the same place, back photo shot from behind = headstock on the LEFT);
+   any that exist are picked up automatically, missing ones fall back to the tinted wood. ---- */
+function loadImg(src){ return new Promise(r=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=src; }); }
+function woodStrip(I){ const c=document.createElement('canvas'); c.width=2048; c.height=256; const x=c.getContext('2d'); const col=new S3.THREE.Color(I.tint); const r=col.r*255,g=col.g*255,b=col.b*255;
+  for(let yy=0;yy<256;yy++){ const half=yy<128?0:1, v=yy%128; for(let xx=0;xx<2048;xx+=2){ const n=Math.sin(xx*0.013+Math.sin(v*0.09+xx*0.002)*3)*0.5+Math.sin(xx*0.071+v*0.31)*0.15; const k=0.82+0.16*n; x.fillStyle=`rgb(${r*k|0},${g*k|0},${b*k|0})`; x.fillRect(xx,yy,2,1); } }
+  [[0,10],[118,10],[128,10],[246,10]].forEach(([y0,hh])=>{ x.fillStyle='#efe6cf'; x.fillRect(0,y0,2048,hh); x.fillStyle='#3a2a1a'; x.fillRect(0,y0+(y0%128?0:hh-2),2048,2); }); return c; }
+function buildGuitar(){
+  const THREE=S3.THREE, I=INSTR[INST], inst=INST;
+  if(GUIT){ S3.scene.remove(GUIT); }
+  GUIT=new THREE.Group();
+  const br=new THREE.Mesh(new THREE.BoxGeometry(1,0.22,0.05),new THREE.MeshBasicMaterial({color:0xd4a017,transparent:true,opacity:0.9,side:THREE.DoubleSide}));
+  br.visible=window.BRACKET===1; GUIT.add(br); GUIT.userData.br=br; /* the gold position bar read as a stray line popping above the neck: hidden */
+  const nS=I.nut.length, xN=I.nut[0][0];
+  const MG=x=>{ if(!I.neckMarg) return 0.45; const t=Math.max(0,(xN-x)/(I.S*I.SL/2)); return I.neckMarg[0]+(I.neckMarg[1]-I.neckMarg[0])*t; }; const yTop=x=>-CM(I,strY(I,0,x))+MG(x), yBot=x=>-CM(I,strY(I,nS-1,x))-MG(x); GUIT.userData.yTop=yTop; GUIT.userData.yBot=yBot;
+  GUIT.userData.neck={x0:CM(I,fretPx(I,I.join)),x1:CM(I,xN),yT:yTop(xN),yB:yBot(xN),dep:I.bass?2.4:2.1};
+  S3.scene.add(GUIT); POSES={};
+  const base=I.img.replace(/\.webp$/,'');
+  const DI=I.dropIns||[]; Promise.all([loadImg(I.img),DI.includes('back')?loadImg(base+'-back.webp'):null,DI.includes('headstock')?loadImg(base+'-headstock.webp'):null,DI.includes('sides')?loadImg(base+'-sides.webp'):null]).then(([im,imBack,imHs,imSides])=>{ if(inst!==INST||!im) return; if((I.ebony||I.boardOnly)&&!/[?&]raw=1/.test(location.search)){ im=remaster(I,im,'front'); if(imBack) imBack=remaster(I,imBack,'back'); if(imHs) imHs=remaster(I,imHs,'hs'); }
+    const pL=I.padL||0, pT=I.padT||0, pB=I.padB||0, CW=I.W+pL, CH=I.H+pT+pB;
+    /* front canvas: photo, plus the completed lower bout when the photo crops it */
+    const cv=document.createElement('canvas'); cv.width=CW; cv.height=CH; const c=cv.getContext('2d');
+    if(I.bout){ const b=I.bout; const sm=document.createElement('canvas'); sm.width=1; sm.height=1; sm.getContext('2d').drawImage(im,b.sx,b.sy,4,4,0,0,1,1); const d=sm.getContext('2d').getImageData(0,0,1,1).data;
+      c.save(); c.beginPath(); c.ellipse(b.cx+pL,b.cy+pT,b.rx,b.ry,0,0,Math.PI*2); c.fillStyle=`rgb(${d[0]},${d[1]},${d[2]})`; c.fill(); c.lineWidth=7; c.strokeStyle='#2a1a0c'; c.stroke(); c.restore(); }
+    c.drawImage(im,pL,pT);
+    /* paint out the photo's own strings (the 3D strings replace them): each string line is filled from the rows just above and below it */
+    { const N0=I.nut0||I.nut, S0=I.sad0||I.sad, x0=Math.floor(Math.min(...S0.map(q=>q[0]))), x1=Math.ceil(N0[0][0]), y0=Math.floor(Math.min(...N0.map(q=>q[1]),...S0.map(q=>q[1])))-8, y1=Math.ceil(Math.max(...N0.map(q=>q[1]),...S0.map(q=>q[1])))+8;
+      const ID=c.getImageData(x0+pL,y0+pT,x1-x0,y1-y0), D=ID.data, w=x1-x0, hw=I.bass?3:2;
+      for(let i=0;i<N0.length;i++){ for(let x=0;x<w;x++){ const X=x+x0; const yc=S0[i][1]+(N0[i][1]-S0[i][1])*(X-S0[i][0])/(N0[i][0]-S0[i][0]); const yy=Math.round(yc)-y0; const ya=yy-hw-2, yb=yy+hw+2; if(ya<0||yb>=y1-y0) continue;
+        for(let y=yy-hw-1;y<=yy+hw+1;y++){ const t=(y-ya)/(yb-ya); for(let ch=0;ch<4;ch++){ const A=D[(ya*w+x)*4+ch], B=D[(yb*w+x)*4+ch]; D[(y*w+x)*4+ch]=A+(B-A)*t; } } } }
+      c.putImageData(ID,x0+pL,y0+pT); }
+    c.clearRect(xN+pL+2,0,CW,CH);                                 /* headstock is redrawn pitched back */
+    if(I.hole){ const h=I.hole; c.save(); c.globalCompositeOperation='destination-out'; c.beginPath(); c.arc(h.x+pL,h.y+pT,h.r,0,Math.PI*2); c.fill(); c.restore(); }
+    (MIRROR?(I.logos||[]):[]).forEach(([x,y,w,h])=>{ const d=document.createElement('canvas'); d.width=w; d.height=h; d.getContext('2d').drawImage(cv,x+pL,y+pT,w,h,0,0,w,h); c.clearRect(x+pL,y+pT,w,h); c.save(); c.translate(x+pL+w,y+pT); c.scale(-1,1); c.drawImage(d,0,0); c.restore(); });
+    GUIT.userData.yTop=yTop; GUIT.userData.yBot=yBot; GUIT.userData.xE=fretPx(I,I.fbEnd||22)-0.6/2.54*I.S; const PRON=!!(window.PR&&I.archTop&&!/[?&]raw=1/.test(location.search)); const HV=PRON?PR.front(I,cv,{pL,pT,CW,CH,xN,xJ:fretPx(I,I.join)+40+pL,xE:fretPx(I,I.fbEnd||22)-0.6/2.54*I.S,yTop,yBot}):null; const tex=new THREE.CanvasTexture(HV||cv); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=S3.renderer.capabilities.getMaxAnisotropy();
+    /* body mask (alpha → white), neck and headstock removed */
+    const xJ=fretPx(I,I.join)+40+pL; const mv=document.createElement('canvas'); mv.width=CW>>1; mv.height=CH>>1; const mc=mv.getContext('2d'); mc.drawImage(cv,0,0,mv.width,mv.height);
+    const id=mc.getImageData(0,0,mv.width,mv.height), D=id.data; let bx0=1e9,bx1=-1,by0=1e9,by1=-1;
+    for(let y=0;y<mv.height;y++) for(let x=0;x<mv.width;x++){ const q=(y*mv.width+x)*4; const on=D[q+3]>100&&x*2<xJ; D[q]=D[q+1]=D[q+2]=on?255:0; D[q+3]=255; if(on){ bx0=Math.min(bx0,x);bx1=Math.max(bx1,x);by0=Math.min(by0,y);by1=Math.max(by1,y);} }
+    mc.putImageData(id,0,0); const maskTex=new THREE.CanvasTexture(mv);
+    const sideMv=document.createElement('canvas'); sideMv.width=mv.width; sideMv.height=mv.height; const sc=sideMv.getContext('2d'); sc.drawImage(mv,0,0);
+    if(I.hole){ const h=I.hole; sc.fillStyle='#000'; sc.beginPath(); sc.arc((h.x+pL)/2,(h.y+pT)/2,h.r/2+3,0,Math.PI*2); sc.fill(); }   /* top + sides open at the soundhole */
+    const sideTex=new THREE.CanvasTexture(sideMv);
+    const w=CM(I,CW), h=CM(I,CH), ox=CM(I,-pL)+w/2, oy=-(CM(I,-pT)+h/2);
+    /* front: segmented plane, Les Paul gets its carved maple top (dome off the string band, 0 at the rim) */
+    const fg=new THREE.PlaneGeometry(w,h,I.carve?(I.archTop?520:220):1,I.carve?(I.archTop?180:80):1);
+    /* chamfer distance-to-rim on the half-res body mask (for the carved-top profile and the side wall) */
+    const DT=new Float32Array(mv.width*mv.height); { const Wm=mv.width,Hm=mv.height; for(let q=0;q<Wm*Hm;q++) DT[q]=D[q*4]>128?1e6:0;
+      for(let y=0;y<Hm;y++) for(let x=0;x<Wm;x++){ const q=y*Wm+x; if(!DT[q]) continue; let v=DT[q]; if(x>0) v=Math.min(v,DT[q-1]+1); if(y>0) v=Math.min(v,DT[q-Wm]+1); if(x>0&&y>0) v=Math.min(v,DT[q-Wm-1]+1.414); if(x<Wm-1&&y>0) v=Math.min(v,DT[q-Wm+1]+1.414); DT[q]=v; }
+      for(let y=Hm-1;y>=0;y--) for(let x=Wm-1;x>=0;x--){ const q=y*Wm+x; if(!DT[q]) continue; let v=DT[q]; if(x<Wm-1) v=Math.min(v,DT[q+1]+1); if(y<Hm-1) v=Math.min(v,DT[q+Wm]+1); if(x<Wm-1&&y<Hm-1) v=Math.min(v,DT[q+Wm+1]+1.414); if(x>0&&y<Hm-1) v=Math.min(v,DT[q+Wm-1]+1.414); DT[q]=v; } }
+    let carveAt=()=>0; if(I.archTop){ const Wm=mv.width,Hm=mv.height; let F=new Float32Array(Wm*Hm); for(let q=0;q<F.length;q++) F[q]=Math.min(DT[q],1e5);
+      /* smooth the chamfer distance (removes medial-axis creases), then a gentle arch: flat recurve inside the binding, smooth rise to the crest */
+      const blur=(A,r)=>{ const B=new Float32Array(A.length); for(let y=0;y<Hm;y++){ let acc=0,c=0; for(let x=-r;x<Wm+r;x++){ if(x+r<Wm){acc+=A[y*Wm+x+r];c++;} if(x-r-1>=0){acc-=A[y*Wm+x-r-1];c--;} if(x>=0&&x<Wm) B[y*Wm+x]=acc/c; } }
+        const C=new Float32Array(A.length); for(let x=0;x<Wm;x++){ let acc=0,c=0; for(let y=-r;y<Hm+r;y++){ if(y+r<Hm){acc+=B[(y+r)*Wm+x];c++;} if(y-r-1>=0){acc-=B[(y-r-1)*Wm+x];c--;} if(y>=0&&y<Hm) C[y*Wm+x]=acc/c; } } return C; };
+      for(let k=0;k<3;k++) F=blur(F,10); for(let q=0;q<F.length;q++) if(!DT[q]) F[q]=0;
+      const pxcm=I.S/2.54/2; let fmax=0; const H=new Float32Array(Wm*Hm); for(let q=0;q<F.length;q++){ if(!DT[q]) continue; const d=F[q]/pxcm; const t=Math.max(0,Math.min(1,(d-0.9)/8.5)); const v=t*t*t*(t*(t*6-15)+10); H[q]=v; if(v>fmax) fmax=v; }
+      const Hs=blur(H,4); for(let q=0;q<Hs.length;q++) Hs[q]=DT[q]?Hs[q]/(fmax||1):0;
+      carveAt=(px,py)=>{ const fx=(px+pL)/2, fy=(py+pT)/2, x0=Math.floor(fx), y0=Math.floor(fy); if(x0<0||y0<0||x0>=Wm-1||y0>=Hm-1) return 0; const tx=fx-x0, ty=fy-y0, g=(x,y)=>Hs[y*Wm+x];
+        return I.carve*((g(x0,y0)*(1-tx)+g(x0+1,y0)*tx)*(1-ty)+(g(x0,y0+1)*(1-tx)+g(x0+1,y0+1)*tx)*ty); }; }
+    if(I.carve){ const P=fg.attributes.position, ycS=-CM(I,(strY(I,0,xN)+strY(I,nS-1,xN))/2);
+      if(I.archTop){ for(let v=0;v<P.count;v++){ const wx=P.getX(v)+ox, wy=P.getY(v)+oy; P.setZ(v,carveAt(wx/2.54*I.S,-wy/2.54*I.S)); } }
+      else { const cx=(bx0+bx1), cy=(by0+by1), rx=(bx1-bx0), ry=(by1-by0);
+      for(let v=0;v<P.count;v++){ const wx=P.getX(v)+ox, wy=P.getY(v)+oy; const px=wx/2.54*I.S+pL, py=-wy/2.54*I.S+pT; const mx=(px/2)|0, my=(py/2)|0;
+        if(mx<0||my<0||mx>=mv.width||my>=mv.height||D[(my*mv.width+mx)*4]<128) continue;
+        const dcm=DT[my*mv.width+mx]*2/I.S*2.54; const t=Math.min(1,Math.max(0,(dcm-0.6)/6.5)); const f=t*t*(3-2*t);
+        const band=Math.abs(wy-ycS); const g=Math.min(1,Math.max(0,(band-2.0)/1.6)); P.setZ(v,I.carve*f*g); } }
+      fg.computeVertexNormals(); }
+    /* body height: the bridge saddles carry the strings at their bridge height, so the body sits below the fretboard plane (as the real set-neck pitch does) */
+    let bodyZ=0; const bodyG=new THREE.Group(); GUIT.add(bodyG);
+    let texBody=tex; if(I.archTop||I.bodyDrop){ const br=I.archTop&&I.parts.find(q=>q.n==='bridge').b; const sadZb=I.action?(I.fretH||0.12)+I.action[0]+2*(I.action[1]-I.action[0]):0; bodyZ=I.archTop?sadZb-I.parts.find(q=>q.n==='bridge').h-carveAt(br[0]+br[2]/2,br[1]+br[3]/2):-I.bodyDrop; bodyG.position.z=bodyZ;
+      const cb=document.createElement('canvas'); const SRC=HV||cv, kk=SRC.width/CW; cb.width=SRC.width; cb.height=SRC.height; const cbx=cb.getContext('2d'); cbx.drawImage(SRC,0,0); if(I.archTop) cbx.clearRect(xJ*kk,0,cb.width,cb.height); else { const x0b=fretPx(I,I.fbEnd||22)-0.6/2.54*I.S; cbx.save(); cbx.globalCompositeOperation='destination-out'; cbx.beginPath(); const yy=(fy,x)=>-fy(x)/2.54*I.S+pT; cbx.moveTo(x0b+pL,yy(yTop,x0b)-2); cbx.lineTo(xN+pL+4,yy(yTop,xN)-2); cbx.lineTo(xN+pL+4,yy(yBot,xN)+2); cbx.lineTo(x0b+pL,yy(yBot,x0b)+2); cbx.closePath(); cbx.fill(); cbx.restore(); } texBody=new THREE.CanvasTexture(cb); texBody.encoding=THREE.sRGBEncoding; texBody.anisotropy=S3.renderer.capabilities.getMaxAnisotropy(); }
+    GUIT.userData.bodyZ=bodyZ; GUIT.userData.carveAt=carveAt; if(I.bodyScaleY){ const yc0=-CM(I,(strY(I,0,xN)+strY(I,nS-1,xN))/2); bodyG.scale.y=I.bodyScaleY; bodyG.position.y=yc0*(1-I.bodyScaleY); }   /* the photo reads 12.65 in across the lower bout; Gibson spec is 13 in */
+    const front=new THREE.Mesh(fg,new THREE.MeshPhysicalMaterial({map:texBody,color:0xffffff,transparent:true,alphaTest:0.4,roughness:I.ebony?0.12:0.62,metalness:0.0,clearcoat:1.0,clearcoatRoughness:0.04,envMapIntensity:I.ebony?0.9:0.45,side:THREE.DoubleSide})); front.position.set(ox,oy,0); bodyG.add(front);
+    if(I.archTop||I.bodyDrop){ /* fretboard: its own mesh at the board plane (12in radius), planar UVs from the photo */
+      const xE=fretPx(I,I.fbEnd||22)-0.6/2.54*I.S, NX=240, NY=14, pb=[], ub=[], ib=[]; for(let i=0;i<=NX;i++){ const px=xE+(xN-xE)*i/NX; const yt=yTop(px), yb=yBot(px); for(let j=0;j<=NY;j++){ const wy=yb+(yt-yb)*j/NY; pb.push(CM(I,px),wy,-boardDrop(I,px,wy)+0.001); ub.push((px+pL)/CW,1-((-wy/2.54*I.S)+pT)/CH); } }
+      for(let i=0;i<NX;i++) for(let j=0;j<NY;j++){ const a=i*(NY+1)+j, b=a+NY+1; ib.push(a,b,a+1, a+1,b,b+1); }
+      const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(pb,3)); bg.setAttribute('uv',new THREE.Float32BufferAttribute(ub,2)); bg.setIndex(ib); bg.computeVertexNormals();
+      GUIT.add(new THREE.Mesh(bg,new THREE.MeshStandardMaterial({map:tex,roughness:0.55,metalness:0.02,side:THREE.DoubleSide})));
+      /* fretboard extension over the body: neck-wood block down into the top */ const xJ0=fretPx(I,I.join), yc0=(yTop(xE)+yBot(xE))/2, wB=yTop(xE)-yBot(xE);
+      const blk=new THREE.Mesh(new THREE.BoxGeometry(CM(I,xJ0)-CM(I,xE),wB*0.995,-bodyZ-0.6+0.4),new THREE.MeshStandardMaterial({color:I.neckTint||I.tint,roughness:0.5})); blk.position.set((CM(I,xJ0)+CM(I,xE))/2,yc0,(-0.6+bodyZ-0.4)/2); GUIT.add(blk);
+      const bind=new THREE.MeshStandardMaterial({color:0xf0e2bf,roughness:0.4}); [yTop,yBot].forEach(fy=>{ const e=new THREE.Mesh(new THREE.BoxGeometry(CM(I,xN)-CM(I,xE),0.12,0.6),bind); e.position.set((CM(I,xN)+CM(I,xE))/2,fy(xE)*0.5+fy(xN)*0.5-(fy===yTop?0.06:-0.06),-0.3); e.rotation.z=Math.atan2(fy(xN)-fy(xE),CM(I,xN)-CM(I,xE)); GUIT.add(e); });
+      /* hardware: separate flat parts at their real heights over the arched top, textured from the photo (top-down crop) */
+      const MAT={gold:new THREE.MeshStandardMaterial({color:0xc9a24a,metalness:0.85,roughness:0.3}),ring:new THREE.MeshStandardMaterial({color:0x111111,roughness:0.4}),pu:new THREE.MeshStandardMaterial({color:0xbfa25a,metalness:0.85,roughness:0.32}),knob:new THREE.MeshStandardMaterial({color:0x0e0e0e,roughness:0.35}),pin:new THREE.MeshStandardMaterial({color:0xf0e8d4,roughness:0.35}),bone:new THREE.MeshStandardMaterial({color:0xefe6cf,roughness:0.45}),chromeBox:new THREE.MeshStandardMaterial({color:0xcfd2d6,metalness:1,roughness:0.2}),pub:new THREE.MeshStandardMaterial({color:0x0c0c0c,roughness:0.45})};
+      const crop=(x,y,w2,h2,alphaFn)=>{ const c2=document.createElement('canvas'); c2.width=Math.max(2,w2|0); c2.height=Math.max(2,h2|0); const x2=c2.getContext('2d'); x2.drawImage(cv,x+pL,y+pT,w2,h2,0,0,c2.width,c2.height);
+        if(alphaFn){ const d2=x2.getImageData(0,0,c2.width,c2.height); for(let q=0;q<d2.data.length;q+=4){ d2.data[q+3]=alphaFn(d2.data[q],d2.data[q+1],d2.data[q+2])?255:0; } x2.putImageData(d2,0,0); } const t=new THREE.CanvasTexture(c2); t.encoding=THREE.sRGBEncoding; t.anisotropy=8; if(alphaFn){ const c3=document.createElement('canvas'); c3.width=c2.width; c3.height=c2.height; const d3=x2.getImageData(0,0,c2.width,c2.height); for(let q=0;q<d3.data.length;q+=4){ const v=d3.data[q+3]; d3.data[q]=d3.data[q+1]=d3.data[q+2]=v; d3.data[q+3]=255; } c3.getContext('2d').putImageData(d3,0,0); t.mask=new THREE.CanvasTexture(c3); } return t; };
+      const goldA=(r,g,b)=>r+g+b>150&&r>b*1.05;
+      MAT.gold.color.setHex(0xd8a84e); MAT.gold.envMapIntensity=1.3; MAT.pu.envMapIntensity=1.1; MAT.gold.metalness=1.0; MAT.gold.roughness=0.22; MAT.pu.metalness=1.0; MAT.pu.roughness=0.28;
+      const detail=new THREE.Group(); bodyG.add(detail); const pole=new THREE.CylinderGeometry(1,1,1,20);
+      if(I.archTop) I.parts.filter(q=>q.k==='pu').forEach(pt=>{ const [x,y,w2,h2]=pt.b; const top=carveAt(x+w2/2,y+h2/2)+pt.h; const px=x+w2*0.83; for(let i=0;i<nS;i++){ const yy=strY(I,i,px); const m=new THREE.Mesh(pole,MAT.gold); m.scale.set(0.2,0.08,0.2); m.rotation.x=Math.PI/2; m.position.set(CM(I,px),-CM(I,yy),top+0.04); detail.add(m); const sl=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.04,0.03),new THREE.MeshStandardMaterial({color:0x3a2e14})); sl.position.set(CM(I,px),-CM(I,yy),top+0.085); detail.add(sl); } });
+      if(I.archTop){ const bp=I.parts.find(q=>q.n==='bridge'); const [x,y,w2,h2]=bp.b; const top=carveAt(x+w2/2,y+h2/2)+bp.h; for(let i=0;i<nS;i++){ const sx=I.sad[i][0]; const sd=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.26,0.32),MAT.gold); sd.position.set(CM(I,sx),-CM(I,I.sad[i][1]),top+0.12); detail.add(sd); const sc=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.5,10),MAT.gold); sc.rotation.z=Math.PI/2; sc.position.set(CM(I,sx)+0.35,-CM(I,I.sad[i][1]),top+0.02); detail.add(sc); }
+        [y+8,y+h2-8].forEach(py=>{ const st=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,0.25,24),MAT.gold); st.rotation.x=Math.PI/2; st.position.set(CM(I,x+w2/2),-CM(I,py),carveAt(x+w2/2,py)+0.4); detail.add(st); }); }
+      if(I.archTop){ const nut=new THREE.Mesh(new THREE.BoxGeometry(0.5,yTop(xN)-yBot(xN),0.5),new THREE.MeshStandardMaterial({color:0xe6dfcb,roughness:0.5})); nut.position.set(CM(I,xN)+0.25,(yTop(xN)+yBot(xN))/2,0.0); GUIT.add(nut); }
+      I.parts.forEach(pt=>{ const pg=new THREE.Group(); let base;
+        if(pt.b){ const [x,y,w2,h2]=pt.b; const cx=x+w2/2, cy=y+h2/2; base=Math.min(carveAt(x,y),carveAt(x+w2,y),carveAt(x,y+h2),carveAt(x+w2,y+h2),carveAt(cx,cy)); const top=carveAt(cx,cy)+pt.h;
+          if(pt.k==='gold'||pt.k==='wood'||pt.k==='chrome'){ const t=crop(x,y,w2,h2,pt.k==='wood'?((r,g,b)=>r+g+b<300):pt.k==='chrome'?((r,g,b)=>Math.abs(r-b)<40&&r+g+b>60&&r+g+b<600):goldA); const sideC=pt.k==='wood'?0x2a1a12:pt.k==='chrome'?0x8a8c90:0xa8863a; const NLp=10; for(let k=0;k<=NLp;k++){ const z=base+(top-base)*k/NLp; const m=new THREE.Mesh(new THREE.PlaneGeometry(CM(I,w2),CM(I,h2)),k===NLp?new THREE.MeshStandardMaterial({map:t,alphaTest:0.5,transparent:true,metalness:pt.k==='wood'?0:0.6,roughness:pt.k==='wood'?0.5:0.3}):new THREE.MeshStandardMaterial({color:sideC,alphaMap:t.mask,alphaTest:0.5,transparent:true,metalness:pt.k==='wood'?0:0.8,roughness:pt.k==='wood'?0.6:0.35,side:THREE.DoubleSide})); m.position.set(CM(I,cx),-CM(I,cy),z); pg.add(m); } }
+          else { const hh=top-base; const bx=new THREE.Mesh(new THREE.BoxGeometry(CM(I,w2),CM(I,h2),hh),MAT[pt.k]); bx.position.set(CM(I,cx),-CM(I,cy),base+hh/2); pg.add(bx);
+            const tp=new THREE.Mesh(new THREE.PlaneGeometry(CM(I,w2),CM(I,h2)),new THREE.MeshStandardMaterial({map:crop(x,y,w2,h2),roughness:pt.k==='pu'?0.3:0.45,metalness:pt.k==='pu'?0.5:0.05})); tp.position.set(CM(I,cx),-CM(I,cy),top+0.003); pg.add(tp); } }
+        else { const [x,y,r]=pt.c; base=carveAt(x,y)-0.15; const top=carveAt(x,y)+pt.h, hh=top-base, rc=CM(I,r);
+          const cyl=new THREE.Mesh(new THREE.CylinderGeometry(rc*(pt.k==='knob'?0.86:1),rc,hh,40),MAT[pt.k]); cyl.rotation.x=Math.PI/2; cyl.position.set(CM(I,x),-CM(I,y),base+hh/2); pg.add(cyl);
+          const cap=new THREE.Mesh(new THREE.CircleGeometry(rc*(pt.k==='knob'?0.86:1),40),new THREE.MeshStandardMaterial({map:crop(x-r,y-r,2*r,2*r),roughness:0.35})); cap.position.set(CM(I,x),-CM(I,y),top+0.003); pg.add(cap);
+          if(pt.n==='switch'){ const tg=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.16,2.2,16),MAT.gold); tg.rotation.x=Math.PI/2; tg.rotation.y=0.25; tg.position.set(CM(I,x),-CM(I,y),top+1.05); pg.add(tg); const tip=new THREE.Mesh(new THREE.SphereGeometry(0.32,20,14),new THREE.MeshStandardMaterial({color:0xefe6cf,roughness:0.4})); tip.position.set(CM(I,x)+0.27,-CM(I,y),top+2.15); pg.add(tip); } }
+        pg.userData.part=pt; bodyG.add(pg); }); }
+    /* body slab: stacked masked layers to the real depth; last layer = back (drop-in back photo if present) */
+    const NL=16; for(let k=1;k<=NL;k++){ const z=-I.T*k/NL; const mat=new THREE.MeshStandardMaterial({color:I.tint,alphaMap:k===NL?maskTex:sideTex,transparent:true,alphaTest:0.4,roughness:0.55,side:THREE.DoubleSide});
+      if(k===NL&&imBack){ const bt=new THREE.Texture(PRON?PR.back(I,imBack,fretPx(I,I.join)+40):imBack); bt.needsUpdate=true; bt.encoding=THREE.sRGBEncoding; if(!I.backFrontFrame){ bt.wrapS=THREE.RepeatWrapping; bt.repeat.x=-1; bt.offset.x=1; } mat.map=bt; mat.color.set(0xffffff); }
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat); m.position.set(ox,oy,z); bodyG.add(m); }
+    const imS=imSides||(I.hole?woodStrip(I):null); if(imS){ const Wm=mv.width,Hm=mv.height, on=(x,y)=>x>=0&&y>=0&&x<Wm&&y<Hm&&D[(y*Wm+x)*4]>128;
+      let sx=-1,sy=-1; for(let y=0;y<Hm&&sx<0;y++) for(let x=0;x<Wm;x++) if(on(x,y)){ sx=x; sy=y; break; }
+      const dirs=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]; const pts=[[sx,sy]]; let cx2=sx,cy2=sy,dir=7, guard=0;
+      do{ let found=false; for(let k=0;k<8;k++){ const d2=(dir+6+k)%8; const nx=cx2+dirs[d2][0], ny=cy2+dirs[d2][1]; if(on(nx,ny)){ cx2=nx; cy2=ny; dir=d2; found=true; break; } } if(!found) break; pts.push([cx2,cy2]); }while((cx2!==sx||cy2!==sy)&&guard++<40000);
+      const st=pts.filter((_,k)=>k%3===0); st.push(st[0]); const ycSp=(strY(I,0,xN)+strY(I,nS-1,xN))/2;
+      const pos2=[], uv2=[], id2=[]; st.forEach(([x,y],k)=>{ const px=x*2-pL, py=y*2-pT; const wx=CM(I,px), wy=-CM(I,py); const upper=py<ycSp; const u=Math.min(0.999,Math.max(0.001,px/I.W));
+        pos2.push(wx,wy,0, wx,wy,-I.T); uv2.push(u,upper?1:0.5, u,upper?0.5:0.0); if(k>0){ const a=(k-1)*2; id2.push(a,a+1,a+2, a+1,a+3,a+2); } });
+      const rg=new THREE.BufferGeometry(); rg.setAttribute('position',new THREE.Float32BufferAttribute(pos2,3)); rg.setAttribute('uv',new THREE.Float32BufferAttribute(uv2,2)); rg.setIndex(id2); rg.computeVertexNormals();
+      if(I.archTop){ const raw=st.slice(0,-1).map(([x,y])=>[CM(I,x*2-pL),-CM(I,y*2-pT)]); const K=6, N=raw.length; const bp=[]; for(let q=0;q<N;q+=2){ let sx=0,sy=0; for(let o=-K;o<=K;o++){ const r=raw[(q+o+N)%N]; sx+=r[0]; sy+=r[1]; } bp.push(new THREE.Vector3(sx/(2*K+1),sy/(2*K+1),0.0)); }
+        const xcut=CM(I,xJ-pL-10), bmat=new THREE.MeshPhysicalMaterial({color:0xece4cf,roughness:0.3,clearcoat:1,clearcoatRoughness:0.08}); let k0=bp.findIndex(v=>v.x>=xcut); if(k0<0) k0=0; const ring=bp.slice(k0).concat(bp.slice(0,k0)); let run=[];
+        const flush=()=>{ if(run.length>8) bodyG.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(run),run.length*3,0.085,8,false),bmat)); run=[]; };
+        ring.forEach(v=>{ if(v.x<xcut) run.push(v); else flush(); }); flush(); }
+      const stx=new THREE.Texture(PRON?PR.sides(I):imS); stx.needsUpdate=true; stx.encoding=THREE.sRGBEncoding; stx.anisotropy=8;
+      bodyG.add(new THREE.Mesh(rg,new THREE.MeshStandardMaterial({map:stx,roughness:0.35,metalness:0.05,side:THREE.DoubleSide}))); }
+    /* soundhole: dark recess (open tube to the inside of the back) */
+    if(I.hole){ const ho=I.hole, hc=W(I,ho.x,ho.y,0), r=CM(I,ho.r);
+      const tube=new THREE.Mesh(new THREE.CylinderGeometry(r,r,I.T*0.96,40,1,true),new THREE.MeshStandardMaterial({color:0x140c06,roughness:0.9,side:THREE.DoubleSide}));
+      tube.rotation.x=Math.PI/2; tube.position.set(hc.x,hc.y,-I.T*0.48); bodyG.add(tube);
+      const floor=new THREE.Mesh(new THREE.CircleGeometry(r*1.02,40),new THREE.MeshStandardMaterial({color:0x0a0603,roughness:1})); floor.position.set(hc.x,hc.y,-I.T*0.95); bodyG.add(floor);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(r,0.09,8,48),new THREE.MeshStandardMaterial({color:0x3a2412,roughness:0.6})); rim.position.set(hc.x,hc.y,0); bodyG.add(rim); }
+    /* modelled neck: C-profile back under the photo fretboard, tapering deeper toward the heel, heel block into the body, volute at the nut */
+    const x0=fretPx(I,I.join), x1=xN+0.6/2.54*I.S, NSEG=40, NA=16, fbT=0.6; const pos=[], idx=[];
+    for(let i=0;i<=NSEG;i++){ const px=x0+(x1-x0)*i/NSEG, wx=CM(I,px), yt=yTop(Math.min(px,xN)), yb=yBot(Math.min(px,xN)), yc=(yt+yb)/2, hw=(yt-yb)/2;
+      const dep=I.neckDep?I.neckDep[0]+(I.neckDep[1]-I.neckDep[0])*(1-i/NSEG):(I.bass?2.2:1.95)+0.35*(1-i/NSEG); const ring=[[yc+hw,-boardDrop(I,Math.min(px,xN),yc+hw)],[yc+hw,-fbT]];
+      for(let a=0;a<=NA;a++){ const t=a/NA*Math.PI; ring.push([yc+hw*Math.cos(t)*0.98,-fbT-(dep-fbT)*Math.sin(t)]); } ring.push([yc-hw,-fbT],[yc-hw,-boardDrop(I,Math.min(px,xN),yc-hw)]);
+      ring.forEach(([y,z])=>pos.push(wx,y,z)); }
+    const RL=NA+5; for(let i=0;i<NSEG;i++) for(let j=0;j<RL-1;j++){ const a=i*RL+j,b=a+RL; idx.push(a,b,a+1, a+1,b,b+1); }
+    const ng=new THREE.BufferGeometry(); ng.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); ng.setIndex(idx); ng.computeVertexNormals();
+    { const uvN=[]; for(let q=0;q<pos.length;q+=3){ const px=pos[q]/2.54*I.S, py=-pos[q+1]/2.54*I.S; uvN.push(px/I.W,1-py/I.H); } ng.setAttribute('uv',new THREE.Float32BufferAttribute(uvN,2)); }
+    const neckMat=new THREE.MeshStandardMaterial({color:I.neckTint||I.tint,roughness:0.55,side:THREE.DoubleSide});
+    let neckBackMat=neckMat; if(imBack&&!PRON){ const bt2=new THREE.Texture(imBack); bt2.needsUpdate=true; bt2.encoding=THREE.sRGBEncoding; if(!I.backFrontFrame){ bt2.wrapS=THREE.RepeatWrapping; bt2.repeat.x=-1; bt2.offset.x=1; } neckBackMat=new THREE.MeshStandardMaterial({map:bt2,roughness:0.4,side:THREE.DoubleSide}); }
+    GUIT.add(new THREE.Mesh(ng,neckBackMat));
+    const fbMat=new THREE.MeshStandardMaterial({color:I.fbTint||0x1c140e,roughness:0.7,side:THREE.DoubleSide});   /* fretboard edge strips */
+    { const ys=[yTop(xN),yBot(xN)], yj=[yTop(x0),yBot(x0)]; }
+    const heel=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),neckMat); const hx=CM(I,x0), hyc=(yTop(x0)+yBot(x0))/2, hhw=(yTop(x0)-yBot(x0))/2;
+    heel.scale.set(I.bass?3.5:3.0,hhw*0.95,I.T*0.42); heel.position.set(hx-1.2,hyc,-I.T*0.42-0.6); GUIT.add(heel);
+    GUIT.userData.neck={x0:CM(I,x0),x1:CM(I,xN),yT:yTop(xN),yB:yBot(xN),dep:I.bass?2.55:2.3};
+    /* frets + strings (real gauges, from the photo's nut/saddle points) */
+    const metal=new THREE.MeshStandardMaterial({color:0xb9b4aa,metalness:1.0,roughness:0.3,envMapIntensity:0.7});
+    if(I.radius){ const fw=I.fretW/2, sz=I.fretH/fw; for(let f=1;f<=22;f++){ const x=fretPx(I,f); const yt=yTop(x), yb=yBot(x), pts=[]; for(let k=0;k<=12;k++){ const wy=yb+(yt-yb)*k/12; pts.push(new THREE.Vector3(CM(I,x),wy,-boardDrop(I,x,wy)/sz)); }
+        const fm=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,fw,10,false),metal); fm.scale.z=sz; GUIT.add(fm); [pts[0],pts[pts.length-1]].forEach(q=>{ const cap=new THREE.Mesh(new THREE.SphereGeometry(fw,12,8),metal); cap.position.set(q.x,q.y,q.z); cap.scale.z=1; const cg=new THREE.Group(); cg.scale.z=sz; cg.add(cap); GUIT.add(cg); }); } }
+    else for(let f=1;f<=I.join+4;f++){ const x=fretPx(I,f); const a=W(I,x,strY(I,0,x)-I.S*0.08,0.06), b=W(I,x,strY(I,nS-1,x)+I.S*0.08,0.06); const L=a.distanceTo(b);
+      const fm=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,L,6),metal); fm.position.copy(a.clone().add(b).multiplyScalar(0.5)); GUIT.add(fm); }
+    GUIT.userData.strMat=[]; if(I.radius){ GUIT.userData.strG=new THREE.Group(); GUIT.add(GUIT.userData.strG); const wind=(()=>{ const c=document.createElement('canvas'); c.width=8; c.height=64; const x=c.getContext('2d'); for(let y=0;y<64;y+=4){ x.fillStyle='#fff'; x.fillRect(0,y,8,2.4); x.fillStyle='#6a6a6a'; x.fillRect(0,y+2.4,8,1.6); } const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; })(); GUIT.userData.wind=wind;
+      for(let i=0;i<nS;i++){ const wound=I.bass||i<=2; const m=new THREE.MeshStandardMaterial({color:wound?(I.bass?0xb8b0a0:0xc9a86a):0xe8e6e0,metalness:1.0,roughness:wound?0.42:0.22}); if(wound){ m.bumpMap=wind; m.bumpScale=0.02; m.roughnessMap=wind; } GUIT.userData.strMat.push(m); } layStrings(null); }
+    else for(let i=0;i<nS;i++){ const g=I.gauge[i]; const a=W(I,I.sad[i][0],I.sad[i][1],0.16), b=W(I,xN,I.nut[i][1],0.16); const L=a.distanceTo(b);
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(g/2+0.02,g/2+0.02,L,8),new THREE.MeshStandardMaterial({color:I.bass?0xb8b0a0:(i<=2?0xc9a86a:0xe0ddd5),metalness:0.85,roughness:0.35}));
+      m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize()); GUIT.add(m); }
+    /* capo: rubber bar just behind the capo fret, clamp bar behind the neck */
+    GUIT.userData.capo=CAPO; if(CAPO>0){ const cx=CM(I,fretPx(I,CAPO)+0.45/2.54*I.S), yt=yTop(fretPx(I,CAPO))+0.5, yb=yBot(fretPx(I,CAPO))-0.5, cg=new THREE.Group(); cg.name='capo';
+      const pad=new THREE.Mesh(new THREE.BoxGeometry(0.9,yt-yb,0.55),new THREE.MeshStandardMaterial({color:0x151515,roughness:0.8})); pad.position.set(cx,(yt+yb)/2,0.16+0.3); cg.add(pad);
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(0.7,yt-yb+0.2,0.25),new THREE.MeshStandardMaterial({color:0x9aa0a6,metalness:0.8,roughness:0.3})); bar.position.set(cx,(yt+yb)/2,0.16+0.65); cg.add(bar);
+      const back=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.2,0.5),new THREE.MeshStandardMaterial({color:0x9aa0a6,metalness:0.8,roughness:0.3})); back.position.set(cx,yb-0.3,-(I.bass?2.6:2.3)-0.2); cg.add(back);
+      const arm=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,(I.bass?2.6:2.3)+1.2),new THREE.MeshStandardMaterial({color:0x9aa0a6,metalness:0.8,roughness:0.3})); arm.position.set(cx,yb-0.25,-(I.bass?2.6:2.3)/2+0.4); cg.add(arm);
+      GUIT.add(cg); }
+    /* headstock: photo (or drop-in) on a solid slab, hinged at the nut and pitched back; a volute fills the joint */
+    const hsSrc=imHs||im, hsx=imHs?0:xN, hsWpx=(imHs?imHs.width:I.W-xN); let hsCv=document.createElement('canvas'); hsCv.width=Math.max(8,hsWpx|0); hsCv.height=I.H;
+    hsCv.getContext('2d').drawImage(hsSrc,hsx,0,hsCv.width,I.H,0,0,hsCv.width,I.H); if(PRON) hsCv=PR.headstock(I,hsCv); const hsTex=new THREE.CanvasTexture(hsCv); hsTex.encoding=THREE.sRGBEncoding; const hsM=document.createElement('canvas'); hsM.width=hsCv.width; hsM.height=hsCv.height; { const mx=hsM.getContext('2d'); const d0=hsCv.getContext('2d').getImageData(0,0,hsCv.width,hsCv.height); const d1=mx.createImageData(hsCv.width,hsCv.height); for(let q=0;q<d0.data.length;q+=4){ const v=d0.data[q+3]>100?255:0; d1.data[q]=d1.data[q+1]=d1.data[q+2]=v; d1.data[q+3]=255; } mx.putImageData(d1,0,0); } const hsMask=new THREE.CanvasTexture(hsM);   /* alpha → mask (alphaMap reads the green channel, not alpha) */
+    const hsW=CM(I,hsWpx), hsT=I.bass?1.5:1.4, hsG=new THREE.Group(); hsG.position.set(CM(I,xN),0,0); const ang=THREE.MathUtils.degToRad(I.hsAngle||0);
+    let hsBackTex=null; if(imBack&&!PRON){ const bc=document.createElement('canvas'); bc.width=hsCv.width; bc.height=I.H; const bx=bc.getContext('2d'); const sc=imBack.width/I.W;
+      if(I.backFrontFrame) bx.drawImage(imBack,xN*sc,0,hsCv.width*sc,I.H*sc,0,0,bc.width,I.H); else { bx.save(); bx.translate(bc.width,0); bx.scale(-1,1); bx.drawImage(imBack,(I.W-xN-hsCv.width)*sc,0,hsCv.width*sc,I.H*sc,0,0,bc.width,I.H); bx.restore(); }
+      hsBackTex=new THREE.CanvasTexture(bc); hsBackTex.encoding=THREE.sRGBEncoding; }
+    for(let k=0;k<=6;k++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(hsW,h*(I.H/CH)),new THREE.MeshStandardMaterial({map:k?(k===6?hsBackTex:null):hsTex,color:k&&!(k===6&&hsBackTex)?I.tint:0xffffff,alphaMap:k?hsMask:null,transparent:true,alphaTest:0.4,side:k===0?THREE.FrontSide:THREE.DoubleSide,roughness:0.5}));
+      m.position.set(hsW/2,-CM(I,I.H/2),-hsT*k/6); hsG.add(m); }
+    if(I.tuners){ const gold=new THREE.MeshStandardMaterial({color:0xc9a24a,metalness:0.9,roughness:0.28});
+      I.tuners.forEach(([tx,ty])=>{ const hb=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.62,1.1,16),gold); hb.rotation.x=Math.PI/2; hb.position.set(CM(I,tx-xN),-CM(I,ty),-hsT-0.55); hsG.add(hb);
+        const cap=new THREE.Mesh(new THREE.SphereGeometry(0.55,14,10,0,Math.PI*2,0,Math.PI/2),gold); cap.rotation.x=-Math.PI/2; cap.position.set(CM(I,tx-xN),-CM(I,ty),-hsT-1.1); hsG.add(cap); }); }
+    hsG.rotation.y=ang; GUIT.add(hsG);
+    const vol=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),neckMat); const vyc=(yTop(xN)+yBot(xN))/2; vol.scale.set(1.6,(yTop(xN)-yBot(xN))/2*0.95,1.0); vol.position.set(CM(I,xN)+0.3,vyc,-1.25); GUIT.add(vol);
+    if(window.PR) PR.upgrade(GUIT,I,inst); if(window.GCTL) GCTL.attach3d(); if(window.LPGLB) LPGLB.apply(GUIT,I,inst); render3d(); });
+}
+const MIRROR=false; /* audience view: the photo is shown as shot (headstock right, low E on top), so no mirroring and logos read correctly */
+function mirrorCam(){ S3.cam.updateProjectionMatrix(); if(MIRROR&&window.CAMV!=='player') S3.cam.projectionMatrix.elements[0]*=-1; S3.cam.projectionMatrixInverse.copy(S3.cam.projectionMatrix).invert(); }
+/* where the narrow view centres: between the fretting fingers and the wrist (wrist sits toward the body), clamped to the guitar */
+function narrowX(){ const I=INSTR[INST]; let x; try{ x=padPoint(2).x-4.5; }catch(e){ x=null; } if(!(x>-1e3)) x=CM(I,fretPx(I,5)); const xn=CM(I,fretPx(I,-1.6)), xb=CM(I,fretPx(I,22)); return Math.max(Math.min(x,xn-12),xb+4); }
+function narrowFollow(dt){ if(!window.NARROW||window.CAMV||window.ORBITED||!S3||!TGT||window.FREEZE) return; const want=narrowX(); const hx=window._camHX!=null?_camHX:want; const k=1-Math.exp(-dt*2.5); const nx=hx+(want-hx)*k; if(Math.abs(nx-hx)<1e-4) return; const d=nx-hx; window._camHX=nx; S3.cam.position.x+=d; if(ORB){ ORB.target.x+=d; } S3.cam.lookAt(ORB?ORB.target:new S3.THREE.Vector3(nx,S3.cam.position.y,0)); if(typeof mirrorCam==='function') mirrorCam(); }
+function frameCam(){
+  const I=INSTR[INST], st=$('stage'), r=st.getBoundingClientRect(); S3.renderer.setSize(r.width,r.height,false); S3.cam.aspect=r.width/r.height;
+  const xa=CM(I,fretPx(I,-1.6)), xb=CM(I,fretPx(I,I.bass?14:17)); const yc=-CM(I,(strY(I,0,I.nut[0][0])+strY(I,I.nut.length-1,I.nut[0][0]))/2);
+  const span=Math.abs(xa-xb); S3.cam.fov=22; const dist=(span/2)/Math.tan(S3.cam.fov*Math.PI/360)/S3.cam.aspect*1.04;
+  const cx=(xa+xb)/2, cy=yc-3.2;
+  let cp=[cx,cy+dist*0.30,dist*1.02], la=[cx,cy,0];
+  /* v18 narrow/portrait stage: frame a hand-sized window (hand, wrist and ~8 frets) that follows the fretting hand instead of the whole neck */
+  window.NARROW=S3.cam.aspect<(window.NARROWASP||1.35)||(window.innerHeight>window.innerWidth&&window.NARROWPORT!==0); if(window.NARROW&&!window.CAMV){ const W=window.NARROWW||34, H=26, th=Math.tan(S3.cam.fov*Math.PI/360); const d2=Math.max((W/2)/th/S3.cam.aspect,(H/2)/th)*1.0; const hx=window._camHX!=null?_camHX:narrowX(); window._camHX=hx; cp=[hx,cy-2.5+d2*0.30,d2*1.02]; la=[hx,cy-2.5,0]; window._camD2=d2; }
+  if(window.CAMV&&TGT){ const c=S3.group.position.clone(); const pad=padPoint(2); const zx=pad.x, zy=pad.y-1;
+    if(CAMV==='front') { cp=[zx,zy-3,46]; la=[zx,zy,0]; }                 // face-on close-up (audience-mirrored = player tab view)
+    if(CAMV==='player'){ cp=[zx,zy+44,24]; la=[zx,zy,0]; }                // over the top of the neck, looking down like the player
+    if(CAMV==='side')  { cp=[zx-6,zy-44,6]; la=[zx,zy+1,0]; } }
+  S3.cam.position.set(...cp); S3.cam.up.set(0,1,0); if(window.CAMV==='player') S3.cam.up.set(0,0,1); S3.cam.lookAt(...la); if(ORB){ ORB.target.set(...la); ORB.update(); } window.ORBITED=0; S3.cam.near=0.5; S3.cam.far=dist*8; mirrorCam(); render3d();
+}
+/* ---- separated-finger hand: capsule segments (phalanges, metacarpals) + palm slab, driven by the rig's joints every frame.
+   Built in code (no third-party model, nothing to license); proportions = the rig's own joint lengths (adult hand) x 0.88.
+   Contact checks use the exact capsule surfaces. ---- */
+const CAPR={1:[0.88,0.80,0.72,0.64],2:[0.90,0.82,0.74,0.66],3:[0.88,0.78,0.70,0.62],4:[0.84,0.70,0.62,0.56],T:[1.05,0.92,0.80]};   /* cm: metacarpal, proximal, middle, distal */
+let CAPS=null;
+function capSegs(){ const L=[]; for(let k=1;k<=4;k++){ const c=S3.CH[k]; for(let j=0;j<4;j++) L.push({k,j,a:c[j],b:c[j+1],r:CAPR[k][j],tip:j===3}); } const t=S3.CH.T; for(let j=0;j<3;j++) L.push({k:'T',j,a:t[j],b:t[j+1],r:CAPR.T[j],tip:j===2}); return L; }
+function buildCaps(){ const THREE=S3.THREE; const mat=new THREE.MeshStandardMaterial({color:0xdca286,roughness:0.58,metalness:0,emissive:0x2a120a,emissiveIntensity:0.25});
+  const nail=new THREE.MeshStandardMaterial({color:0xf0c8b8,roughness:0.35,metalness:0});
+  const cyl=new THREE.CylinderGeometry(1,1,1,20,1,true), sph=new THREE.SphereGeometry(1,20,14);
+  CAPS={segs:capSegs(),grp:new THREE.Group()}; CAPS.segs.forEach(sg=>{ const g=new THREE.Group(); const c=new THREE.Mesh(cyl,mat); const e0=new THREE.Mesh(sph,mat), e1=new THREE.Mesh(sph,mat); g.add(c,e0,e1); sg.m={g,c,e0,e1};
+    if(sg.tip&&sg.k!=='T'){ const n=new THREE.Mesh(sph,nail); sg.m.nail=n; g.add(n); } CAPS.grp.add(g); });
+  CAPS.palm=new THREE.Mesh(new THREE.SphereGeometry(1,28,18),mat); CAPS.grp.add(CAPS.palm); CAPS.thenar=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),mat); CAPS.grp.add(CAPS.thenar); CAPS.hypo=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),mat); CAPS.grp.add(CAPS.hypo); S3.scene.add(CAPS.grp);
+  S3.group.traverse(o=>{ if(o.isSkinnedMesh) o.visible=false; if(o.isMesh&&o.geometry&&o.geometry.type==='SphereGeometry'&&o.parent&&o.parent.isBone) o.visible=false; }); window.CAPSON=true; }
+function segWorld(sg){ const A=S3.wpos(sg.a), B=S3.wpos(sg.b); if(sg.tip){ const d=B.clone().sub(A); const L=d.length(); B.copy(A).add(d.multiplyScalar(Math.max(0.3,L-sg.r*0.85)/L)); } if(sg.j===0&&sg.k!=='T'){ /* metacarpal: start a little toward the wrist */ } return [A,B]; }
+function updateCaps(){ if(!CAPS) return; const THREE=S3.THREE, up=new THREE.Vector3(0,1,0);
+  CAPS.segs.forEach(sg=>{ const [A,B]=segWorld(sg); sg.A=A; sg.B=B; const d=B.clone().sub(A), L=d.length(); const m=sg.m; const r=sg.r*(sg.j===0&&sg.k!=='T'?1.0:1);
+    m.c.position.copy(A).add(B).multiplyScalar(0.5); m.c.quaternion.setFromUnitVectors(up,d.clone().normalize()); m.c.scale.set(r,L,r); m.e0.position.copy(A); m.e0.scale.setScalar(r); m.e1.position.copy(B); m.e1.scale.setScalar(r);
+    if(m.nail){ /* nail on the back of the distal segment */ const back=new THREE.Vector3().crossVectors(d,S3.wpos(S3.FN[sg.k]+'-finger-phalanx-proximal').sub(S3.wpos(S3.FN[sg.k===4?3:sg.k+1]+'-finger-phalanx-proximal'))).normalize();
+      const n0=S3.wpos('wrist'); if(back.dot(A.clone().sub(n0))<0){} m.nail.position.copy(A).lerp(B,0.6).add(nailDir(sg,d).multiplyScalar(r*0.72)); m.nail.quaternion.setFromUnitVectors(up,d.clone().normalize()); m.nail.scale.set(r*0.62,r*0.95,r*0.32); } });
+  /* palm slab between the knuckles and the wrist */
+  const iP=S3.wpos('index-finger-phalanx-proximal'), pP=S3.wpos('pinky-finger-phalanx-proximal'), mP=S3.wpos('middle-finger-phalanx-proximal'), wr=S3.wpos('wrist'), iM=S3.wpos('index-finger-metacarpal'), pM=S3.wpos('pinky-finger-metacarpal');
+  const X=pP.clone().sub(iP), Y=mP.clone().sub(wr), Z=new THREE.Vector3().crossVectors(X,Y).normalize(); const Xn=X.clone().normalize(), Yn=new THREE.Vector3().crossVectors(Z,Xn).normalize();
+  const c=iP.clone().add(pP).add(iM).add(pM).multiplyScalar(0.25); CAPS.palm.position.copy(c); CAPS.palm.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(Xn,Yn,Z)); CAPS.palm.scale.set(X.length()/2+0.75,Math.max(1.2,iP.distanceTo(iM)*0.55),0.95);
+  /* thenar pad (thumb ball) on the palm side between the thumb root and the index knuckle; hypothenar pad along the little-finger edge */
+  { const t0=S3.wpos('thumb-metacarpal'), t1=S3.wpos('thumb-phalanx-proximal'); const palmSide=Z.clone().multiplyScalar(Z.dot(S3.wpos('thumb-tip').clone().sub(c))>0?1:-1);
+    const tc=t0.clone().lerp(t1,0.55).lerp(c,0.25).add(palmSide.clone().multiplyScalar(0.35)); CAPS.thenar.position.copy(tc); const td=t1.clone().sub(t0).normalize(); CAPS.thenar.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),td); CAPS.thenar.scale.set(1.15,Math.max(1.6,t0.distanceTo(t1)*0.65),1.0);
+    const hc=pM.clone().lerp(pP,0.45).add(palmSide.clone().multiplyScalar(0.3)).add(Xn.clone().multiplyScalar(0.15)); CAPS.hypo.position.copy(hc); CAPS.hypo.quaternion.copy(CAPS.palm.quaternion); CAPS.hypo.scale.set(0.8,Math.max(1.4,pM.distanceTo(pP)*0.5),0.75); } }
+function nailDir(sg,d){ /* the back of the finger = away from the palm: the side the knuckle bends away from */ const THREE=S3.THREE; const c=S3.CH[sg.k]; const P1=S3.wpos(c[2]), P2=S3.wpos(c[3]), P3=S3.wpos(c[4]); const a=P1.clone().sub(P2), b=P3.clone().sub(P2); let n=a.clone().add(b).multiplyScalar(-1);
+  n.sub(d.clone().normalize().multiplyScalar(n.dot(d.clone().normalize()))); if(n.lengthSq()<1e-6){ n=new THREE.Vector3(0,0,1); } return n.normalize(); }
+/* exact capsule contact for finger k (its proximal, middle and distal segments) */
+function capNearest(k,P){ let best=null,minZ=1e9; for(const sg of CAPS.segs){ if(sg.k!==k||sg.j===0) continue; const A=sg.A,B=sg.B; const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,P.clone().sub(A).dot(ab)/ab.lengthSq())); const Q=A.clone().add(ab.multiplyScalar(t)); const dist=Q.distanceTo(P);
+    const sp=Q.clone().add(P.clone().sub(Q).multiplyScalar(sg.r/Math.max(1e-6,dist))); const d=Math.abs(dist-sg.r); minZ=Math.min(minZ,Math.min(A.z,B.z)-sg.r); if(!best||d<best.d) best={p:sp,d,q:Q,r:sg.r,j:sg.j}; } best.minZ=minZ; return best; }
+function render3d(){ if(S3){ updateCaps(); let n=0; S3.scene.traverse(()=>n++); if(n!==window._shN){ window._shN=n; S3.scene.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=!o.material||!o.material.alphaMap; } }); } if(!(window.PR&&PR.render())) S3.renderer.render(S3.scene,S3.cam); } }
+let ORB=null; function orbitInit(){ if(ORB||!S3.THREE.OrbitControls) return; ORB=new S3.THREE.OrbitControls(S3.cam,S3.renderer.domElement); ORB.enableDamping=true; ORB.addEventListener('change',()=>{ render3d(); }); ORB.addEventListener('start',()=>{ window.ORBITED=1; }); }
+window.orbit=(az,el,dist)=>{ /* scripted orbit for screenshots: az/el in degrees around the current target */ const t=ORB.target, r=dist||S3.cam.position.distanceTo(t); const A=az*Math.PI/180, E=el*Math.PI/180;
+  S3.cam.up.set(0,1,0); S3.cam.position.set(t.x+r*Math.sin(A)*Math.cos(E), t.y+r*Math.sin(E), t.z+r*Math.cos(A)*Math.cos(E)); S3.cam.lookAt(t); window.ORBITED=1; render3d(); };
+
+/* ---- hand pose for a hand position p ---- */
+function placeHand(p,hy){
+  const THREE=S3.THREE, I=INSTR[INST], g=S3.group, base=Math.max(p,1);
+  const lean=THREE.MathUtils.degToRad(Math.max(1.5,6-(base-1)*0.5));
+  const q=new THREE.Quaternion().setFromAxisAngle(S3.V(0,0,1),-lean).multiply(new THREE.Quaternion().setFromAxisAngle(S3.V(1,0,0),THREE.MathUtils.degToRad(window.HRX!=null?HRX:(I.bass?40:46)))).multiply(S3.axes.base);
+  g.quaternion.copy(q); g.scale.setScalar(S3.axes.scale*(window.CAPS?0.88:0.92)*(I.bass?1.08:1)); g.position.set(0,0,0); g.updateMatrixWorld(true);
+  const mc=S3.wpos('middle-finger-phalanx-proximal');
+  const fx=fretR(I,base+1.2)+(fretR(I,base+0.2)-fretR(I,base+1.2))*0.5; const tgt=W(I,fx,strY(I,I.nut.length-1,fx),0);
+  const sp=CM(I,Math.abs(strY(I,1,fx)-strY(I,0,fx)));
+  tgt.y-= sp*0.85+(hy!=null?hy:(window.HY!=null?window.HY:2.0)); tgt.z=(window.HZ||1.6);
+  g.position.set(tgt.x-mc.x,tgt.y-mc.y,tgt.z-mc.z); g.updateMatrixWorld(true);
+  return {pos:g.position.clone(),q:g.quaternion.clone(),scale:g.scale.x};
+}
+/* fingertip IK: coordinate descent over the finger's joint angles (m = knuckle, p = middle joint, d = tip joint (=p*curl), a = spread) */
+let SKIN=null; /* per finger: skinned-mesh vertex indices of the fingertip segment, for true skin-contact checks */
+function skinInit(){ if(CAPS) return SKIN||(SKIN={caps:true});  if(SKIN) return SKIN; let mesh=null; S3.group.traverse(o=>{ if(o.isSkinnedMesh&&!mesh) mesh=o; }); if(!mesh) return null;
+  const bones=mesh.skeleton.bones.map(b=>b.name), si=mesh.geometry.attributes.skinIndex, sw=mesh.geometry.attributes.skinWeight; const L={1:[],2:[],3:[],4:[],T:[]};
+  for(let v=0;v<si.count;v++){ let bi=0,bw=-1; for(let j=0;j<4;j++){ const g=['getX','getY','getZ','getW'][j]; const w=sw[g](v); if(w>bw){bw=w;bi=si[g](v);} } const nm=bones[bi]||'';
+    for(let k=1;k<=4;k++) if(nm.startsWith(S3.FN[k]+'-finger-phalanx-distal')||nm.startsWith(S3.FN[k]+'-finger-tip')||nm.startsWith(S3.FN[k]+'-finger-phalanx-intermediate')) L[k].push(v); }
+  return SKIN={mesh,L}; }
+/* nearest skin point of finger k to world point P (and whether any of its skin goes below the board surface z<0 inside the neck) */
+function skinNearest(k,P){ if(CAPS){ updateCaps(); return capNearest(k,P); } const S=skinInit(); if(!S) return null; const v=new S3.THREE.Vector3(); let best=null,bd=1e9,below=0,minZ=1e9; S.mesh.updateMatrixWorld(true); S.mesh.skeleton.update();
+  for(const i of S.L[k]){ S.mesh.boneTransform(i,v); v.applyMatrix4(S.mesh.matrixWorld); const d=v.distanceToSquared(P); if(d<bd){bd=d;best=v.clone();} if(v.z<minZ) minZ=v.z; }
+  return {p:best,d:Math.sqrt(bd),minZ}; }
+const PAD=0.62; /* cm: fingertip pad radius (skin surface to the bone line) */
+/* v34 skin pad point: the palmar skin point PADBACK cm back from the skin tip, fixed in the distal bone frame (skin is rigid on the distal segment) */
+let PADLOC=null; window.resetPad=()=>{ PADLOC=null; };
+function padLocInit(){ const T=S3.THREE; let mesh=null; S3.group.traverse(o=>{ if(o.isSkinnedMesh&&!mesh) mesh=o; }); if(!mesh) return null; const L={}; const v=new T.Vector3();
+  for(let k=1;k<=4;k++){ const nm=S3.FN[k]; const bd=S3.group.getObjectByName(nm+'-finger-phalanx-distal'); if(!bd) return null; const q0=Object.assign({},S3.fingQ&&S3.fingQ[k]||{m:0.6,p:1.2,d:0.7,a:0});
+    S3.setFinger(k,{m:0.6,p:1.2,d:0.6,a:0}); S3.group.updateMatrixWorld(true); const t0=S3.wpos(nm+'-finger-tip'); S3.setFinger(k,{m:0.6,p:1.2,d:0.8,a:0}); S3.group.updateMatrixWorld(true); const t1=S3.wpos(nm+'-finger-tip'); S3.setFinger(k,{m:0.6,p:1.2,d:0.6,a:0}); S3.group.updateMatrixWorld(true);
+    const inv=new T.Matrix4().copy(bd.matrixWorld).invert(); const tl=t0.clone().applyMatrix4(inv); const ax=tl.clone().normalize(); const pal=t1.clone().applyMatrix4(inv).sub(tl); pal.sub(ax.clone().multiplyScalar(pal.dot(ax))).normalize(); if(window.PADSIGN) pal.multiplyScalar(PADSIGN); window._PALDBG=(window._PALDBG||[]).concat([[k,+pal.x.toFixed(2),+pal.y.toFixed(2),+pal.z.toFixed(2)]]);
+    const B=mesh.skeleton.bones, g=mesh.geometry, si=g.attributes.skinIndex.array, sw=g.attributes.skinWeight.array; mesh.updateMatrixWorld(true); mesh.skeleton.update(); const pts=[];
+    for(let i=0;i<g.attributes.position.count;i++){ let w=0; for(let c=0;c<4;c++){ const bn=B[si[i*4+c]].name; if(bn===nm+'-finger-phalanx-distal'||bn===nm+'-finger-tip') w+=sw[i*4+c]; } if(w<0.95) continue; mesh.boneTransform(i,v); v.applyMatrix4(mesh.matrixWorld); pts.push(v.clone().applyMatrix4(inv)); }
+    let tmax=-1e9; pts.forEach(p=>tmax=Math.max(tmax,p.dot(ax))); const sc=new T.Vector3().setFromMatrixScale(bd.matrixWorld).x||1; const back=(window.PADBACK!=null?PADBACK:0.45)/sc; window._PADSC=sc; let best=null,bs=-1e9; pts.forEach(p=>{ const t=p.dot(ax); if(Math.abs(t-(tmax-back))>0.12/sc) return; const s=p.dot(pal); if(s>bs){ bs=s; best=p; } });
+    L[k]=best?best.clone():tl.clone().multiplyScalar(0.6); }
+  return L; }
+function padPoint(n){ if(!window.SKINPAD){ const t=S3.wpos(S3.FN[n]+'-finger-tip'), d=S3.wpos(S3.FN[n]+'-finger-phalanx-distal'); return d.clone().lerp(t,0.62); }
+  if(!PADLOC){ PADLOC=padLocInit(); if(!PADLOC){ window.SKINPAD=0; return padPoint(n); } } const bd=S3.group.getObjectByName(S3.FN[n]+'-finger-phalanx-distal'); bd.updateMatrixWorld(true); return PADLOC[n].clone().applyMatrix4(bd.matrixWorld); }
+function padNormal(k){ const nm=S3.FN[k]; const dj=S3.wpos(nm+'-finger-phalanx-distal'), tp=S3.wpos(nm+'-finger-tip'); const ax=tp.clone().sub(dj).normalize(); const r=padPoint(k).sub(dj); r.sub(ax.multiplyScalar(r.dot(ax))); return r.normalize(); }
+const PADZ=()=>window.SKINPAD?(window.PADZC!=null?PADZC:0.075):PAD;
+let SPS=null; /* sign of abduction that fans a finger away from the middle finger */
+function spreadPrior(n){ if(SPS==null){ const save=[1,4].map(k=>k); const mt=S3.wpos('middle-finger-tip'); S3.setFinger(1,{m:0,p:0,d:0,a:0.2}); const a=S3.wpos('index-finger-tip').distanceTo(mt); S3.setFinger(1,{m:0,p:0,d:0,a:-0.2}); const b=S3.wpos('index-finger-tip').distanceTo(mt); SPS=a>b?1:-1; }
+  return SPS*({1:0.10,2:0,3:-0.07,4:-0.16}[n]); }
+/* v32: DIP angle that puts the last segment straight down (target ~88 deg to the board), by bisection; clamped to anatomical DIP range */
+function dVert(n,q){ const nm=S3.FN[n]; const want=-Math.sin((window.VDEG||88)*Math.PI/180); let lo=Math.max(0.2,q.p*0.35), hi=Math.min(1.6,q.p*1.1+0.4);
+  const dzAt=d=>{ S3.setFinger(n,{m:q.m,p:q.p,d,a:q.a}); const dj=S3.wpos(nm+'-finger-phalanx-distal'), tp=S3.wpos(nm+'-finger-tip'); return (tp.z-dj.z)/Math.max(1e-6,tp.distanceTo(dj)); };
+  const zl=dzAt(lo), zh=dzAt(hi); if((zl-want)*(zh-want)>0) return Math.abs(zl-want)<Math.abs(zh-want)?lo:hi;
+  for(let i=0;i<9;i++){ const mid=(lo+hi)/2, z=dzAt(mid); if((z-want)*(zl-want)>0) lo=mid; else hi=mid; } return (lo+hi)/2; }
+function fitFinger(n,tgt,curl,start,flat,iters){
+  const nm=S3.FN[n]+'-finger-tip'; let best=Object.assign({m:0.7,p:1.0,a:0},start||{}); 
+  const A0=spreadPrior(n);
+  const duck=flat==='duck'; if(duck) flat=false; const clampQ=q=>{ q.m=Math.max(-0.2,Math.min(1.6,q.m)); if(duck){ q.p=Math.max(0.1,Math.min(0.6,q.p)); q.a=Math.max(-0.3,Math.min(0.3,q.a)); q.d=q.p*0.68; return q; } q.p=flat?Math.max(0,Math.min(0.25,q.p)):Math.max(window.PMIN||0.72,Math.min(1.9,q.p)); q.a=Math.max(-(window.AMAX||0.22),Math.min(window.AMAX||0.22,q.a)); if(window.REBUILD&&!flat){ q.p=Math.max(RB.p0,Math.min(RB.p1,q.p)); q.d=RB.c*q.p; return q; } q.d=flat?q.p*0.3:(window.VERT?dVert(n,q):window.FREED?Math.max(0.3,Math.max(q.p*0.45,Math.min(Math.min(1.6,q.p*1.0+0.35),q.d==null?q.p*curl:q.d))):Math.max(0.5,q.p*curl)); return q; };
+  const err=q=>{ S3.setFinger(n,q); const pad=padPoint(n); let e=pad.distanceToSquared(tgt)+(flat?0:Math.pow(q.p-q.m*1.3,2)*0.02)+(duck?0.25:0.06)*Math.pow(q.a-A0*(duck?0.3:1),2); if(duck) e+=0.35*(Math.pow(q.m-0.5,2)+3*Math.pow(q.p-0.38,2));   /* v1.89 relaxed duck bill prior (Study Lab Techniques) */
+    if(!flat&&!duck){ const dj=S3.wpos(S3.FN[n]+'-finger-phalanx-distal'), mj=S3.wpos(S3.FN[n]+'-finger-phalanx-intermediate'), tp=S3.wpos(S3.FN[n]+'-finger-tip'); /* arch: tip joint and middle joint stand up off the board */
+      e+=Math.pow(Math.max(0,tgt.z+0.9-dj.z),2)*3+Math.pow(Math.max(0,tgt.z+1.6-mj.z),2)*2;
+      const dz=(tp.z-dj.z)/Math.max(1e-6,tp.distanceTo(dj)); e+=(window.PERPW!=null?window.PERPW:4.0)*Math.pow(Math.max(0,dz+(window.PERPT!=null?PERPT:0.985)),2);  if(window.FREED) e+=(window.DCW!=null?DCW:0.02)*Math.pow(q.d-0.67*q.p,2); if(window.REBUILD&&!tgt.free){ const deg=Math.asin(Math.max(-1,Math.min(1,-dz)))*180/Math.PI; e+=RB.aw*Math.pow(Math.max(0,RB.a0-deg)+Math.max(0,deg-RB.a1),2)/100; } }   /* v30: last segment comes straight down onto the string (>= ~80 deg to the board) */  /* end segment near perpendicular to the board */
+    return e; };
+  clampQ(best); let be=err(best), st=0.25;
+  for(let it=0;it<(iters||7);it++){ let imp=true,guard=0; while(imp&&guard++<10){ imp=false; for(const k of (window.FREED&&!flat&&!duck?['m','p','d','a']:['m','p','a'])) for(const sg of [-1,1]){ const q=clampQ(Object.assign({},best,{[k]:best[k]+sg*st})); const e=err(q); if(e<be){be=e;best=q;imp=true;} } } st/=2; }
+  S3.setFinger(n,best); best.miss=Math.sqrt(padPoint(n).distanceToSquared(tgt)); return best;
+}
+const THUMBC={};
+/* v15: held 'support' fingers above fret 12 are dropped when solving (frets there are too narrow for a held 3-fret span); the played note is always solved */
+window.solveEv=e=>{ if(window.SUPSKIP===0||!e||!e.notes||!e.notes.some(n=>n.support&&n.f>=12)) return e; const keep=e.notes.map(n=>!(n.support&&n.f>=12)); return Object.assign({},e,{notes:e.notes.filter((n,j)=>keep[j]),fingers:e.fingers.filter((f,j)=>keep[j]),_full:e}); };
+function bestPose(e,prev){ e=solveEv(e); const colP=r=>{ if(!window.SOLCOL||!window.HCOL||!GUIT||!GUIT.userData.strG) return 0; applyPose(r); for(let k=1;k<=4;k++) if(r.fing[k]) S3.setFinger(k,r.fing[k]); const F=HCOL.measure(e); let p=0; for(let k=0;k<=5;k++) if(F[k]) p+=Math.max(0,F[k].penReal!=null?F[k].penReal:F[k].pen); return p; };
+  const sc=r=>{ const q=evQ(e,r.fing); r.Q=q; const cp=colP(r); q.col=+cp.toFixed(3); return q.bad*100+q.w+cp*(window.SOLCOL||0); }; const ok=r=>!r.Q.bad&&!(r.Q.col>0.1);
+  let r=poseForEv(e,prev), best=sc(r);
+  /* finger accuracy first: if any pad misses (or, with SOLCOL, the hand sinks into the neck), retry cold-started, without the thumb lift, and with the thumb higher or lower; keep the best */
+  if(!ok(r)){ const TL=window.THUMBLIFT, TY=window.THY; const VAR=[[null,TL,0,0],[prev,false,0,0],[null,false,0,0],[prev,false,1,0],[null,false,1,0]]; if(barreInfo(e,1)) VAR.push([null,false,0,1.6],[null,false,0,2.4],[null,false,1,2.0],[null,false,1,1.8],[null,false,1,2.2]);
+  if(window.SOLCOL) for(const ty of [0.3,0.7,0.2]) VAR.push([null,TL,0,0,ty],[null,false,1,0,ty]);
+  for(const [pv,tl,rl,bh,ty] of VAR){ window.THUMBLIFT=tl; window.RELAX=rl; window.BHY=bh||null; window.THY=ty!=null?ty:TY; const r2=poseForEv(e,pv); window.RELAX=0; window.BHY=null; window.THY=TY; const c=sc(r2); if(c<best){best=c;r=r2;} if(ok(r)) break; } window.THUMBLIFT=TL; }
+  return r; }
+window.bestPose=bestPose;
+/* v32 classical-fretting solver defaults (Dale): DIP free with ~2/3 PIP coupling, tips toward 90 deg, vertical finger planes, hand rolled so fingers point across the neck */
+window.RB=Object.assign({p0:1.40,p1:1.75,c:0.6,a0:67,a1:87,aw:15,hw:15,rw:20},window.RB||{});
+for(const [k,v] of Object.entries({SKINPAD:1,REBUILD:1,FREED:1,PERPW:0,HPW:0,MHW:0,PTW:40,RY0:0.3,DCW:0,HYBRID:1,SOLCOL:30})) if(window[k]==null) window[k]=v;
+const POSEC={}; window.POSEC=POSEC; const SOLVER_VER='v35'; const THUMB_SKIN=+(new URLSearchParams(location.search).get('tskin')||1.05);
+/* per-chord pose cache: solved offline (exportPoses) and shipped as poses3d.json so warm-up only solves chords it has never seen */
+window.exportPoses=()=>{ const V=v=>v&&[+v.x.toFixed(5),+v.y.toFixed(5),+v.z.toFixed(5)]; const o={}; for(const k in POSEC){ const r=POSEC[k]; const f={}; for(const j in r.fing){ const F=r.fing[j]; f[j]={m:F.m,p:F.p,d:F.d,a:F.a||0,on:!!F.on,tgt:V(F.tgt),str:V(F.str)}; }
+  o[k]={G:{pos:V(r.G.pos),q:[r.G.q.x,r.G.q.y,r.G.q.z,r.G.q.w].map(x=>+x.toFixed(6)),scale:r.G.scale},fing:f,thumb:r.thumb,p:r.p,base:r.base,Q:r.Q}; } return o; };
+window.importPoses=o=>{ const T=S3.THREE, V=a=>a&&new T.Vector3(a[0],a[1],a[2]); for(const k in o){ if(k.startsWith('__')) continue;   /* file poses replace any pose solved live before the file arrived (those were never collision-fixed) */ const r=o[k]; const f={}; for(const j in r.fing){ const F=r.fing[j]; f[j]=Object.assign({},F,{tgt:V(F.tgt),str:V(F.str)}); }
+  POSEC[k]={G:{pos:V(r.G.pos),q:new T.Quaternion(...r.G.q),scale:r.G.scale},fing:f,thumb:r.thumb,p:r.p,base:r.base,Q:r.Q}; } };
+const evSig=e=>[SOLVER_VER,INST,CAPO,(typeof opens!=='undefined'?opens.join(','):''),e.pos,e.notes.map((n,j)=>n.s+'/'+n.f+'/'+e.fingers[j]+(n.harm?'h':'')).join(' ')].join('|');
+/* v19 fast path: a shape the library hasn't seen is never solved on the spot. The same fingering shape (string, finger, fret relative to the hand position) from the library is slid to the new position at once, and the full solve runs in the background and replaces it. */
+const shapeOf=sg=>{ const a=sg.split('|'); const pos=+a[4]; const notes=(a[5]||'').split(' ').filter(Boolean).map(t=>t.split('/')); return {pre:a[1]+(a[3]||'').split(',').length,same:a.slice(0,4).join('|'),pos,key:notes.map(([s0,f,k])=>s0+'/'+(+f>0?(+f-pos):'o')+'/'+k).join(' '),ref:notes.find(([s0,f])=>+f>0)}; };
+let SHIX=null, SHN=-1; function shapeIndex(){ const n=Object.keys(POSEC).length; if(SHIX&&n===SHN) return SHIX; SHIX=new Map(); SHN=n; for(const sg in POSEC){ const h=shapeOf(sg); const k=h.pre+'#'+h.key; let L=SHIX.get(k); if(!L) SHIX.set(k,L=[]); L.push({pos:h.pos,sg,ref:h.ref,same:h.same}); } return SHIX; }
+function quickPose(e,i){ const sg=evSig(e), h=shapeOf(sg); const L=shapeIndex().get(h.pre+'#'+h.key); if(!L||!L.length){ /* no such shape yet: borrow the nearest-position library pose (held, solved properly in the background) */ let best=null,bd=1e9; for(const [k2,L2] of shapeIndex()) { if(!k2.startsWith(h.pre+'#')) continue; for(const c of L2){ const d=Math.abs(c.pos-h.pos); if(d<bd){ bd=d; best=c; } } } if(!best) return null; const P2=POSEC[best.sg]; return Object.assign({},P2,{ev:e,_quick:1,_hold:1,G:{pos:P2.G.pos.clone(),q:P2.G.q.clone(),scale:P2.G.scale}}); } const sc=c=>Math.abs(c.pos-h.pos)+(c.same===h.same?0:0.5); let b=L[0]; for(const c of L) if(sc(c)<sc(b)) b=c; const P=POSEC[b.sg];
+  const r=Object.assign({},P,{ev:e,_quick:1,G:{pos:P.G.pos.clone(),q:P.G.q.clone(),scale:P.G.scale}}); if(h.ref&&b.ref&&b.pos!==h.pos){ const d=noteWorld(+h.ref[0],+h.ref[1],0).sub(noteWorld(+b.ref[0],+b.ref[1],0)); S3.group.parent&&S3.group.parent.updateMatrixWorld(true); r.G.pos.add(d); } return r; }
+function poseFor(i,full){ const key=INST+':'+i; const have=POSES[key]; if(have&&!(full&&have._quick)) return have; const e=RES.events[i], sg=evSig(e); if(POSEC[sg]) return POSES[key]=Object.assign({},POSEC[sg],{ev:e});
+  if(!full&&!window.NOQUICK){ let q=quickPose(e,i)||have; if(q){ window.QUICKN=(window.QUICKN||0)+1; return POSES[key]=q; } }
+  const r=bestPose(e,POSES[INST+':'+(i-1)]); POSEC[sg]=r; window.UNIQ=(window.UNIQ||0)+1; return POSES[key]=r; }
+/* per-event quality, same rules as verify(): counts pads off the string line (>0.5 mm), outside 2-4 mm behind the fret, or sunk */
+function evQ(e,fing){ const I=INSTR[INST], nS=I.nut.length; for(let j=1;j<=4;j++) if(fing[j]) S3.setFinger(j,fing[j]); S3.group.updateMatrixWorld(true); let bad=0,w=0;
+  e.notes.forEach((n,k)=>{ const f=e.fingers[k]; if(f<1||!fing[f]) return; const F=fing[f]; const P=noteWorld(n.s,n.f,strTopZ(n.s)); const cntF=e.fingers.filter(x=>x===f).length, isBarre=!!barreInfo(e,f), isDbl=cntF===2&&!isBarre;
+    const zl=lowSkinZ(f,P); if(zl<0.05){ bad++; w=Math.max(w,(0.05-zl)*10); } if(isBarre){ const sn=skinNearest(f,P); if(sn.d>0.05) bad++; w=Math.max(w,sn.d*10); return; }
+    const pad=padPoint(f); const sy=-CM(I,strY(I,nS-1-n.s,pad.x/2.54*I.S)); const fx=CM(I,fretR(I,n.f)); const tP=isDbl&&F.str?F.str:null;
+    const lat=Math.abs(pad.y-(tP?tP.y:sy))*10, beh=(pad.x-fx)*10; if(lat>0.5) bad++; if(!n.harm&&(beh<2||beh>4)) bad++; w=Math.max(w,lat,n.harm?0:Math.max(0,2-beh,beh-4)); });
+  return {bad,w}; }
+window.evQ=evQ;
+/* v30 audit: distal-segment angle to the board for every pressed note, and unintended muting of sounding strings by pressing fingers */
+window.flatV=(k,v)=>{ const FP=window.FLATP; if(!FP||!FP.v) return v; const pl=FP.v.getComponent(k-1); if(!(pl>-1e3)) return v; const q=v.clone().applyMatrix4(FP.gi); if(q.z<pl){ q.z=pl; v.copy(q.applyMatrix4(FP.g)); } return v; };
+window.tipAudit=()=>{ const I=INSTR[INST]; const ang=[], mutes=[], R=[], TH=[]; RES.events.forEach((e,i)=>{ const P=poseFor(i); if(!P) return; applyPose(P); S3.group.updateMatrixWorld(true);
+  const pressed={}; e.notes.forEach((n,j)=>{ const k=e.fingers[j]; if(k>=1&&k<=4&&n.f>0){ (pressed[k]=pressed[k]||[]).push(n); } });
+  for(const k in pressed){ if(barreInfo(e,+k)&&+k===1) continue; const nm=S3.FN[k]; const dj=S3.wpos(nm+'-finger-phalanx-distal'), tp=S3.wpos(nm+'-finger-tip'); const dz=(tp.z-dj.z)/Math.max(1e-6,tp.distanceTo(dj)); const pb=S3.wpos(nm+'-finger-phalanx-proximal'); const F=P.fing[k]; let pad=null; { const Sk=(window._PADSK||(window._PADSK=(()=>{ let mesh=null; S3.group.traverse(o=>{ if(o.isSkinnedMesh&&!mesh) mesh=o; }); const g=mesh.geometry, si=g.attributes.skinIndex, sw=g.attributes.skinWeight, B=mesh.skeleton.bones; const L={1:[],2:[],3:[],4:[]}; for(let i=0;i<g.attributes.position.count;i++){ let bw=-1,bi=0; for(let c=0;c<4;c++){ if(sw.array[i*4+c]>bw){ bw=sw.array[i*4+c]; bi=si.array[i*4+c]; } } const nm=B[bi].name; for(let kk=1;kk<=4;kk++) if(nm.startsWith(S3.FN[kk]+'-finger-phalanx-distal')||nm.startsWith(S3.FN[kk]+'-finger-tip')) L[kk].push(i); } return {mesh,L}; })())); const n0=pressed[k][0]; const Pn=noteWorld(n0.s,n0.f,strTopZ(n0.s)); const v=new S3.THREE.Vector3(); let bd=1e9,bv=null; Sk.mesh.updateMatrixWorld(true); Sk.mesh.skeleton.update(); for(const vi of Sk.L[k]){ Sk.mesh.boneTransform(vi,v); v.applyMatrix4(Sk.mesh.matrixWorld); flatV(+k,v); const d2=v.distanceToSquared(Pn); if(d2<bd){ bd=d2; bv=v.clone(); } }
+    if(bv){ const ax=tp.clone().sub(dj).normalize(); let tmax=-1e9; for(const vi of Sk.L[k]){ Sk.mesh.boneTransform(vi,v); v.applyMatrix4(Sk.mesh.matrixWorld); tmax=Math.max(tmax,v.clone().sub(dj).dot(ax)); } const back=(tmax-bv.clone().sub(dj).dot(ax))*10; const mc=S3.wpos(nm+'-finger-phalanx-proximal'); const pal=mc.clone().sub(dj); pal.sub(ax.clone().multiplyScalar(pal.dot(ax))).normalize(); const r=bv.clone().sub(dj); r.sub(ax.clone().multiplyScalar(r.dot(ax))); pad={backMm:back, palmar:r.dot(pal)>0}; { const rp=Pn.clone().sub(dj); const tt=rp.dot(ax); rp.sub(ax.clone().multiplyScalar(tt)); pad.strT=tt/Math.max(1e-6,tp.distanceTo(dj)); pad.strPal=rp.dot(pal)/Math.max(1e-6,rp.length()); pad.strPerpMm=rp.length()*10; pad.tipLenMm=tmax*10; } } } R.push({pad,dir:Math.atan2(Math.abs(tp.x-pb.x),Math.abs(tp.y-pb.y))*180/Math.PI, dipPip:F.p>0.05?F.d/F.p:null, abd:Math.abs(F.a||0)*180/Math.PI}); ang.push({ev:i,bar:e.bar,k:+k,deg:+(Math.asin(Math.min(1,Math.max(-1,-dz)))*180/Math.PI).toFixed(1)}); }
+  if(Object.keys(pressed).length){ const tt=S3.wpos('thumb-tip'), mm=S3.wpos('middle-finger-phalanx-proximal'); const nk=GUIT.userData.neck; const px=tt.x/2.54*I.S, yT=GUIT.userData.yTop(Math.min(px,I.nut[0][0])), yB=GUIT.userData.yBot(Math.min(px,I.nut[0][0])); TH.push({behind:tt.z<-0.2, notOverTop:!(tt.z>-0.6&&(tt.y>yT-0.1||tt.y<yB+0.1))&&tt.z<0, oppMm:Math.abs(tt.x-mm.x)*10, hFrac:(tt.y-yB)/(yT-yB)}); }
+  e.notes.forEach(n=>{ for(const k in pressed){ const fk=pressed[k][0].f; if(pressed[k].some(q=>q.s===n.s)) continue; if(barreInfo(e,+k)&&+k===1) continue; if(n.f>=fk) continue; /* only a touch on the sounding side mutes */
+      const c=(lowSkinZ(+k,noteWorld(n.s,fk,999))-strTopZ(n.s))*10; if(c<0.3) mutes.push({ev:i,bar:e.bar,k:+k,string:n.s,fret:n.f,clearMm:+c.toFixed(2)}); } }); });
+  const d=ang.map(a=>a.deg).sort((a,b)=>a-b); const q=p=>d[Math.min(d.length-1,Math.floor(p*d.length))];
+  const pr=(arr,f)=>arr.length?+(100*arr.filter(f).length/arr.length).toFixed(1):null;
+  const _pb=R.filter(r=>r.pad).map(r=>r.pad.backMm).sort((x,y)=>x-y); const rules={tip65to88:pr(ang,a=>a.deg>=65&&a.deg<=88), padBackMm_p10_p50_p90:[_pb[Math.floor(_pb.length*0.1)],_pb[Math.floor(_pb.length/2)],_pb[Math.floor(_pb.length*0.9)]].map(x=>+(+x).toFixed(1)), dbg:(()=>{ const P=R.filter(r=>r.pad); const md=f=>{ const v=P.map(f).sort((x,y)=>x-y); return [v[Math.floor(v.length*0.1)],v[Math.floor(v.length/2)],v[Math.floor(v.length*0.9)]].map(x=>+(+x).toFixed(2)); }; let m=null; S3.group.traverse(o=>{ if(o.isSkinnedMesh&&!m) m=o; }); return {bulge:!!(m&&m.geometry.userData&&m.geometry.userData.padBulge),strT:md(r=>r.pad.strT),strPal:md(r=>r.pad.strPal),strPerpMm:md(r=>r.pad.strPerpMm),tipLenMm:md(r=>r.pad.tipLenMm)}; })(), palmarPct:pr(R.filter(r=>r.pad),r=>r.pad.palmar),tip80to95:pr(ang,a=>a.deg>=80&&a.deg<=95), tipAtLeast75:pr(ang,a=>a.deg>=75), dirWithin15degOfFret:pr(R,r=>r.dir<=15), dipPip0p5to0p85:pr(R.filter(r=>r.dipPip!=null),r=>r.dipPip>=0.5&&r.dipPip<=0.85), abdUnder15deg:pr(R,r=>r.abd<=15), thumbBehindNeck:pr(TH,t=>t.behind), thumbNotOverTop:pr(TH,t=>t.notOverTop), thumbOpposite2ndWithin20mm:pr(TH,t=>t.oppMm<=20), thumbMidNeck0p3to0p7:pr(TH,t=>t.hFrac>=0.3&&t.hFrac<=0.7), padCentre3to6mmNotNail:pr(R.filter(r=>r.pad),r=>r.pad.palmar&&r.pad.backMm>=3&&r.pad.backMm<=6), padPalmarSide:pr(R.filter(r=>r.pad),r=>r.pad.palmar), noUnintendedMute:+(100*(1-mutes.length/Math.max(1,R.length))).toFixed(1)};
+  const ds=R.map(r=>r.dir).sort((a,b)=>a-b);
+  return {rules,dirDeg:{median:ds[Math.floor(ds.length/2)],p90:ds[Math.floor(ds.length*0.9)],max:ds[ds.length-1]},n:d.length,min:d[0],p10:q(0.1),median:q(0.5),p90:q(0.9),max:d[d.length-1],in80to95:d.filter(x=>x>=80&&x<=95).length,below80:d.filter(x=>x<80).length,above95:d.filter(x=>x>95).length,worst:ang.sort((a,b)=>a.deg-b.deg).slice(0,6),mutes:mutes.length,muteList:mutes.slice(0,10)}; };
+/* Dale's barre rule: the index barres ONLY the strings it needs. Barre = index on 3+ notes, or 2 notes on one fret with a string between;
+   span = thinnest..thickest barred string (engine s: 0 = high e). Two adjacent strings stay a rolled-flat partial (double stop). */
+function barreInfo(e,f){ f=f||1; const ns=e.notes.filter((n,j)=>e.fingers[j]===f&&n.f>0); if(ns.length<2) return null; const ss=ns.map(n=>n.s); const lo=Math.min(...ss), hi=Math.max(...ss);
+  if(ns.length===2&&hi-lo<2) return null; return {lo,hi,f:ns[0].f}; }
+window.barreInfo=barreInfo;
+{ const _pf=poseFor; poseFor=function(i,full){ const P=_pf(i,full); if(P&&P._quick) return P; if(P&&!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
+function poseForEv(e,prev){
+  const I=INSTR[INST], p=e.pos, base=Math.max(p,1), nStr=I.nut.length, THREE=S3.THREE;
+  const used={};
+  e.notes.forEach((n,k)=>{ const f=e.fingers[k]; if(f>0) (used[f]=used[f]||[]).push(n); });
+  const BI=barreInfo(e,1); const barreEv=!!BI; const PMIN0=window.PMIN; if(barreEv){ window.PMIN=0.35; window.AMAX=window.FREED?0.3:(window.RELAX?0.95:0.7); window.PERPW=window.RELAX?0.1:0.15; } if(window.RELAX&&!barreEv){ window.AMAX=window.FREED?0.26:0.95; window.PERPW=0.15; }   /* in a barre the other fingers curl from a flatter hand */ const G0=placeHand(p,barreEv?(window.BHY||2.0):null);   /* full barres keep the lower wrist their solve was tuned for */
+  const sMid=I.bass?1.5:2.5;
+  const T={}; for(let k=1;k<=4;k++){ let tgt, flat=false;
+    if(used[k]){ const ns=used[k];
+      if(BI&&k===1){ flat=true; const top=ns.reduce((a,b)=>photoStr(a.s)<photoStr(b.s)?a:b); tgt=noteWorld(top.s,top.f,0.1+PAD*0.55); tgt.y+=0.18; }
+      else if(ns.length>1){ /* one finger on two neighbouring strings (double-stop): pad centred between them */ tgt=noteWorld(ns[0].s,ns[0].f,0.1+PADZ()).lerp(noteWorld(ns[1].s,ns[1].f,0.1+PADZ()),0.5); }
+      else tgt=noteWorld(ns[0].s,ns[0].f,(ns[0].harm?0.35:0.1)+PADZ(),ns[0].harm);
+    } else { const f=(p===0?k:base+k-1); const sNear=e.notes.length?e.notes.reduce((a,b)=>a+b.s,0)/e.notes.length:sMid;
+      const sv=Math.min(nStr-1,Math.max(0,sNear+(k>=3?-0.25:0.25))), s0=Math.floor(sv), s1=Math.min(nStr-1,s0+1), zh=strTopZ(Math.round(sv))+(e.mute?0.03:(window.HOVERCM!=null?HOVERCM:0.40))+PADZ(); tgt=noteWorld(s0,f,zh).lerp(noteWorld(s1,f,zh),sv-s0);
+      /* v29 motion: a finger that just played stays hovering right over its last note (minimal lift); otherwise it hovers ~4 mm over its own fret, curved, not a straight duck bill */
+      const pf=prev&&prev.fing&&prev.fing[k]; if(!e.mute&&pf&&pf.on&&pf.tgt&&prev.base===base&&pf.tgt.isVector3){ tgt=pf.tgt.clone(); tgt.z+=window.HOVERKEEP!=null?HOVERKEEP:0.30; }
+      flat=e.mute?'duck':false; }   /* relaxed duck bill: gathered, ~1 cm over the board, nearly straight */
+    T[k]={tgt,flat,on:!!used[k]}; }
+  const fx=noteWorld(Math.floor(nStr/2),base+1,0).x; const yT=-CM(I,strY(I,0,fretR(I,base+1)))+0.45, yB=-CM(I,strY(I,nStr-1,fretR(I,base+1)))-0.45;
+  const fx12=noteWorld(Math.floor(nStr/2),base+0.5,0).x; const thT=(()=>{ /* grip span from the neck profile at this fret: thumb pad centre sits on the C-profile surface, offset outward by the pad half-thickness (skin) */
+    const px=fx12/2.54*I.S, dep=I.neckDep?neckDepAt(I,px):(I.bass?2.2:1.95), fbT=0.6, yc=(yT+yB)/2, hw=(yT-yB)/2*0.98, a=dep-fbT, y=yB+(window.THY!=null?THY:0.5)*(yT-yB), u=Math.min(0.97,Math.abs(y-yc)/hw);
+    const z=-fbT-a*Math.sqrt(1-u*u); let ny=(y-yc)/(hw*hw), nz=(z+fbT)/(a*a); const L=Math.hypot(ny,nz); ny/=L; nz/=L; const SK=THUMB_SKIN*(I.bass?1.1:1);
+    return new THREE.Vector3(fx+0.0,y+ny*SK,z+nz*SK); })();   /* v31: thumb pad mid-neck, opposite the 2nd finger */
+  /* x: line the knuckles up over their notes (pressed fingers), else over the position */
+  S3.group.position.copy(G0.pos); S3.group.updateMatrixWorld(true);
+  let dx=0,nn=0; for(let k=1;k<=4;k++) if(T[k].on){ dx+=T[k].tgt.x-S3.wpos(S3.FN[k]+'-finger-phalanx-proximal').x; nn++; } dx=nn?dx/nn*0.8:0;
+  const isBarre=!!BI; const RY0=(window.RY0!=null?window.RY0:0.12)*(isBarre?2:1), RX0=window.RX0!=null?window.RX0:0.0;
+  const trial=(P,full)=>{ const q=G0.q.clone().premultiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(P.rx,P.ry||0,P.rz)));
+    S3.group.quaternion.copy(q); S3.group.position.set(G0.pos.x+dx+P.dx,G0.pos.y+P.dy,G0.pos.z+P.dz); S3.group.updateMatrixWorld(true);
+    const fing={}; let cost=0; for(let k=1;k<=4;k++){ if(!full&&!T[k].on) continue; fing[k]=fitFinger(k,T[k].tgt,(window.DIPC||0.67),(full&&full[k])||(prev&&prev.fing[k]),T[k].flat,full?7:4); fing[k].on=T[k].on; fing[k].tgt=T[k].tgt; cost+=(T[k].on?(window.ONW||4):0.4)*fing[k].miss*fing[k].miss; }
+    { const nk=GUIT.userData.neck; const palm=S3.wpos('middle-finger-metacarpal'), palm2=S3.wpos('index-finger-metacarpal'); for(const pp of [palm,palm2]){ const clr=nk.yB-pp.y; if(pp.z>-nk.dep-0.6&&pp.z<1.5) cost+=3*Math.pow(Math.max(0,1.0-clr),2); } }
+    if(isBarre&&fing[1]){ S3.setFinger(1,fing[1]); const J=['phalanx-proximal','phalanx-intermediate','phalanx-distal','tip'].map(j=>S3.wpos('index-finger-'+j)); const seg=(P,A,B)=>{ const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,P.clone().sub(A).dot(ab)/ab.lengthSq())); return A.clone().add(ab.multiplyScalar(t)).distanceTo(P); };
+      used[1].forEach(n=>{ const P=noteWorld(n.s,n.f,0.2+PAD*0.8); let d=1e9; for(let j=0;j<3;j++) d=Math.min(d,seg(P,J[j],J[j+1])); cost+=4*d*d; }); }
+    { /* v31 classical fretting: fingers point straight across the neck (parallel to the frets), knuckle line parallel to the neck */
+      for(const k in fing){ S3.setFinger(+k,fing[k]); } S3.group.updateMatrixWorld(true);
+      if(window.FREED) for(const k in fing){ if(!T[k].on) continue; const nm=S3.FN[k]; const dj=S3.wpos(nm+'-finger-phalanx-distal'), tp=S3.wpos(nm+'-finger-tip'); const dz=(tp.z-dj.z)/Math.max(1e-6,tp.distanceTo(dj)); cost+=(window.HPW!=null?HPW:6)*Math.pow(Math.max(0,dz+0.985),2); if(window.REBUILD){ const deg=Math.asin(Math.max(-1,Math.min(1,-dz)))*180/Math.PI; cost+=RB.hw*Math.pow(Math.max(0,RB.a0-deg)+Math.max(0,deg-RB.a1),2)/100; if(window.SKINPAD&&RB.rw){ const pnn=padNormal(k); cost+=RB.rw*pnn.y*pnn.y; } } { const ip=S3.wpos(nm+'-finger-phalanx-intermediate'), m0=S3.wpos(nm+'-finger-phalanx-proximal'); const pn=ip.clone().sub(m0).cross(tp.clone().sub(ip)); if(pn.lengthSq()>1e-8){ pn.normalize(); cost+=(window.PTW!=null?PTW:10)*pn.z*pn.z; } }   /* finger flexion plane vertical (perpendicular to the board) */ const mc=S3.wpos(nm+'-finger-phalanx-proximal'); if(window.MLW){ const pxm=mc.x/2.54*INSTR[INST].S; const yb=GUIT.userData.yBot(Math.min(pxm,INSTR[INST].nut[0][0])); const lat=yb-mc.y; cost+=MLW*Math.pow(lat-(window.MLY!=null?MLY:1.0),2); }   /* ref frames: knuckles sit just past the treble edge of the board */ cost+=(window.MHW!=null?MHW:20)*Math.pow(Math.max(0,(window.MH!=null?MH:2.2)-(mc.z-T[k].tgt.z)),2); }   /* knuckles arched well above the string */   /* v32: hand height/roll chosen so the pressing tips can come straight down */
+      for(const k in fing){ const nm=S3.FN[k]; const b=S3.wpos(nm+'-finger-phalanx-proximal'), t=S3.wpos(nm+'-finger-tip'); const ang=Math.atan2(Math.abs(t.x-b.x),Math.abs(t.y-b.y)+1e-6); cost+=(window.DIRW!=null?DIRW:3)*Math.pow(Math.max(0,ang-0.14),2)*(T[k].on?1:0.6); }
+      const ki=S3.wpos('index-finger-phalanx-proximal'), kp=S3.wpos('pinky-finger-phalanx-proximal'); const kl=Math.atan2(Math.abs(ki.y-kp.y),Math.abs(ki.x-kp.x)+1e-6); cost+=(window.KNW!=null?KNW:1.5)*Math.pow(Math.max(0,kl-0.2),2); }
+    S3.setThumb(THUMBC[INST]||{y:0,p:0,f:0.3}); const th=S3.wpos('thumb-tip').distanceTo(thT); cost+=(isBarre?0.3:(window.THW||0.3))*th*th; cost+=0.3*(Math.pow(P.rx-RX0,2)+P.rz*P.rz)+0.6*Math.pow((P.ry||0)-RY0,2)+0.02*(P.dx*P.dx); return {cost,fing,P,q}; };
+  let best=null; for(const dy of (window.FREED?[-1.5,-0.5,0.5,1.5,2.5]:[-1.5,-0.5,0.5,1.5])) for(const dz of (window.FREED?[-0.6,0.4,1.4,2.4]:[-1.2,0,1.2])) for(const rx of (window.FREED?[RX0-0.25,RX0,RX0+0.25]:[RX0])){ const r=trial({dx:0,dy,dz,rx,ry:RY0,rz:0}); if(!best||r.cost<best.cost) best=r; }
+  const STEP={dx:0.6,dy:0.5,dz:0.5,rx:0.08,ry:0.08,rz:0.08};
+  for(let it=0;it<3;it++){ for(const k of Object.keys(STEP)) for(const sg of [-1,1]){ const P=Object.assign({},best.P); P[k]+=sg*STEP[k]/(1<<it); P.rx=Math.max(-0.5,Math.min(0.5,P.rx)); P.ry=Math.max(-0.5,Math.min(0.6,P.ry||0)); P.rz=Math.max(-0.25,Math.min(0.25,P.rz)); const r=trial(P); if(r.cost<best.cost) best=r; } }
+  const fin=trial(best.P,best.fing||{});
+  /* dedicated barre solve: index straight along the fret from string 1 (tip just past it) back to the knuckle; lower the hand
+     (knuckle) and roll it so every string's skin contact closes; then fingers 2-4 are refitted curled from the new hand pose */
+  if(isBarre){ const Ps=e.notes.filter(n=>true).map(n=>noteWorld(n.s,used[1][0].f,0.2)); const all=[]; for(let s2=BI.lo;s2<=BI.hi;s2++) all.push(noteWorld(s2,BI.f,strTopZ(s2)));
+    const g=S3.group, q0=g.quaternion.clone(), p0=g.position.clone(); let X={dx:0,dy:0,dz:0,rx:0,ry:0,rz:0,m:fin.fing[1].m,a:fin.fing[1].a||0,p:fin.fing[1].p||0,d:(fin.fing[1].p||0)*0.3};
+    const apply=X=>{ g.quaternion.copy(q0).premultiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(X.rx,X.ry,X.rz))); g.position.set(p0.x+X.dx,p0.y+X.dy,p0.z+X.dz); g.updateMatrixWorld(true); S3.setFinger(1,{m:X.m,p:X.p,d:X.d,a:X.a}); };
+    const barrePen=()=>{ let c=0; for(let s2=BI.lo;s2<=BI.hi;s2++){ const P=noteWorld(s2,BI.f,strTopZ(s2)); const zl=lowSkinZ(1,P); if(zl<strTopZ(s2)-0.005) c+=400*Math.pow(strTopZ(s2)-0.005-zl,2); }
+      { const full=BI.hi>=nStr-1; const yH=noteWorld(BI.hi,BI.f,0).y, yN=full?2*yH-noteWorld(BI.hi-1,BI.f,0).y:noteWorld(BI.hi+1,BI.f,0).y, sp=yN-yH, t=S3.wpos('index-finger-tip'); const past=(t.y-yH)/sp, PL=full?1.0:0.55; if(past>PL) c+=30*Math.pow((past-PL)*Math.abs(sp),2); if(past<0.15) c+=30*Math.pow((0.15-past)*Math.abs(sp),2);
+        if(!full) for(let s2=BI.hi+1;s2<nStr;s2++){ const zl=lowSkinZ(1,noteWorld(s2,BI.f,strTopZ(s2))); if(zl<strTopZ(s2)+0.08) c+=40*Math.pow(strTopZ(s2)+0.08-zl,2); } } return c; };
+    const cost=X=>{ apply(X); let c=barrePen()*2, mx=0; for(const P of all){ const sn=skinNearest(1,P); c+=sn.d*sn.d*10; mx=Math.max(mx,sn.d); if(!CAPS&&sn.minZ<0.03) c+=Math.pow(0.03-sn.minZ,2)*200; } return c+40*mx*mx; };
+    let bc=cost(X); const ST={dx:0.2,dy:0.4,dz:0.4,rx:0.08,ry:0.1,rz:0.06,m:0.15,a:0.08,p:0.08,d:0.08};
+    for(let it=0;it<11;it++){ let imp=true,gd=0; while(imp&&gd++<20){ imp=false; for(const k of Object.keys(ST)) for(const sg of [-1,1]){ const Y=Object.assign({},X); Y[k]+=sg*ST[k]/(1<<it); Y.p=Math.max(-0.1,Math.min(0.3,Y.p)); Y.d=Math.max(-0.2,Math.min(0.3,Y.d)); Y.dx=Math.max(-0.4,Math.min(0.4,Y.dx)); Y.ry=Math.max(-0.5,Math.min(0.6,Y.ry)); const c=cost(Y); if(c<bc){bc=c;X=Y;imp=true;} } } }
+    apply(X); fin.fing[1]=Object.assign({},fin.fing[1],{m:X.m,p:X.p,d:X.d,a:X.a,on:true}); window.BARRE_X=X;
+    for(let k=2;k<=4;k++){ const f2=fitFinger(k,T[k].tgt,0.9,fin.fing[k],false,7); f2.on=T[k].on; f2.tgt=T[k].tgt; fin.fing[k]=f2; } }
+  /* true contact pass: every pressed pad onto its string top, 3 mm behind the fret; returns the worst remaining error (cm) */
+  const contactPass=()=>{ let worst=0;
+    for(let k=1;k<=4;k++){ if(!T[k].on||(k===1&&isBarre)) continue; const ns=used[k]; const sp=(ns.length>1?ns.reduce((a,b)=>photoStr(a.s)<photoStr(b.s)?a:b):ns[0]); const P=(ns.length===2)?noteWorld(ns[0].s,ns[0].f,strTopZ(ns[0].s)).lerp(noteWorld(ns[1].s,ns[1].f,strTopZ(ns[1].s)),0.5):noteWorld(sp.s,sp.f,strTopZ(sp.s),sp.harm);
+      const SZ=sp.harm?strTopZ(sp.s)+0.05:strTopZ(sp.s); let tg=T[k].tgt.clone(); let bestE=1e9,bestF=fin.fing[k];
+      for(let r=0;r<10;r++){ for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); const sn=skinNearest(k,P); if(!sn) break; const pad=padPoint(k);
+        const ex=P.x-pad.x, ey=P.y-pad.y, ez=SZ-Math.min(sn.p.z,sn.minZ+0.0)+0*0; const zLow=window.SKINPAD?pad.z:lowSkinZ(k,P); const dz=SZ-zLow; const E=ex*ex+ey*ey+dz*dz; if(E<bestE){bestE=E;bestF=fin.fing[k];}
+        tg.x+=ex; tg.y+=ey; tg.z+=dz; const f2=fitFinger(k,tg,0.85,fin.fing[k],T[k].flat,7); f2.on=true; f2.tgt=T[k].tgt; f2.str=P; fin.fing[k]=f2; }
+      for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); { const pad=padPoint(k), E=Math.pow(P.x-pad.x,2)+Math.pow(P.y-pad.y,2)+Math.pow(SZ-(window.SKINPAD?pad.z:lowSkinZ(k,P)),2); if(E>bestE){ fin.fing[k]=bestF; } } }
+    for(let k=1;k<=4;k++){ if(!T[k].on||(k===1&&isBarre)||!fin.fing[k].str) continue; const P=fin.fing[k].str, ns=used[k], sp=ns[0]; const SZ=sp.harm?strTopZ(sp.s)+0.05:(ns.length===2?(strTopZ(ns[0].s)+strTopZ(ns[1].s))/2:strTopZ(sp.s)); const pad=padPoint(k);
+      const E=Math.max(Math.abs(P.x-pad.x),Math.abs(P.y-pad.y),Math.abs(SZ-(window.SKINPAD?pad.z:lowSkinZ(k,P)))); if(window.DBGW) console.log('worst f'+k,(P.x-pad.x).toFixed(2),(P.y-pad.y).toFixed(2),(SZ-lowSkinZ(k,P)).toFixed(2)); if(E>worst) worst=E; } return worst; };
+  const barreWorst=()=>{ if(!isBarre) return 0; let w=0; for(let s2=BI.lo;s2<=BI.hi;s2++){ const sn=skinNearest(1,noteWorld(s2,BI.f,strTopZ(s2))); w=Math.max(w,sn.d); } return w; };
+  const cp0=contactPass; const contactPass2=()=>Math.max(cp0(),barreWorst());
+  let worst=contactPass2(); if(window.DBGW) console.log('worst0',worst.toFixed(3),'barre',barreWorst().toFixed(3));
+  /* per-chord wrist re-solve: if any pad is still more than 0.5 mm off, nudge the whole hand (small moves + roll) and redo the contacts */
+  if(worst>0.05&&nn>=1){ const cloneF=F=>{ const o={}; for(const k in F){ o[k]=Object.assign({},F[k]); if(F[k].str) o[k].str=F[k].str.clone(); if(F[k].tgt) o[k].tgt=F[k].tgt.clone(); } return o; }; const g=S3.group, p0=g.position.clone(), q0=g.quaternion.clone(); let best={w:worst,pos:p0.clone(),q:q0.clone(),fing:cloneF(fin.fing)};
+    const tries=[]; for(const dx of [-0.4,0,0.4]) for(const dy of [-0.5,0,0.5]) for(const dz of [-0.4,0,0.4]) for(const rz of [-0.08,0,0.08]) if(dx||dy||dz||rz) tries.push({dx,dy,dz,rz});
+    for(const t of tries){ g.position.set(p0.x+t.dx,p0.y+t.dy,p0.z+t.dz); g.quaternion.copy(q0).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),t.rz)); g.updateMatrixWorld(true);
+      for(let k=1;k<=4;k++){ if(!T[k].on||(k===1&&isBarre)) continue; const f2=fitFinger(k,T[k].tgt,(window.DIPC||0.67),fin.fing[k],T[k].flat,5); f2.on=true; f2.tgt=T[k].tgt; f2.str=fin.fing[k].str; fin.fing[k]=f2; }
+      const w=contactPass2(); if(w<best.w){ best={w,pos:g.position.clone(),q:g.quaternion.clone(),fing:cloneF(fin.fing)}; if(w<0.04) break; } else { fin.fing=cloneF(best.fing); } }
+    g.position.copy(best.pos); g.quaternion.copy(best.q); g.updateMatrixWorld(true); fin.fing=best.fing; for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); worst=best.w; if(window.DBGW) console.log('after',best.w.toFixed(3),'recheck',contactPass2().toFixed(3),'barre',barreWorst().toFixed(3)); }
+  /* raise the hand toward the neck so the thumb can reach ~75% up the back, opposite fingers 1-2, but only while every pad stays on its
+     string (no loss of accuracy) and the palm keeps 1 cm off the neck */
+  if(!isBarre&&nn>=1&&window.THUMBLIFT!==false){ const g=S3.group, nk=GUIT.userData.neck, cloneF=F=>{ const o={}; for(const k in F){ o[k]=Object.assign({},F[k]); if(F[k].str) o[k].str=F[k].str.clone(); if(F[k].tgt) o[k].tgt=F[k].tgt.clone(); } return o; };
+    const hOf=()=>{ const th=S3.solveThumb(thT); const t=S3.wpos('thumb-tip'); return {th,h:(t.y-yB)/(yT-yB),z:t.z}; };
+    const Q0=evQ(e,fin.fing); let base={pos:g.position.clone(),q:g.quaternion.clone(),fing:cloneF(fin.fing),w:worst,Q:Q0}; let H=hOf(); let bestH=H.h, bestMiss=H.th.miss;
+    for(let st=1;st<=10&&bestH<0.72;st++){ let bs=1e9,bc=null;
+      for(const dz of [-0.3,0,0.3]) for(const rx of [-0.06,0,0.06]){ g.position.copy(base.pos); g.position.y+=0.25; g.position.z+=dz; g.quaternion.copy(base.q).premultiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,0,0))); g.updateMatrixWorld(true);
+        fin.fing=cloneF(base.fing); for(let k=1;k<=4;k++){ if(!T[k].on) continue; const f2=fitFinger(k,T[k].tgt,(window.DIPC||0.67),fin.fing[k],T[k].flat,5); f2.on=true; f2.tgt=T[k].tgt; f2.str=fin.fing[k].str; fin.fing[k]=f2; }
+        const w0=contactPass(); const Q=evQ(e,fin.fing); const sc=Q.bad*100+Q.w; if(sc<bs){ bs=sc; bc={pos:g.position.clone(),q:g.quaternion.clone(),fing:cloneF(fin.fing),w:w0,Q}; } }
+      g.position.copy(bc.pos); g.quaternion.copy(bc.q); g.updateMatrixWorld(true); fin.fing=bc.fing; for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]);
+      const pm=S3.wpos('middle-finger-metacarpal'); const clr=nk.yB-pm.y; const h=hOf();
+      /* finger accuracy has strict priority: any new miss or a worse worst-pad error ends the lift */
+      if(bc.Q.bad<=base.Q.bad&&bc.Q.w<=Math.max(base.Q.w,0.3)&&clr>=1.0&&h.z<-0.4&&h.th.miss<=bestMiss+0.05){ bestMiss=Math.min(bestMiss,h.th.miss); base=bc; bestH=h.h; } else break; }
+    g.position.copy(base.pos); g.quaternion.copy(base.q); g.updateMatrixWorld(true); fin.fing=base.fing; for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); worst=base.w; }
+  if(isBarre){ /* final barre polish: index joints plus a small wrist roll/lift, minimising the worst string; fingers 2-4 re-contacted after */
+    const g=S3.group, p0=g.position.clone(), q0=g.quaternion.clone(); const all=[]; for(let s2=BI.lo;s2<=BI.hi;s2++) all.push(noteWorld(s2,BI.f,strTopZ(s2)));
+    const cloneF=F=>{ const o={}; for(const k in F){ o[k]=Object.assign({},F[k]); if(F[k].str) o[k].str=F[k].str.clone(); if(F[k].tgt) o[k].tgt=F[k].tgt.clone(); } return o; }; const F0=cloneF(fin.fing); let bestR=null;
+    for(const WR of [1,2,3,0]){ g.position.copy(p0); g.quaternion.copy(q0); g.updateMatrixWorld(true); fin.fing=cloneF(F0); for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]);
+    let X=Object.assign({dz:0,dy:0,rx:0,rz:0},fin.fing[1]);
+    const apply=X=>{ g.position.set(p0.x,p0.y+X.dy,p0.z+X.dz); g.quaternion.copy(q0).premultiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(X.rx,0,X.rz))); g.updateMatrixWorld(true); S3.setFinger(1,X); };
+    const barrePen=()=>{ let c=0; for(let s2=BI.lo;s2<=BI.hi;s2++){ const P=noteWorld(s2,BI.f,strTopZ(s2)); const zl=lowSkinZ(1,P); if(zl<strTopZ(s2)-0.005) c+=400*Math.pow(strTopZ(s2)-0.005-zl,2); }
+      { const full=BI.hi>=nStr-1; const yH=noteWorld(BI.hi,BI.f,0).y, yN=full?2*yH-noteWorld(BI.hi-1,BI.f,0).y:noteWorld(BI.hi+1,BI.f,0).y, sp=yN-yH, t=S3.wpos('index-finger-tip'); const past=(t.y-yH)/sp, PL=full?1.0:0.55; if(past>PL) c+=30*Math.pow((past-PL)*Math.abs(sp),2); if(past<0.15) c+=30*Math.pow((0.15-past)*Math.abs(sp),2);
+        if(!full) for(let s2=BI.hi+1;s2<nStr;s2++){ const zl=lowSkinZ(1,noteWorld(s2,BI.f,strTopZ(s2))); if(zl<strTopZ(s2)+0.08) c+=40*Math.pow(strTopZ(s2)+0.08-zl,2); } } return c; };
+    const cost=X=>{ apply(X); let c=barrePen()*0.4,mx=0; for(const P of all){ const sn=skinNearest(1,P); c+=sn.d*sn.d; mx=Math.max(mx,sn.d); } return c+40*mx*mx+(mx>0.045?200*(mx-0.045)*(mx-0.045):0); };
+    let bc=cost(X); const WS=WR===1?1:WR===2?0.4:0.15; const ST=WR?{m:0.1,a:0.08,p:0.08,d:0.08,dz:0.15*WS,dy:0.2*WS,rx:0.05*WS,rz:0.04*WS}:{m:0.1,a:0.08,p:0.08,d:0.08};
+    for(let it=0;it<8;it++){ let imp=true,gd=0; while(imp&&gd++<20){ imp=false; for(const k in ST) for(const sg of [-1,1]){ const Y=Object.assign({},X); Y[k]+=sg*ST[k]/(1<<it); Y.dz=Math.max(-0.5*WS,Math.min(0.5*WS,Y.dz)); Y.dy=Math.max(-0.6*WS,Math.min(0.6*WS,Y.dy)); Y.rx=Math.max(-0.15,Math.min(0.15,Y.rx)); Y.rz=Math.max(-0.12,Math.min(0.12,Y.rz)); const c=cost(Y); if(c<bc){bc=c;X=Y;imp=true;} } } }
+    apply(X); const F1=Object.assign({},fin.fing[1],{m:X.m,a:X.a,p:X.p,d:X.d}); fin.fing[1]=F1; S3.setFinger(1,F1);
+    for(let k=2;k<=4;k++){ if(!T[k].on) continue; const f2=fitFinger(k,T[k].tgt,(window.DIPC||0.67),fin.fing[k],T[k].flat,5); f2.on=true; f2.tgt=T[k].tgt; f2.str=fin.fing[k].str; fin.fing[k]=f2; }
+    cp0(); cp0(); cp0(); { const a0=window.AMAX,p0_=window.PMIN,w0_=window.PERPW; if(cp0()>0.05){ window.AMAX=1.1; window.PMIN=0.0; window.PERPW=0.0; cp0(); cp0(); cp0(); cp0(); window.AMAX=a0; window.PMIN=p0_; window.PERPW=w0_; } } const w=Math.max(cp0(),barreWorst()); if(!bestR||w<bestR.w) bestR={w,pos:g.position.clone(),q:g.quaternion.clone(),fing:cloneF(fin.fing)}; }
+    g.position.copy(bestR.pos); g.quaternion.copy(bestR.q); g.updateMatrixWorld(true); fin.fing=bestR.fing; for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); worst=bestR.w; }
+  fin.worst=worst; window.PMIN=PMIN0; window.AMAX=null; window.PERPW=null;
+  if(false&&used[1]&&used[1].length>1){ const Ps=used[1].map(n=>noteWorld(n.s,n.f,0.2)); let tg=fin.fing[1].tgt.clone(); let bestF=fin.fing[1], bestW=1e9;
+    for(let r=0;r<8;r++){ for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); const ds=Ps.map(P=>skinNearest(1,P)); const w=Math.max(...ds.map(d=>d.d)); if(w<bestW){bestW=w;bestF=fin.fing[1];}
+      const wi=ds.findIndex(d=>d.d===w); const dv=Ps[wi].clone().sub(ds[wi].p); tg.z+=dv.z*0.9; tg.y+=dv.y*0.3; const mz=Math.min(...ds.map(d=>d.minZ)); if(mz<0.02) tg.z+=0.02-mz;
+      const f2=fitFinger(1,tg,0.85,fin.fing[1],true,7); f2.on=true; f2.tgt=fin.fing[1].tgt; f2.str=fin.fing[1].str; fin.fing[1]=f2; }
+    fin.fing[1]=bestF; for(let j=1;j<=4;j++) S3.setFinger(j,fin.fing[j]); }
+  THUMBC[INST]=S3.solveThumb(thT); /* hand-solve warm start stays the plain thumb */ let thumb=S3.solveThumbX(thT,-0.6-(I.bass?0.2:0)-(I.neckDep?I.neckDep[0]-1.95:0)); { const hh=(S3.wpos('thumb-tip').y-yB)/(yT-yB); if(hh<0.45){ const t2=S3.solveThumbX(thT,-0.6-(I.bass?0.2:0),2.4); const h2=(S3.wpos('thumb-tip').y-yB)/(yT-yB); if(h2>hh) thumb=t2; else S3.setThumb(thumb); } }
+  const G={pos:S3.group.position.clone(),q:S3.group.quaternion.clone(),scale:G0.scale};
+  return {G,fing:fin.fing,thumb,p,base,ev:e,thT:[thT.x,thT.y,thT.z],yBT:[yB,yT]};
+}
+function applyPose(P){
+  const g=S3.group; g.position.copy(P.G.pos); g.quaternion.copy(P.G.q); g.scale.setScalar(P.G.scale); g.updateMatrixWorld(true);  /* thumb base slide is a world offset: parent matrix must be current */
+  for(let k=1;k<=4;k++) S3.setFinger(k,P.fing[k]); S3.setThumb(P.thumb); g.updateMatrixWorld(true);
+}
+const lerpQ=(a,b,t)=>({m:a.m+(b.m-a.m)*t,p:a.p+(b.p-a.p)*t,d:a.d+(b.d-a.d)*t,a:(a.a||0)+((b.a||0)-(a.a||0))*t});
+function blend(A,B,t){ if(!A) return B; const THREE=S3.THREE;
+  const G={pos:A.G.pos.clone().lerp(B.G.pos,t),q:A.G.q.clone().slerp(B.G.q,t),scale:A.G.scale+(B.G.scale-A.G.scale)*t};
+  const fing={}; for(let k=1;k<=4;k++) fing[k]=lerpQ(A.fing[k],B.fing[k],t);
+  const ao=A.thumb.o||[0,0,0], bo=B.thumb.o||[0,0,0]; const thumb={y:A.thumb.y+(B.thumb.y-A.thumb.y)*t,p:A.thumb.p+(B.thumb.p-A.thumb.p)*t,f:A.thumb.f+(B.thumb.f-A.thumb.f)*t,o:[0,1,2].map(i=>ao[i]+(bo[i]-ao[i])*t)};
+  return {G,fing,thumb,p:B.p,base:B.base,ev:B.ev}; }
+/* animation loop: eased approach to the target pose (critically-damped feel), labels follow the fingertips */
+/* v29 human motion layer (render only; the solved/verified poses are the targets it settles on):
+   anticipation (free fingers start toward their next note during the current one), ring/pinky coupling, tiny relaxed micro-motion on free fingers,
+   wrist/arm leads position shifts (faster stage than the fingers). Joint-space easing gives curved, not straight-line, fingertip paths. */
+function motionTarget(now){ if(!TGT||window.SNAP||window.NOMOTION||!RES) return TGT; const e=RES.events[CURI]; const nx=RES.events[CURI+1]; const dur=window.EVDURMS||400;
+  const u=Math.max(0,Math.min(1,(now-SHOWT)/dur)); const N=nx?poseFor(CURI+1):null; const M=blend(TGT,TGT,0); M.fing={}; for(let k=1;k<=4;k++) M.fing[k]=Object.assign({},TGT.fing[k]);
+  const ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x); const sameHand=N&&N.base===TGT.base;
+  for(let k=1;k<=4;k++){ const F=M.fing[k]; if(F.on){ /* release: a pressing finger that moves to a different spot next lifts a touch in the last 15% of the note (anticipation); one that stays down does not move */
+      const Q=N&&N.fing[k]; const stays=Q&&Q.on&&Q.tgt&&F.tgt&&Q.tgt.distanceTo&&Q.tgt.distanceTo(F.tgt)<0.05; if(N&&!stays&&window.FLUENT!==0){ const w=ss((u-0.85)/0.15); F.m-=0.10*w; F.p-=0.06*w; } continue; }
+    if(sameHand&&N.fing[k]){ const w=0.7*ss((u-0.2)/0.8); const Q=N.fing[k]; F.m+=(Q.m-F.m)*w; F.p+=(Q.p-F.p)*w; F.d+=(Q.d-F.d)*w; F.a=(F.a||0)+((Q.a||0)-(F.a||0))*w; }
+    const t=now/1000; F.m+=0.018*Math.sin(t*1.1+k*1.7); F.a=(F.a||0)+0.012*Math.sin(t*0.7+k); }
+  for(const [x,y] of [[3,4],[4,3]]){ const A=M.fing[x], B=M.fing[y]; if(!A.on){ const c=0.18; A.m+=(B.m-A.m)*c; A.p+=(B.p-A.p)*c*0.6; } }
+  return M; }
+let lastT=performance.now();
+function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; frame(now); }
+/* one rendered frame at time now (ms); also driven directly by the 60 fps capture with a virtual clock */
+function frame(now){ if(window.VNOW!=null) now=window.VNOW; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,Math.max(0,(now-lastT)/1000)); lastT=now;
+  /* v16 fluency: time constant follows the note length (fast passages stay tight, slow ones glide); two cascaded stages = smooth ease-in/ease-out, never a snap */
+  const tau=Math.max(0.045,Math.min(0.12,(window.EVDURMS||400)/1000*0.2))*(window.FLUENT===0?0.6:1); const k=1-Math.exp(-dt*(window.SNAP?1e3:1/tau)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:1/(tau*1.3))); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); narrowFollow(dt); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
+let SHOWT=0, BENT=false;
+function applyBend(now){ const e=RES&&RES.events[CURI]; if(!e) return; const tps=SP&&SP.on?SP.tps:960*((typeof api!=='undefined'&&api.score&&api.score.tempo)||70)/60; const durMs=e.dur/tps*1000; window.EVDURMS=durMs;
+  const u=window.BENDU!=null?window.BENDU:Math.max(0,(now-SHOWT-60)/durMs); const B=bendState(e,u);
+  if(!B){ if(BENT){ layStrings(PRESS); BENT=false; } window.BENDNOW=null; return; }
+  layStrings(PRESS,B.by); BENT=true;
+  if(Math.abs(B.semMax)>0.2&&CUR&&S3.solveThumb){ const I0=INSTR[INST]; if(!e._hook){ const n0=e.notes.find(q=>q.bend||q.vib); const P0=noteWorld(n0.s,n0.f,0); const yTopE=-CM(I0,strY(I0,0,fretR(I0,n0.f)))+0.5;
+      e._hook=S3.solveThumbX(new S3.THREE.Vector3(P0.x+1.2,yTopE+0.3,0.1),0.4,3.6); }
+    const w=Math.min(1,Math.abs(B.semMax)/1.0), h=e._hook, c=CUR.thumb; S3.setThumb({y:c.y+(h.y-c.y)*w,p:c.p+(h.p-c.p)*w,f:c.f+(h.f-c.f)*w,o:(c.o||[0,0,0]).map((v,j)=>v+(((h.o||[0,0,0])[j])-v)*w)}); S3.group.updateMatrixWorld(true); }
+  /* the wrist turns the hand about the thumb behind the neck: fingertips travel with the string */ const I=INSTR[INST]; const n=e.notes.find(q=>q.bend||q.vib); const P=noteWorld(n.s,n.f,strTopZ(n.s)); const i=photoStr(n.s); const d=B.by[i];
+  const piv=new S3.THREE.Vector3(P.x,P.y,-(I.neckDep?neckDepAt(I,fretR(I,n.f)):2.1)); const h=P.z-piv.z; const q=new S3.THREE.Quaternion().setFromAxisAngle(new S3.THREE.Vector3(1,0,0),-Math.asin(Math.max(-0.6,Math.min(0.6,d/h))));
+  const pre0={}; Object.values(S3.FN).forEach(fn=>pre0[fn]=S3.wpos(fn+'-finger-tip')); const g=S3.group;
+  /* the fretting pad must travel exactly with the string: scale the wrist angle by the measured pad travel (2 passes) */
+  let fk=null,fd=1e9; Object.values(S3.FN).forEach(fn=>{ const t=pre0[fn]; const dd=Math.hypot(t.x-P.x,t.y-P.y); if(dd<fd){ fd=dd; fk=fn; } });
+  const P0g=g.position.clone(), Q0g=g.quaternion.clone(); let ang=-Math.asin(Math.max(-0.6,Math.min(0.6,d/h))); const AX=new S3.THREE.Vector3(1,0,0);
+  for(let it=0;it<3;it++){ g.position.copy(P0g); g.quaternion.copy(Q0g); const qq=new S3.THREE.Quaternion().setFromAxisAngle(AX,ang); g.position.sub(piv).applyQuaternion(qq).add(piv); g.quaternion.premultiply(qq); g.updateMatrixWorld(true);
+    if(it===2||Math.abs(d)<1e-4) break; const mv=S3.wpos(fk+'-finger-tip').y-pre0[fk].y; if(Math.abs(mv)>1e-5) ang*=Math.max(0.3,Math.min(3,Math.abs(d/mv))); }
+  let pad=null; const yb=P.clone().applyQuaternion(q); Object.values(S3.FN).forEach(fn=>{ const t=S3.wpos(fn+'-finger-tip'); if(Math.abs(t.x-P.x)<2.5){ const dy=Math.min(Math.abs(t.y-(P.y+d)),Math.abs(t.y-(P.y-d))); if(pad==null||dy<pad) pad=dy; } });
+  const th=S3.wpos('thumb-tip'), yTopE=-CM(I,strY(I,0,fretR(I,n.f)))+0.5;
+  window.BENDNOW={u:+u.toFixed(3),semis:+B.semMax.toFixed(2),stringMm:+(d*10).toFixed(2),padToStringMm:pad==null?null:+(pad*10).toFixed(2),thumbOverEdgeMm:+((th.y-yTopE)*10).toFixed(1),thumbBehindMm:+((-th.z)*10).toFixed(1),padMovedMm:+(Math.abs(S3.wpos(fk+'-finger-tip').y-pre0[fk].y)*10).toFixed(2),dCm:+d.toFixed(3),h:+h.toFixed(2)}; }
+let FS=null; function flickSign(k){ if(FS!=null) return FS; const q=Object.assign({},CUR.fing[k]); const tp=()=>S3.wpos(S3.FN[k]+'-finger-tip').y; S3.setFinger(k,Object.assign({},q,{a:(q.a||0)+0.2})); const y1=tp(); S3.setFinger(k,q); const y0=tp(); FS=y1<y0?1:-1; return FS; }
+function techFX(now){ const e=RES&&RES.events[CURI]; if(!e||!CUR) return; const ms=(window.RHT!=null?window.RHT:now-SHOWT)-60;
+  /* pull-off: the leaving finger flicks off sideways toward the floor */
+  const pv=RES.events[CURI-1]; if(pv&&e.notes.some(n=>n.legato)){ e.notes.forEach(n=>{ if(!n.legato) return; const j=pv.notes.findIndex(q=>q.s===n.s&&q.f>n.f); if(j<0) return; const k=pv.fingers[j]; if(!(k>=1&&k<=4)||e.fingers.includes(k)) return;
+      const env=ms<0||ms>140?0:Math.sin(Math.PI*ms/140); if(env>0){ const q=CUR.fing[k]; S3.setFinger(k,{m:q.m-0.12*env,p:q.p,d:q.d,a:(q.a||0)+flickSign(k)*0.32*env}); window.FLICK={k,env:+env.toFixed(2)}; } }); }
+  /* trill: the helper finger hammers on and pulls off at ~12 per second */
+  if(e.trillF&&ms>0){ const k=e.trillF, q=CUR.fing[k]; const lift=0.5*(1+Math.cos(2*Math.PI*12*ms/1000)); S3.setFinger(k,{m:q.m-0.32*lift,p:q.p-0.1*lift,d:q.d,a:q.a}); window.TRILL={k,lift:+lift.toFixed(2)}; }
+  S3.group.updateMatrixWorld(true); }
+window.techFX=techFX;
+/* deterministic frame stepper for videos: t seconds from event i0 at the score tempo */
+window.renderAt=(tSec,i0)=>{ const E=RES.events, bpm=(api.score&&api.score.tempo)||70, tps=960*bpm/60; window.FREEZE=1; const tick=E[i0].tick+tSec*tps; let i=i0; while(i+1<E.length&&E[i+1].tick<=tick) i++;
+  if(i!==CURI||!TGT){ window.PREVP=CUR||poseFor(i); showEvent(i); } const msIn=(tick-E[i].tick)/tps*1000; const k=Math.min(1,msIn/90), kk=k*k*(3-2*k);
+  CUR=MIDP=blend(window.PREVP||TGT,TGT,kk); applyPose(CUR); window.RHT=msIn+60; window.BENDU=msIn/(E[i].dur/tps*1000); const now=performance.now(); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); return {i,bar:E[i].bar}; };
+function updateBracket(){ const I=INSTR[INST], br=GUIT.userData.br, b=TGT.base; const xa=CM(I,fretR(I,b-1)), xb=CM(I,fretR(I,Math.min(b+3,22-CAPO)));
+  const y=-CM(I,strY(I,0,fretR(I,b+1)))+0.9; br.scale.x=Math.abs(xa-xb)-0.3; br.position.set((xa+xb)/2,y,0.1); }
+const COL=['#22d3ee','#22c55e','#d4a017','#ef4444'];
+function project(v){ const p=v.clone().project(S3.cam); const r=$('stage').getBoundingClientRect(); return [(p.x*0.5+0.5)*r.width,(-p.y*0.5+0.5)*r.height]; }
+function labelTips(){ const L=$('tipLbl'); if(!L||window.NOLABEL) return; let h='';
+  for(let k=1;k<=4;k++){ const [x,y]=project(S3.wpos(S3.FN[k]+'-finger-tip')); const on=TGT.fing[k].on; h+=`<b style="left:${x}px;top:${y-15}px;background:${COL[k-1]};opacity:${on?0.95:0.4}">${k}</b>`; }
+  L.innerHTML=h; }
+function debugDots(){ if(!S3||!GUIT) return; if(GUIT.userData.dots){ GUIT.remove(GUIT.userData.dots); } if(!window.DEBUGDOTS||!TGT) return; const g=new S3.THREE.Group();
+  for(let k=1;k<=4;k++){ const F=TGT.fing[k]; if(!F||!F.on||!F.str) continue; const m=new S3.THREE.Mesh(new S3.THREE.SphereGeometry(0.09,10,8),new S3.THREE.MeshBasicMaterial({color:0xff2060,depthTest:false})); m.renderOrder=99; m.position.copy(F.str); g.add(m); }
+  GUIT.add(g); GUIT.userData.dots=g; }
+window.toggleDots=v=>{ window.DEBUGDOTS=v==null?!window.DEBUGDOTS:v; debugDots(); render3d(); };
+function showEvent(i){
+  if(!RES||!RES.events[i]) return; const e=RES.events[i]; CURI=i; SHOWT=window.VNOW!=null?VNOW:performance.now(); if(window.RH) RH.show(i,e);
+  if(window.OV){ (OV[window._cur]||[]).forEach(d=>d.classList.remove('cur')); (OV[i]||[]).forEach(d=>d.classList.add('cur')); window._cur=i;
+    if(window.SIM&&OV[i]&&OV[i][0]){ const w=$('tabWrap'), top=OV[i][0].offsetTop; if(top<w.scrollTop+40||top>w.scrollTop+w.clientHeight-60) w.scrollTop=top-60; } }
+  const p=e.pos;
+  $('now').innerHTML=`Bar <b>${e.bar}</b> · ${p===0?'<b>Open position</b>':'Position <b>'+p+'</b>'}${e.shape?' · Shape <b>'+e.shape+'</b>':''}${e.shift?' · shift <b>'+(e.shift>0?'+':'')+e.shift+'</b>':''}${e.stretch?' · stretch <b>'+e.stretch+'</b>':''} · notes ${e.notes.map((n,k)=>'s'+(n.s+1)+'/f'+n.f+'→'+e.fingers[k]).join('  ')}`;
+  if(!S3) return; TGT=poseFor(i); debugDots(); pressStrings(TGT&&TGT.ev); const pt=$('posTag'); if(pt) pt.textContent=(p===0?'Open position':'Position '+p)+(e.shape?' · Mode Lab Shape '+e.shape:'')+' · '+INSTR[INST].name;
+}
+window.showEvent=showEvent; window.frame=frame;
+window.showCustom=(notes,label)=>{ const ev=[{tick:0,dur:960,restBefore:true,notes:notes.map(n=>({s:n[0],f:n[1]})),bar:0,beats:[]}];
+  const r=FingerEngine.solve(ev,{opens:opens.map(x=>x+CAPO),rootPc:null}); const e=r.events[0]; const sg=evSig(e); TGT=POSEC[sg]?Object.assign({},POSEC[sg],{ev:e}):(POSEC[sg]=bestPose(e,null)); debugDots(); pressStrings(e); CUR=MIDP=null; window.SNAP=1;
+  $('posTag').textContent=label+' · Position '+e.pos+' · '+INSTR[INST].name;
+  $('now').innerHTML=label+' · '+e.notes.map((n,k)=>'s'+(n.s+1)+'/f'+n.f+'→'+e.fingers[k]).join('  '); return e; };
+window.measure=()=>{ applyPose(TGT); const out=[]; for(let k=1;k<=4;k++){ const F=TGT.fing[k]; if(!F.on) continue; const pad=padPoint(k); const sn=F.str?skinNearest(k,F.str):null;
+  const tip=S3.wpos(S3.FN[k]+'-finger-tip'), dj=S3.wpos(S3.FN[k]+'-finger-phalanx-distal'), mj=S3.wpos(S3.FN[k]+'-finger-phalanx-intermediate');
+  const e=TGT.ev; const I=INSTR[INST]; let behindMm=null; if(sn&&e){ const nn=e.notes.find((n,j)=>e.fingers[j]===k&&n.f>0); if(nn){ behindMm=+((sn.p.x-CM(I,fretR(I,nn.f)))*10).toFixed(1); } }
+  const dz=(tip.z-dj.z)/tip.distanceTo(dj); const barre={}; let barreX=null; const BIm=e&&k===1?barreInfo(e,1):null; if(BIm){ const bf=BIm.f; barreX={span:'s'+(BIm.lo+1)+'-s'+(BIm.hi+1),sunkMm:{},behindMm:{},unusedClearMm:{}};
+    for(let s2=BIm.lo;s2<=BIm.hi;s2++){ const P=noteWorld(s2,bf,strTopZ(s2)); const sn2=skinNearest(1,P); barre['s'+(s2+1)]=+(sn2.d*10).toFixed(2); barreX.sunkMm['s'+(s2+1)]=+(Math.max(0,strTopZ(s2)-lowSkinZ(1,P))*10).toFixed(2); barreX.behindMm['s'+(s2+1)]=+((sn2.p.x-CM(I,fretR(I,bf)))*10).toFixed(1); }
+    for(let s2=BIm.hi+1;s2<I.nut.length;s2++){ barreX.unusedClearMm['s'+(s2+1)]=+((lowSkinZ(1,noteWorld(s2,bf,strTopZ(s2)))-strTopZ(s2))*10).toFixed(2); }
+    { const yH=noteWorld(BIm.hi,bf,0).y, yN=BIm.hi<I.nut.length-1?noteWorld(BIm.hi+1,bf,0).y:2*yH-noteWorld(BIm.hi-1,bf,0).y; barreX.tipPastLastStringFrac=+((tip.y-yH)/(yN-yH)).toFixed(2); } }
+  out.push({finger:k, bendPIPplusDIPdeg:+((F.p+F.d)*180/Math.PI).toFixed(0), distalToBoardDeg:+(Math.asin(Math.min(1,-dz))*180/Math.PI).toFixed(0), padBehindFretMm:behindMm, barreSkinToStringMm:Object.keys(barre).length?barre:undefined, barre:barreX||undefined, skinToStringCm:sn?+sn.d.toFixed(3):null, restAboveStringMm:(F.str&&!(k===1&&BIm))?+((lowSkinZ(k,F.str)-F.str.z)*10).toFixed(2):null, padLateralMm:(F.str&&!(k===1&&BIm))?+(Math.abs(pad.y-F.str.y)*10).toFixed(2):null, fingerMinZ:sn?+sn.minZ.toFixed(2):null, padToTargetCm_beforeSkinCorrection:+pad.distanceTo(F.tgt).toFixed(2), tipBelowBoard:tip.z<0, archDistalZ:+dj.z.toFixed(2), archMidZ:+mj.z.toFixed(2)}); }
+  { const nk=GUIT.userData.neck, th=S3.wpos('thumb-tip'), thp=S3.wpos('thumb-phalanx-distal'), pm=S3.wpos('middle-finger-metacarpal'), i1=S3.wpos('index-finger-phalanx-proximal'), i2=S3.wpos('middle-finger-phalanx-proximal');
+    const f12=noteWorld(2,Math.max(1,TGT.base)+0.5,0).x; out.push({thumb:{tipZcm:+th.z.toFixed(2), behindNeck:th.z<-0.5, heightOnNeck:+((th.y-nk.yB)/(nk.yT-nk.yB)).toFixed(2), xFromFingers12cm:+(th.x-f12).toFixed(2), pointsUp:th.y>thp.y, towardHeadstock:th.x>thp.x},
+      palmClearanceCm:+(nk.yB-pm.y).toFixed(2), knuckleLineIndexMinusMiddleCm:+(i1.y-i2.y).toFixed(2)}); }
+  return out; };
+window.verify=(ids)=>{ const I=INSTR[INST], nS=I.nut.length, out=[];
+  for(const i of ids){ showEvent(i); window.SNAP=1; applyPose(TGT); const e=RES.events[i];
+    e.notes.forEach((n,k)=>{ const f=e.fingers[k]; if(f<1) return; const F=TGT.fing[f]; const P=noteWorld(n.s,n.f,strTopZ(n.s)); const sn=skinNearest(f,F.str||P); const c=sn.p;
+      /* which string/fret does the contact point actually sit on? */
+      const px=c.x/2.54*I.S; let fr=0; for(let q=1;q<=24;q++){ if(px<=fretPx(I,q-1)&&px>fretPx(I,q)) { fr=q; break; } }
+      let si=0,bd=1e9; for(let s=0;s<nS;s++){ const d=Math.abs(-CM(I,strY(I,s,px))-c.y); if(d<bd){bd=d;si=s;} } const sEng=nS-1-si;
+      const a=project(c), b=project(P); const cntF=e.fingers.filter(x=>x===f).length, isBarre=!!barreInfo(e,f), isDbl=cntF===2&&!isBarre;
+      const pad=padPoint(f); const sy=-CM(I,strY(I,nS-1-n.s,pad.x/2.54*I.S)); const fx=CM(I,fretR(I,n.f));
+      const tP=isDbl&&F.str?F.str:null; const lat=isBarre?null:+(Math.abs(pad.y-(tP?tP.y:sy))*10).toFixed(2), beh=+((pad.x-fx)*10).toFixed(2), zl=lowSkinZ(f,P), above=+((zl-strTopZ(n.s))*10).toFixed(2), sunk=zl<0.05;
+      out.push({bar:e.bar,string:n.s+1,fret:n.f,finger:f,harm:!!n.harm,barre:isBarre,doubleStop:isDbl,padLateralMm:lat,padBehindFretMm:beh,restAboveStringTopMm:above,sunkIntoBoard:sunk,renderedString:sEng+1,renderedFret:fr,contactCm:+sn.d.toFixed(2),screenPx:+Math.hypot(a[0]-b[0],a[1]-b[1]).toFixed(1),match:isBarre?(fr===n.f+CAPO):(fr===n.f+CAPO&&sEng===n.s)}); }); }
+  return out; };
+/* debug: label every string at the nut with its name and engine number (1 = high e), plus its gauge */
+window.labelNut=()=>{ const I=INSTR[INST], nS=I.nut.length, L=$('tipLbl'); const names=Array.from({length:nS},(_,i)=>NAMES[((opens[nS-1-i]+CAPO)%12+12)%12]+(CAPO?'*':'')); let h='';
+  for(let i=0;i<nS;i++){ const p=W(I,I.nut[i][0]-30,I.nut[i][1],strTopZ(nS-1-i)); const [x,y]=project(p); h+=`<b style="left:${x}px;top:${y}px;width:auto;height:auto;padding:1px 5px;border-radius:6px;background:#fff;font-size:11px">${names[i]} · s${nS-i} · ${(I.gauge[i]*10).toFixed(2)}mm</b>`; }
+  L.innerHTML=h; window.NOLABEL=1; };
+window.camView=v=>{ window.CAMV=v; frameCam(); };
+/* precompute every pose in small idle chunks so playback never waits on the IK */
+let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v35',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); try{ const L=JSON.parse(localStorage.getItem('h3dposes_'+SOLVER_VER)||'null'); if(L) importPoses(L); }catch(_){} POSES={}; }   /* drop per-event poses solved before the file arrived */
+/* idle/stopped: rest in the solved pose of the first fretted event (same rules as playing), never the unposed bind hand */
+function restPose(){ if(!RES||!S3) return; const i=RES.events.findIndex(e=>e.notes.some(n=>n.f>0)); if(i<0) return; window.CURI=i; showEvent(i); }
+function warm(){ if(!RES||!S3) return; if(/nowarm/.test(location.search)){ window.WARM=true; window.HEADREADY=true; return; } if(POSEFILE===null&&!/nocache/.test(location.search)){ loadPoseFile().then(warm); return; }
+  /* v19: no up-front solving. Every event is looked up in the shipped pose library (keyed by position + string/fret/finger pattern); only shapes the library has never seen are solved, in small idle slices just ahead of the playhead (or a new seek point), and cached. */
+  const inst=INST, N=RES.events.length, done=new Uint8Array(N); let left=N; const tw0=performance.now(); const gen=(window._warmGen=(window._warmGen||0)+1); window.WARM=false;
+  for(let i=0;i<N;i++){ if(POSEC[evSig(RES.events[i])]){ poseFor(i); done[i]=1; left--; } } window.LIBHIT=N-left; window.LIBMISS=left; window.LOOKUPMS=Math.round(performance.now()-tw0);
+  const solve=i=>{ if(i<0||i>=N||done[i]) return false; const was=POSES[INST+':'+i]; const P=poseFor(i,true); done[i]=1; left--; if(was&&was._quick&&i===CURI&&!SP.on){ TGT=P; } return true; };
+  let fill=0; const head=()=>SP&&SP.on?SP.i:(typeof PLAYI!=='undefined'?Math.max(PLAYI,CURI||0):0);
+  window.LASTUI=performance.now(); window.HEADREADY=true; window.HEADMS=Math.round(performance.now()-tw0); $('prog').style.display='none';
+  const step=()=>{ if(gen!==window._warmGen||inst!==INST||!RES) return; if(!(SP&&SP.on)&&performance.now()-(window.LASTUI||0)<1500){ setTimeout(step,250); return; } const t=performance.now(); const budget=1;
+    while(left>0&&performance.now()-t<budget){ let did=false; const h=head(); if(SP&&SP.on) break; /* never solve while playing: the music and the hand stay in step */ if(false){ /* while playing, only shapes with no library match (held as the last pose) are solved, just ahead of the playhead */ for(let j=h;j<Math.min(N,h+40);j++){ if(done[j]) continue; const q=poseFor(j); if(!q._hold){ continue; } solve(j); did=true; break; } if(!did) break; } else { for(let j=Math.max(0,h-1);j<Math.min(N,h+60);j++){ if(solve(j)){ did=true; break; } } if(!did){ while(fill<N&&done[fill]) fill++; if(fill<N) solve(fill); } } }
+    if(left>0) setTimeout(step,SP&&SP.on?8:30); else { window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; try{ if(window.UNIQ&&!/nocache/.test(location.search)){ const o=exportPoses(); const f=POSEFILE||{}; const add={}; let n=0; for(const k in o) if(!f[k]){ add[k]=o[k]; n++; } if(n) localStorage.setItem('h3dposes_'+SOLVER_VER,JSON.stringify(add)); } }catch(_){} if(!SP.on){ if(TGT) applyPose(TGT); else restPose(); } } };
+  step(); }
+/* timer-driven silent preview (same clock as the player: ticks at the score tempo) */
+let simRAF=0;
+function simPlay(fromBar,toBar){ cancelAnimationFrame(simRAF); window.SIM=1; const E=RES.events; const bpm=api.score.tempo||70, tps=960*bpm/60*(+$('speed').value);
+  let i=Math.max(0,E.findIndex(e=>e.bar>=(fromBar||1))); const end=toBar?E.findIndex(e=>e.bar>toBar):-1; const t0=performance.now()-0; const tick0=E[i].tick;
+  showEvent(i); const f=()=>{ const tick=tick0+(performance.now()-t0)/1000*tps; while(i<E.length-1&&E[i+1].tick<=tick&&(end<0||i+1<end)){ i++; showEvent(i); } if(i<E.length-1&&(end<0||i+1<end)) simRAF=requestAnimationFrame(f); else window.SIMDONE=true; }; window.SIMDONE=false; f(); }
+window.simPlay=simPlay;
+$('sim').onclick=()=>simPlay(RES.events[CURI]?RES.events[CURI].bar:1);
+/* instrument switch: pick the matching track (bass track for the bass) and rebuild */
+function pickTrackFor(inst){ if(!score) return; const want=INSTR[inst].nut.length; let idx=score.tracks.findIndex(t=>!t.staves[0].isPercussion&&t.staves[0].tuning.length===want&&(inst!=='bass'||/bass/i.test(t.name)));
+  if(idx<0) idx=score.tracks.findIndex(t=>!t.staves[0].isPercussion&&(inst==='bass'?t.staves[0].tuning.length<=5:t.staves[0].tuning.length>=6)); if(idx>=0&&+$('track').value!==idx){ $('track').value=idx; selectTrack(); return true; } return false; }
+$('inst').onchange=()=>{ INST=$('inst').value; if(window.GCTL) GCTL.onInstrument(); FILEOPENS=null; if(S3){ buildGuitar(); frameCam(); } CUR=MIDP=null; if(!pickTrackFor(INST)){ solve(); drawOverlay(); } setTimeout(warm,50); };
+window.setInstrument=v=>{ $('inst').value=v; $('inst').onchange(); };
+/* boot the 3D hand (Study Lab's hand studio: same model and joint engine) */
+KL_HANDSTUDIO.make($('stage'),{}).then(S=>{ S3=S; $('stageMsg').remove();
+  { /* studio lighting: PMREM environment from soft-box panels (reflections in the lacquer and hardware), soft shadows from the key light */
+    const T=S.THREE, es=new T.Scene(); const pan=(w,h,c,x,y,z,ry,rx)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color:c,side:T.DoubleSide})); m.position.set(x,y,z); m.rotation.set(rx||0,ry||0,0); es.add(m); };
+    es.background=new T.Color(0x000000); pan(6,2.2,0xffffff,0,4,3,0,Math.PI/2.6); pan(2.5,5,0xfff0dc,-5,1,1,Math.PI/2); pan(2,4,0x9fb4d0,5,0.5,-1,-Math.PI/2); pan(10,10,0x040303,0,-5,0,0,Math.PI/2); pan(4,1.2,0xffffff,0,1.5,-6,0);
+    const pm=new T.PMREMGenerator(S.renderer); S.scene.environment=pm.fromScene(es,0.03).texture; S.envMapIntensity=0.9;
+    S.renderer.shadowMap.enabled=true; S.renderer.shadowMap.type=T.PCFSoftShadowMap;
+    const key=S.scene.children.find(o=>o.isDirectionalLight); if(key){ key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.radius=4; key.shadow.bias=-0.0005; const c=key.shadow.camera; c.left=-70; c.right=70; c.top=50; c.bottom=-50; c.near=1; c.far=600; } }
+  S.group.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
+  S.renderer.domElement.style.position='absolute'; S.renderer.domElement.style.inset='0';
+  $('stage').insertAdjacentHTML('beforeend','<div id="tipLbl"></div><div id="posTag">Position</div>');
+  S.scene.children.filter(o=>o.isLight).forEach(l=>{ if(l.isDirectionalLight&&l.position.z>0.9) l.position.set(-0.3,0.9,1.2); });
+  S.group.traverse(o=>{ if(o.material) o.material.side=S.THREE.DoubleSide; });
+  if(/[?&]hand=seg/.test(location.search)) buildCaps();   /* default: the Study Lab Techniques hand mesh (skinned WebXR hand), segmented hand only behind ?hand=seg */
+  if(window.PR) PR.boot(S).then(()=>{ if(GUIT) PR.upgrade(GUIT,INSTR[INST],INST); if(window.GCTL) GCTL.attach3d(); render3d(); });
+  if(window.GCTL){ GCTL.pointer(); GCTL.panel(); }
+  orbitInit(); if(/[?&]debug=1/.test(location.search)) $('dots').style.display=''; $('dots').onclick=()=>toggleDots(); $('resetView').onclick=()=>{ window.CAMV=null; frameCam(); }; buildGuitar(); frameCam(); window.addEventListener('resize',()=>frameCam()); requestAnimationFrame(loop);
+  if(RES){ showEvent(CURI||0); warm(); } window.S3=S; if(window.RH&&!/[?&]rh=0/.test(location.search)) RH.init();
+}).catch(e=>{ console.error('3D boot',e&&e.stack||e); const m=$('stageMsg'); if(m) m.textContent='3D unavailable: '+(e&&e.message||e); });
+
+</script><script src="demo-gk3.js?v=2"></script></body></html>
