@@ -20,7 +20,7 @@ window.HCOL=(function(){ let DW=null;
     if(px<x0) zbot=zb-fbT; else { const dep=neckDepAt(I,px); zbot=dy<hw*0.98?-fbT-(dep-fbT)*Math.sqrt(Math.max(0,1-Math.pow(dy/(hw*0.98),2))):-fbT; }
     if(z<zbot) return -1; if(dir==='back') return z-zbot+1e-4; if(dir==='top') return Math.min(zb-z,hw-dy)+1e-4; return Math.min(zb-z,z-zbot,hw-dy); }
   /* full measure of the current applied pose */
-  function measure(e){ if(e&&typeof solveEv==='function') e=solveEv(e); init(); const I=INSTR[INST]; const V=verts(), segs=strSegs(), p=v(); const F={}; for(let k=1;k<=5;k++) F[k]={pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9};
+  function measure(e){ if(e&&typeof solveEv==='function') e=solveEv(e); init(); const I=INSTR[INST]; if(!I||!I.nut||!GUIT||!GUIT.userData.xE) return {0:{pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9},1:{pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9},2:{pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9},3:{pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9},4:{pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9},5:{pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9}}; const V=verts(), segs=strSegs(), p=v(); const F={}; for(let k=1;k<=5;k++) F[k]={pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9};
     for(let q=0;q<IDX.length;q++){ const f=FID[IDX[q]]; p.set(V[q*3],V[q*3+1],V[q*3+2]); const R=F[f]||(F[f]={pen:0,penObj:'',minStr:1e9,minZ:1e9,clear:1e9});
       const np=neckPen(I,p.x,p.y,p.z,(f===5||f===0)?'back':'top'); if(np>R.pen){ R.pen=np; R.penObj='board/neck:'+M.skeleton.bones[BN[IDX[q]]].name; }
       if(p.z<1.2&&p.z>-0.4) for(const s of segs){ const d=segDist(p,s)-s.r; if(-d>R.pen){ R.pen=-d; R.penObj='string'; } if(d<R.minStr) R.minStr=d; }

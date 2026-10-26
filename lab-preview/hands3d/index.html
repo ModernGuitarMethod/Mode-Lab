@@ -51,7 +51,7 @@ button,select,.file{min-height:36px;touch-action:manipulation}
 <header><img src="icon-192.png" alt=""><h1>MODE LAB</h1><span style="color:var(--muted);font-size:13px">3D Tab Player</span><span class="tag">Preview</span></header>
 <div class="bar">
   <label>Instrument <select id="inst"><option value="electric">Les Paul</option><option value="acoustic">Acoustic</option><option value="bass">Bass</option></select></label>
-  <label class="file">Load GP / MusicXML<input id="file" type="file" accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl"></label>
+  <label class="file">Load GP / MusicXML<input id="file" type="file"></label>
   <label>Track <select id="track"></select></label>
   <label>Key centre <select id="key"></select></label>
   <label>Mode <select id="mode"></select></label>
@@ -78,9 +78,9 @@ button,select,.file{min-height:36px;touch-action:manipulation}
 <script src="handglb.js"></script>
 <script src="handstudio.js"></script>
 <script src="photoreal.js"></script>
-<script src="lpglb.js?v=hd15"></script>
+<script src="lpglb.js?v=hd16"></script>
 <script src="controls.js"></script>
-<script src="collide.js?v=v15"></script>
+<script src="collide.js?v=v16"></script>
 <script src="handhd.js?v=hd15"></script>
 <script src="skin.js?v=hd15"></script>
 <script>
@@ -114,7 +114,7 @@ function fillTuning(){ const fam=INST==='bass'?'bass':'guitar'; const fo=FILEOPE
   if(FILECAPO) $('capo').options[FILECAPO].textContent+=' (file)'; }
 function curOpens(){ const v=$('tuning').value, fam=INST==='bass'?'bass':'guitar'; return v==='file'||!TUNINGS[fam][v]?FILEOPENS.slice():TUNINGS[fam][v].slice(); }
 let score=null, track=null, opens=[64,59,55,50,45,40], RES=null, beatMap=new Map(), fileKey={pc:4,minor:true};
-api.scoreLoaded.on(s=>{ score=s;
+api.scoreLoaded.on(s=>{ score=s; { /* a file without tab staves (piano/voice MusicXML) renders as standard notation; tab files keep the tab view */ const anyTab=s.tracks.some(t=>t.staves.some(st=>st.tuning&&st.tuning.length)); const want=anyTab?alphaTab.StaveProfile.Tab:alphaTab.StaveProfile.Score; if(api.settings.display.staveProfile!==want){ api.settings.display.staveProfile=want; api.updateSettings(); } }
   $('track').innerHTML=s.tracks.map((t,i)=>`<option value="${i}">${t.name||('Track '+(i+1))}${t.staves[0].isPercussion?' (drums)':''}</option>`).join('');
   const first=pickTrack(s); $('track').value=Math.max(0,first);
   const mb=s.masterBars[0]; const ks=mb.keySignature|0, minor=(mb.keySignatureType|0)===1;
@@ -123,7 +123,7 @@ api.scoreLoaded.on(s=>{ score=s;
   selectTrack(); });
 /* auto-pick the track that matches the chosen instrument: bass = 4/5 strings or named bass; guitar = 6+ strings, not bass */
 function pickTrack(s){ const ok=t=>!t.staves[0].isPercussion&&t.staves[0].tuning&&t.staves[0].tuning.length; const isB=t=>/bass/i.test(t.name||'')||t.staves[0].tuning.length<=5;
-  const want=INST==='bass'; let i=s.tracks.findIndex(t=>ok(t)&&isB(t)===want); if(i<0) i=s.tracks.findIndex(ok); return i; }
+  const want=INST==='bass'; let i=s.tracks.findIndex(t=>ok(t)&&isB(t)===want); if(i<0) i=s.tracks.findIndex(ok); if(i<0) i=s.tracks.findIndex(t=>!t.staves[0].isPercussion); /* no tab track (piano/voice MusicXML): first pitched track, played on guitar */ return i; }
 window.pickTrack=pickTrack;
 /* Krumhansl key estimate from sounding pitches (used when the file has no key signature) */
 function detectKey(t){ const h=new Array(12).fill(0);
@@ -158,8 +158,19 @@ $('play').onclick=()=>{ if(SP.on) sampleStop(); else samplePlay(RES.events[CURI]
 
 api.soundFontLoad.on(e=>{ if(e&&e.total) $('status').textContent='Sound '+Math.round(100*e.loaded/e.total)+'%'; });
 api.playerReady.on(()=>{ if(!SP.on) $('status').textContent='Ready'; });
-function loadScoreFile(f){ if(!f) return; if(!/\.(gp|gp3|gp4|gp5|gpx|musicxml|xml|mxl)$/i.test(f.name)){ $('status').textContent='Not a Guitar Pro or MusicXML file: '+f.name; return; } sampleStop&&sampleStop(); f.arrayBuffer().then(b=>{ window.WARM=false; api.load(new Uint8Array(b)); $('status').textContent=f.name; window.LOADED=f.name; }); }
-window.loadScoreFile=loadScoreFile;
+/* any Guitar Pro (gp3/4/5, gpx, gp7/8 .gp) or MusicXML (.xml/.musicxml, compressed .mxl). No accept filter: iOS greys out unknown extensions. */
+async function unzipMxl(u8){ const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength); let eocd=-1; for(let i=u8.length-22;i>=Math.max(0,u8.length-65557);i--) if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } if(eocd<0) return null;
+  const n=dv.getUint16(eocd+10,true); let p=dv.getUint32(eocd+16,true); const ents=[]; const td=new TextDecoder();
+  for(let k=0;k<n;k++){ const meth=dv.getUint16(p+10,true), cs=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), off=dv.getUint32(p+42,true); ents.push({name:td.decode(u8.subarray(p+46,p+46+nl)),meth,cs,off}); p+=46+nl+xl+cl; }
+  const read=async e=>{ const o=e.off, nl=dv.getUint16(o+26,true), xl=dv.getUint16(o+28,true); const d=u8.subarray(o+30+nl+xl,o+30+nl+xl+e.cs); if(e.meth===0) return d; const st=new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); };
+  let root=null; const c=ents.find(e=>e.name==='META-INF/container.xml'); if(c){ const m=/full-path="([^"]+)"/.exec(td.decode(await read(c))); if(m) root=m[1]; }
+  const e=ents.find(e=>e.name===root)||ents.find(e=>/\.(xml|musicxml)$/i.test(e.name)&&!e.name.startsWith('META-INF')); return e?await read(e):null; }
+function loadScoreFile(f){ if(!f) return; sampleStop&&sampleStop(); $('status').textContent='Loading '+f.name+'...';
+  f.arrayBuffer().then(async b=>{ let u=new Uint8Array(b); const isZip=u[0]===0x50&&u[1]===0x4b;
+    if(isZip&&(/\.mxl$/i.test(f.name)||!/\.gp$/i.test(f.name))){ try{ const x=await unzipMxl(u); if(x) u=x; }catch(err){} }
+    window.LOADERR=null; window.WARM=false; try{ api.load(u,[0]); }catch(err){ window.LOADERR=String(err); }
+    if(window.LOADERR){ $('status').textContent='Could not read '+f.name+' (Guitar Pro 3-8 or MusicXML only)'; return; } $('status').textContent=f.name; window.LOADED=f.name; }); }
+window.loadScoreFile=loadScoreFile; if(api.error) api.error.on(e=>{ const m=String(e&&(e.stack||e.message)||e).slice(0,600); if(window.score&&score.tracks&&score.tracks.length&&window.RES&&RES.events&&RES.events.length){ window.RENDERERR=m; return; } window.LOADERR=m; $('status').textContent='Could not read that file (Guitar Pro 3-8 or MusicXML only)'; });
 $('file').onchange=e=>loadScoreFile(e.target.files[0]);
 ['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{ e.preventDefault(); document.body.classList.add('drag'); }));
 ['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{ e.preventDefault(); document.body.classList.remove('drag'); if(ev==='drop'&&e.dataTransfer&&e.dataTransfer.files.length) loadScoreFile(e.dataTransfer.files[0]); }));
@@ -168,6 +179,7 @@ fetch('Little-Wing.gp3').then(r=>r.arrayBuffer()).then(b=>api.load(new Uint8Arra
 function buildEvents(){
   const st=track.staves[0];
   const fo=st.tuning.slice(); // alphaTab: index 0 = highest string (same as Mode Lab)
+  if(fo.length<4){ /* MusicXML without tab (piano, voice, etc.): play it on a standard-tuned guitar */ const std=(INST==='bass'?TUNINGS.bass['Standard (4)']:TUNINGS.guitar.Standard); fo.length=0; fo.push(...std); }
   if(!FILEOPENS||FILEOPENS.join()!==fo.join()||FILECAPO!==(st.capo|0)){ FILEOPENS=fo; FILECAPO=st.capo|0; fillTuning(); }
   opens=curOpens(); CAPO=+$('capo').value||0; window.REMAP={moved:0,dropped:0};
   const n=fo.length, nN=opens.length; const ev=[]; let lastEnd=0;
@@ -179,7 +191,8 @@ function buildEvents(){
   st.bars.forEach(bar=>{ const v=bar.voices[0]; if(!v) return; v.beats.forEach(b=>{
     const start=b.absolutePlaybackStart, dur=b.playbackDuration;
     if(b.isRest||!b.notes.length){ return; }
-    const notes=b.notes.filter(x=>x.isDead||x.fret>=0).map(x=>{ const q=place(n-x.string,x.isDead?0:x.fret); return q?{s:q.s, f:x.isDead?0:q.f, dead:!!x.isDead, pitch:q.pitch, fileFret:x.fret, note:x, tie:x.isTieDestination,
+    const tabOf=x=>{ if(x.isDead||(x.fret>=0&&x.string>0)) return [n-x.string,x.isDead?0:x.fret]; const v=x.realValue; if(!(v>0)) return null; let best=null; for(let i=0;i<n;i++){ const f=v-fo[i]-CAPO; if(f>=0&&f<=17&&(!best||Math.abs(f-5)<Math.abs(best[1]-5))) best=[i,f]; } return best; };   /* MusicXML without tab: pick a playable string/fret from the pitch */
+    const notes=b.notes.filter(x=>tabOf(x)).map(x=>{ const tf=tabOf(x); const q=place(tf[0],tf[1]); return q?{s:q.s, f:x.isDead?0:q.f, dead:!!x.isDead, pitch:q.pitch, fileFret:x.fret, note:x, tie:x.isTieDestination,
       slide:!!x.slideOutType, legato:!!x.isHammerPullDestination, harm:(x.harmonicType|0)>0, harmType:x.harmonicType|0,
       bend:(x.bendType|0)?{type:x.bendType|0,pts:(x.bendPoints||[]).map(p=>[p.offset,p.value])}:null, vib:x.vibrato|0, pm:!!x.isPalmMute, ghost:!!x.isGhost, lhTap:!!x.isLeftHandTapped,
       trill:x.isTrill?(x.trillValue|0):0, hpOrigin:!!x.isHammerPullOrigin, slideIn:x.slideInType|0, slideOut:x.slideOutType|0, slideDest:!!x.isSlurDestination||!!(x.slideOrigin)}:null; }).filter(Boolean);
@@ -651,7 +664,7 @@ window.tipAudit=()=>{ const I=INSTR[INST]; const ang=[], mutes=[], R=[], TH=[]; 
 function barreInfo(e,f){ f=f||1; const ns=e.notes.filter((n,j)=>e.fingers[j]===f&&n.f>0); if(ns.length<2) return null; const ss=ns.map(n=>n.s); const lo=Math.min(...ss), hi=Math.max(...ss);
   if(ns.length===2&&hi-lo<2) return null; return {lo,hi,f:ns[0].f}; }
 window.barreInfo=barreInfo;
-{ const _pf=poseFor; poseFor=function(i){ const P=_pf(i); if(P&&!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; return (window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))?HCOL.fix(P,RES.events[i]):P; }; }
+{ const _pf=poseFor; poseFor=function(i){ const P=_pf(i); if(P&&!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
 function poseForEv(e,prev){
   const I=INSTR[INST], p=e.pos, base=Math.max(p,1), nStr=I.nut.length, THREE=S3.THREE;
   const used={};
@@ -784,14 +797,18 @@ function blend(A,B,t){ if(!A) return B; const THREE=S3.THREE;
 function motionTarget(now){ if(!TGT||window.SNAP||window.NOMOTION||!RES) return TGT; const e=RES.events[CURI]; const nx=RES.events[CURI+1]; const dur=window.EVDURMS||400;
   const u=Math.max(0,Math.min(1,(now-SHOWT)/dur)); const N=nx?poseFor(CURI+1):null; const M=blend(TGT,TGT,0); M.fing={}; for(let k=1;k<=4;k++) M.fing[k]=Object.assign({},TGT.fing[k]);
   const ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x); const sameHand=N&&N.base===TGT.base;
-  for(let k=1;k<=4;k++){ const F=M.fing[k]; if(F.on) continue;
-    if(sameHand&&N.fing[k]){ const w=0.55*ss((u-0.35)/0.65); const Q=N.fing[k]; F.m+=(Q.m-F.m)*w; F.p+=(Q.p-F.p)*w; F.d+=(Q.d-F.d)*w; F.a=(F.a||0)+((Q.a||0)-(F.a||0))*w; }
+  for(let k=1;k<=4;k++){ const F=M.fing[k]; if(F.on){ /* release: a pressing finger that moves to a different spot next lifts a touch in the last 15% of the note (anticipation); one that stays down does not move */
+      const Q=N&&N.fing[k]; const stays=Q&&Q.on&&Q.tgt&&F.tgt&&Q.tgt.distanceTo&&Q.tgt.distanceTo(F.tgt)<0.05; if(N&&!stays&&window.FLUENT!==0){ const w=ss((u-0.85)/0.15); F.m-=0.10*w; F.p-=0.06*w; } continue; }
+    if(sameHand&&N.fing[k]){ const w=0.7*ss((u-0.2)/0.8); const Q=N.fing[k]; F.m+=(Q.m-F.m)*w; F.p+=(Q.p-F.p)*w; F.d+=(Q.d-F.d)*w; F.a=(F.a||0)+((Q.a||0)-(F.a||0))*w; }
     const t=now/1000; F.m+=0.018*Math.sin(t*1.1+k*1.7); F.a=(F.a||0)+0.012*Math.sin(t*0.7+k); }
   for(const [x,y] of [[3,4],[4,3]]){ const A=M.fing[x], B=M.fing[y]; if(!A.on){ const c=0.18; A.m+=(B.m-A.m)*c; A.p+=(B.p-A.p)*c*0.6; } }
   return M; }
 let lastT=performance.now();
-function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
-  const k=1-Math.exp(-dt*(window.SNAP?1e3:40)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:60)); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
+function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; frame(now); }
+/* one rendered frame at time now (ms); also driven directly by the 60 fps capture with a virtual clock */
+function frame(now){ if(window.VNOW!=null) now=window.VNOW; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,Math.max(0,(now-lastT)/1000)); lastT=now;
+  /* v16 fluency: time constant follows the note length (fast passages stay tight, slow ones glide); two cascaded stages = smooth ease-in/ease-out, never a snap */
+  const tau=Math.max(0.045,Math.min(0.12,(window.EVDURMS||400)/1000*0.2))*(window.FLUENT===0?0.6:1); const k=1-Math.exp(-dt*(window.SNAP?1e3:1/tau)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:1/(tau*1.3))); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
 let SHOWT=0, BENT=false;
 function applyBend(now){ const e=RES&&RES.events[CURI]; if(!e) return; const tps=SP&&SP.on?SP.tps:960*((typeof api!=='undefined'&&api.score&&api.score.tempo)||70)/60; const durMs=e.dur/tps*1000; window.EVDURMS=durMs;
   const u=window.BENDU!=null?window.BENDU:Math.max(0,(now-SHOWT-60)/durMs); const B=bendState(e,u);
@@ -836,14 +853,14 @@ function debugDots(){ if(!S3||!GUIT) return; if(GUIT.userData.dots){ GUIT.remove
   GUIT.add(g); GUIT.userData.dots=g; }
 window.toggleDots=v=>{ window.DEBUGDOTS=v==null?!window.DEBUGDOTS:v; debugDots(); render3d(); };
 function showEvent(i){
-  if(!RES||!RES.events[i]) return; const e=RES.events[i]; CURI=i; SHOWT=performance.now(); if(window.RH) RH.show(i,e);
+  if(!RES||!RES.events[i]) return; const e=RES.events[i]; CURI=i; SHOWT=window.VNOW!=null?VNOW:performance.now(); if(window.RH) RH.show(i,e);
   if(window.OV){ (OV[window._cur]||[]).forEach(d=>d.classList.remove('cur')); (OV[i]||[]).forEach(d=>d.classList.add('cur')); window._cur=i;
     if(window.SIM&&OV[i]&&OV[i][0]){ const w=$('tabWrap'), top=OV[i][0].offsetTop; if(top<w.scrollTop+40||top>w.scrollTop+w.clientHeight-60) w.scrollTop=top-60; } }
   const p=e.pos;
   $('now').innerHTML=`Bar <b>${e.bar}</b> · ${p===0?'<b>Open position</b>':'Position <b>'+p+'</b>'}${e.shape?' · Shape <b>'+e.shape+'</b>':''}${e.shift?' · shift <b>'+(e.shift>0?'+':'')+e.shift+'</b>':''}${e.stretch?' · stretch <b>'+e.stretch+'</b>':''} · notes ${e.notes.map((n,k)=>'s'+(n.s+1)+'/f'+n.f+'→'+e.fingers[k]).join('  ')}`;
   if(!S3) return; TGT=poseFor(i); debugDots(); pressStrings(TGT&&TGT.ev); const pt=$('posTag'); if(pt) pt.textContent=(p===0?'Open position':'Position '+p)+(e.shape?' · Mode Lab Shape '+e.shape:'')+' · '+INSTR[INST].name;
 }
-window.showEvent=showEvent;
+window.showEvent=showEvent; window.frame=frame;
 window.showCustom=(notes,label)=>{ const ev=[{tick:0,dur:960,restBefore:true,notes:notes.map(n=>({s:n[0],f:n[1]})),bar:0,beats:[]}];
   const r=FingerEngine.solve(ev,{opens:opens.map(x=>x+CAPO),rootPc:null}); const e=r.events[0]; const sg=evSig(e); TGT=POSEC[sg]?Object.assign({},POSEC[sg],{ev:e}):(POSEC[sg]=bestPose(e,null)); debugDots(); pressStrings(e); CUR=MIDP=null; window.SNAP=1;
   $('posTag').textContent=label+' · Position '+e.pos+' · '+INSTR[INST].name;
