@@ -504,12 +504,17 @@ function buildGuitar(){
 }
 const MIRROR=false; /* audience view: the photo is shown as shot (headstock right, low E on top), so no mirroring and logos read correctly */
 function mirrorCam(){ S3.cam.updateProjectionMatrix(); if(MIRROR&&window.CAMV!=='player') S3.cam.projectionMatrix.elements[0]*=-1; S3.cam.projectionMatrixInverse.copy(S3.cam.projectionMatrix).invert(); }
+/* where the narrow view centres: between the fretting fingers and the wrist (wrist sits toward the body), clamped to the guitar */
+function narrowX(){ const I=INSTR[INST]; let x; try{ x=padPoint(2).x-4.5; }catch(e){ x=null; } if(!(x>-1e3)) x=CM(I,fretPx(I,5)); const xn=CM(I,fretPx(I,-1.6)), xb=CM(I,fretPx(I,22)); return Math.max(Math.min(x,xn-12),xb+4); }
+function narrowFollow(dt){ if(!window.NARROW||window.CAMV||window.ORBITED||!S3||!TGT||window.FREEZE) return; const want=narrowX(); const hx=window._camHX!=null?_camHX:want; const k=1-Math.exp(-dt*2.5); const nx=hx+(want-hx)*k; if(Math.abs(nx-hx)<1e-4) return; const d=nx-hx; window._camHX=nx; S3.cam.position.x+=d; if(ORB){ ORB.target.x+=d; } S3.cam.lookAt(ORB?ORB.target:new S3.THREE.Vector3(nx,S3.cam.position.y,0)); if(typeof mirrorCam==='function') mirrorCam(); }
 function frameCam(){
   const I=INSTR[INST], st=$('stage'), r=st.getBoundingClientRect(); S3.renderer.setSize(r.width,r.height,false); S3.cam.aspect=r.width/r.height;
   const xa=CM(I,fretPx(I,-1.6)), xb=CM(I,fretPx(I,I.bass?14:17)); const yc=-CM(I,(strY(I,0,I.nut[0][0])+strY(I,I.nut.length-1,I.nut[0][0]))/2);
   const span=Math.abs(xa-xb); S3.cam.fov=22; const dist=(span/2)/Math.tan(S3.cam.fov*Math.PI/360)/S3.cam.aspect*1.04;
   const cx=(xa+xb)/2, cy=yc-3.2;
   let cp=[cx,cy+dist*0.30,dist*1.02], la=[cx,cy,0];
+  /* v18 narrow/portrait stage: frame a hand-sized window (hand, wrist and ~8 frets) that follows the fretting hand instead of the whole neck */
+  window.NARROW=S3.cam.aspect<(window.NARROWASP||1.35)||(window.innerHeight>window.innerWidth&&window.NARROWPORT!==0); if(window.NARROW&&!window.CAMV){ const W=window.NARROWW||34, H=26, th=Math.tan(S3.cam.fov*Math.PI/360); const d2=Math.max((W/2)/th/S3.cam.aspect,(H/2)/th)*1.0; const hx=window._camHX!=null?_camHX:narrowX(); window._camHX=hx; cp=[hx,cy-2.5+d2*0.30,d2*1.02]; la=[hx,cy-2.5,0]; window._camD2=d2; }
   if(window.CAMV&&TGT){ const c=S3.group.position.clone(); const pad=padPoint(2); const zx=pad.x, zy=pad.y-1;
     if(CAMV==='front') { cp=[zx,zy-3,46]; la=[zx,zy,0]; }                 // face-on close-up (audience-mirrored = player tab view)
     if(CAMV==='player'){ cp=[zx,zy+44,24]; la=[zx,zy,0]; }                // over the top of the neck, looking down like the player
@@ -549,7 +554,7 @@ function nailDir(sg,d){ /* the back of the finger = away from the palm: the side
 function capNearest(k,P){ let best=null,minZ=1e9; for(const sg of CAPS.segs){ if(sg.k!==k||sg.j===0) continue; const A=sg.A,B=sg.B; const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,P.clone().sub(A).dot(ab)/ab.lengthSq())); const Q=A.clone().add(ab.multiplyScalar(t)); const dist=Q.distanceTo(P);
     const sp=Q.clone().add(P.clone().sub(Q).multiplyScalar(sg.r/Math.max(1e-6,dist))); const d=Math.abs(dist-sg.r); minZ=Math.min(minZ,Math.min(A.z,B.z)-sg.r); if(!best||d<best.d) best={p:sp,d,q:Q,r:sg.r,j:sg.j}; } best.minZ=minZ; return best; }
 function render3d(){ if(S3){ updateCaps(); let n=0; S3.scene.traverse(()=>n++); if(n!==window._shN){ window._shN=n; S3.scene.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=!o.material||!o.material.alphaMap; } }); } if(!(window.PR&&PR.render())) S3.renderer.render(S3.scene,S3.cam); } }
-let ORB=null; function orbitInit(){ if(ORB||!S3.THREE.OrbitControls) return; ORB=new S3.THREE.OrbitControls(S3.cam,S3.renderer.domElement); ORB.enableDamping=true; ORB.addEventListener('change',()=>{ window.ORBITED=1; render3d(); }); }
+let ORB=null; function orbitInit(){ if(ORB||!S3.THREE.OrbitControls) return; ORB=new S3.THREE.OrbitControls(S3.cam,S3.renderer.domElement); ORB.enableDamping=true; ORB.addEventListener('change',()=>{ render3d(); }); ORB.addEventListener('start',()=>{ window.ORBITED=1; }); }
 window.orbit=(az,el,dist)=>{ /* scripted orbit for screenshots: az/el in degrees around the current target */ const t=ORB.target, r=dist||S3.cam.position.distanceTo(t); const A=az*Math.PI/180, E=el*Math.PI/180;
   S3.cam.up.set(0,1,0); S3.cam.position.set(t.x+r*Math.sin(A)*Math.cos(E), t.y+r*Math.sin(E), t.z+r*Math.cos(A)*Math.cos(E)); S3.cam.lookAt(t); window.ORBITED=1; render3d(); };
 
@@ -808,7 +813,7 @@ function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; 
 /* one rendered frame at time now (ms); also driven directly by the 60 fps capture with a virtual clock */
 function frame(now){ if(window.VNOW!=null) now=window.VNOW; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,Math.max(0,(now-lastT)/1000)); lastT=now;
   /* v16 fluency: time constant follows the note length (fast passages stay tight, slow ones glide); two cascaded stages = smooth ease-in/ease-out, never a snap */
-  const tau=Math.max(0.045,Math.min(0.12,(window.EVDURMS||400)/1000*0.2))*(window.FLUENT===0?0.6:1); const k=1-Math.exp(-dt*(window.SNAP?1e3:1/tau)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:1/(tau*1.3))); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
+  const tau=Math.max(0.045,Math.min(0.12,(window.EVDURMS||400)/1000*0.2))*(window.FLUENT===0?0.6:1); const k=1-Math.exp(-dt*(window.SNAP?1e3:1/tau)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:1/(tau*1.3))); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); narrowFollow(dt); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
 let SHOWT=0, BENT=false;
 function applyBend(now){ const e=RES&&RES.events[CURI]; if(!e) return; const tps=SP&&SP.on?SP.tps:960*((typeof api!=='undefined'&&api.score&&api.score.tempo)||70)/60; const durMs=e.dur/tps*1000; window.EVDURMS=durMs;
   const u=window.BENDU!=null?window.BENDU:Math.max(0,(now-SHOWT-60)/durMs); const B=bendState(e,u);
