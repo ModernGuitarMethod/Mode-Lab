@@ -681,7 +681,21 @@ window.tipAudit=()=>{ const I=INSTR[INST]; const ang=[], mutes=[], R=[], TH=[]; 
 function barreInfo(e,f){ f=f||1; const ns=e.notes.filter((n,j)=>e.fingers[j]===f&&n.f>0); if(ns.length<2) return null; const ss=ns.map(n=>n.s); const lo=Math.min(...ss), hi=Math.max(...ss);
   if(ns.length===2&&hi-lo<2) return null; return {lo,hi,f:ns[0].f}; }
 window.barreInfo=barreInfo;
-{ const _pf=poseFor; poseFor=function(i,full){ const P=_pf(i,full); if(P&&P._quick) return P; if(P&&!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
+/* v23 uncurl: pressing fingertips must come down at ~90 deg to the board (pad on the string, knuckles arched, rest of the finger off the board), never curled back under. Per pressed finger, re-balance MCP/PIP/DIP so the last segment sits at 80-90 deg while the pad stays on its target; cached on the shared pose (POSEC) so each shape is done once. */
+window.tipAttack=k=>{ const nm=S3.FN[k]; const mj=S3.wpos(nm+'-finger-phalanx-intermediate'), dj=S3.wpos(nm+'-finger-phalanx-distal'), tp=S3.wpos(nm+'-finger-tip'); const d=tp.clone().sub(dj).normalize(); const m=dj.clone().sub(mj); m.z=0; m.normalize(); return Math.atan2(-d.z, d.x*m.x+d.y*m.y)*180/Math.PI; };
+function uncurl(P,e){ if(window.UNCURL===0||!P||!P.fing||P.fing._uc) return P; const BI=barreInfo(e,1); applyPose(P); const nPress=new Set(e.notes.map((n,j)=>n.f>0?e.fingers[j]:0).filter(f=>f>=1&&f<=4)).size; const chord=nPress>=2; /* Dale: single-note lines ~90 deg; chords/power chords/double-stops/held shapes more relaxed (~70-86) */ const A1=chord?(window.UCMAXC||86):(window.UCMAX||90), A0=chord?(window.UCMINC||70):(window.UCMIN||82); const AX=noteWorld(1,12,0).sub(noteWorld(1,1,0)).normalize(); const along=(a,b)=>a.clone().sub(b).dot(AX);
+  for(let k=1;k<=4;k++){ const F=P.fing[k]; if(!F||!F.on||!F.tgt||(BI&&k===1)||F.flat) continue; S3.setFinger(k,F); const a0=tipAttack(k); if(a0<=A1+1) continue; const tgt=F.tgt; const msr=()=>{ try{ const R=HCOL.measure(e)[k]; return R?[Math.max(0,R.penReal!=null?R.penReal:R.pen),Math.max(0,R.minStr)]:[0,0]; }catch(_){ return [0,0]; } }; const [pen0,gap0]=msr();
+    const lat=(a,b)=>{ const v=a.clone().sub(b); v.sub(AX.clone().multiplyScalar(v.dot(AX))); v.z=0; return v.length(); };
+    const dx0=Math.abs(along(padPoint(k),tgt)), ly0=lat(padPoint(k),tgt); let done=false;
+    /* the pad point sits nearer the nail end as the tip stands up, so the target may sink up to 1.2 mm toward the string; contact/penetration are measured on the skin */
+    for(const dz of [0,0.04,0.08,0.12]){ if(done) break; const T2=tgt.clone(); T2.z-=dz;
+      const err=q=>{ S3.setFinger(k,q); const pad=padPoint(k); const a=tipAttack(k); const nm=S3.FN[k]; const dj=S3.wpos(nm+'-finger-phalanx-distal'), mj=S3.wpos(nm+'-finger-phalanx-intermediate'); return pad.distanceToSquared(T2)+5*Math.pow(along(pad,T2),2)+0.0006*(Math.pow(Math.max(0,a-A1),2)+Math.pow(Math.max(0,A0-a),2))+Math.pow(Math.max(0,tgt.z+0.9-dj.z),2)*3+Math.pow(Math.max(0,tgt.z+1.6-mj.z),2)*2; };
+      let best=Object.assign({},F), be=err(best), st=0.12;
+      for(let it=0;it<5;it++){ let imp=true,g=0; while(imp&&g++<8){ imp=false; for(const key of ['d','p','m']) for(const sg of [-1,1]){ const q=Object.assign({},best,{[key]:best[key]+sg*st}); q.d=Math.max(0.15,Math.min(1.6,q.d)); q.p=Math.max(0.45,Math.min(1.9,q.p)); q.m=Math.max(-0.2,Math.min(1.6,q.m)); const ee=err(q); if(ee<be){ be=ee; best=q; imp=true; } } } st/=2; }
+      S3.setFinger(k,best); const pd=padPoint(k); if(Math.abs(along(pd,tgt))<=dx0+0.015&&lat(pd,tgt)<=ly0+0.05&&tipAttack(k)<a0-2){ const [p1,g1]=msr(); if(p1<=pen0+0.01&&g1<=Math.max(gap0,0.06)){ best.miss=Math.sqrt(pd.distanceToSquared(tgt)); P.fing[k]=best; Object.defineProperty(P.fing,'_ucChg',{value:1,configurable:true}); done=true; } } }
+    if(!done) S3.setFinger(k,F); }
+  Object.defineProperty(P.fing,'_uc',{value:1,configurable:true}); return P; }
+{ const _pf=poseFor; poseFor=function(i,full){ const P0=_pf(i,full); if(P0&&P0._quick) return P0; const P=uncurl(P0,RES.events[i]);  if(P&&!P._colfix&&!(P.fing&&P.fing._ucChg)&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
 function poseForEv(e,prev){
   const I=INSTR[INST], p=e.pos, base=Math.max(p,1), nStr=I.nut.length, THREE=S3.THREE;
   const used={};
@@ -812,7 +826,7 @@ function blend(A,B,t){ if(!A) return B; const THREE=S3.THREE;
    anticipation (free fingers start toward their next note during the current one), ring/pinky coupling, tiny relaxed micro-motion on free fingers,
    wrist/arm leads position shifts (faster stage than the fingers). Joint-space easing gives curved, not straight-line, fingertip paths. */
 function motionTarget(now){ if(!TGT||window.SNAP||window.NOMOTION||!RES) return TGT; const e=RES.events[CURI]; const nx=RES.events[CURI+1]; const dur=window.EVDURMS||400;
-  const u=Math.max(0,Math.min(1,(now-SHOWT)/dur)); const N=nx?poseFor(CURI+1):null; const M=blend(TGT,TGT,0); M.fing={}; for(let k=1;k<=4;k++) M.fing[k]=Object.assign({},TGT.fing[k]);
+  const u=Math.max(0,Math.min(1,(now-SHOWT)/dur)); const N=nx?poseFor(CURI+1,true):null; const M=blend(TGT,TGT,0); M.fing={}; for(let k=1;k<=4;k++) M.fing[k]=Object.assign({},TGT.fing[k]);
   const ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x); const sameHand=N&&N.base===TGT.base;
   for(let k=1;k<=4;k++){ const F=M.fing[k]; if(F.on){ /* release: a pressing finger that moves to a different spot next lifts a touch in the last 15% of the note (anticipation); one that stays down does not move */
       const Q=N&&N.fing[k]; const stays=Q&&Q.on&&Q.tgt&&F.tgt&&Q.tgt.distanceTo&&Q.tgt.distanceTo(F.tgt)<0.05; if(N&&!stays&&window.FLUENT!==0){ const w=ss((u-0.85)/0.15); F.m-=0.10*w; F.p-=0.06*w; } continue; }
@@ -856,7 +870,7 @@ function techFX(now){ const e=RES&&RES.events[CURI]; if(!e||!CUR) return; const 
 window.techFX=techFX;
 /* deterministic frame stepper for videos: t seconds from event i0 at the score tempo */
 window.renderAt=(tSec,i0)=>{ const E=RES.events, bpm=(api.score&&api.score.tempo)||70, tps=960*bpm/60; window.FREEZE=1; const tick=E[i0].tick+tSec*tps; let i=i0; while(i+1<E.length&&E[i+1].tick<=tick) i++;
-  if(i!==CURI||!TGT){ window.PREVP=CUR||poseFor(i); showEvent(i); } const msIn=(tick-E[i].tick)/tps*1000; const k=Math.min(1,msIn/90), kk=k*k*(3-2*k);
+  if(i!==CURI||!TGT){ window.PREVP=CUR||poseFor(i,true); showEvent(i); } const msIn=(tick-E[i].tick)/tps*1000; const k=Math.min(1,msIn/90), kk=k*k*(3-2*k);
   CUR=MIDP=blend(window.PREVP||TGT,TGT,kk); applyPose(CUR); window.RHT=msIn+60; window.BENDU=msIn/(E[i].dur/tps*1000); const now=performance.now(); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); return {i,bar:E[i].bar}; };
 function updateBracket(){ const I=INSTR[INST], br=GUIT.userData.br, b=TGT.base; const xa=CM(I,fretR(I,b-1)), xb=CM(I,fretR(I,Math.min(b+3,22-CAPO)));
   const y=-CM(I,strY(I,0,fretR(I,b+1)))+0.9; br.scale.x=Math.abs(xa-xb)-0.3; br.position.set((xa+xb)/2,y,0.1); }
@@ -875,7 +889,7 @@ function showEvent(i){
     if(window.SIM&&OV[i]&&OV[i][0]){ const w=$('tabWrap'), top=OV[i][0].offsetTop; if(top<w.scrollTop+40||top>w.scrollTop+w.clientHeight-60) w.scrollTop=top-60; } }
   const p=e.pos;
   $('now').innerHTML=`Bar <b>${e.bar}</b> · ${p===0?'<b>Open position</b>':'Position <b>'+p+'</b>'}${e.shape?' · Shape <b>'+e.shape+'</b>':''}${e.shift?' · shift <b>'+(e.shift>0?'+':'')+e.shift+'</b>':''}${e.stretch?' · stretch <b>'+e.stretch+'</b>':''} · notes ${e.notes.map((n,k)=>'s'+(n.s+1)+'/f'+n.f+'→'+e.fingers[k]).join('  ')}`;
-  if(!S3) return; TGT=poseFor(i); debugDots(); pressStrings(TGT&&TGT.ev); const pt=$('posTag'); if(pt) pt.textContent=(p===0?'Open position':'Position '+p)+(e.shape?' · Mode Lab Shape '+e.shape:'')+' · '+INSTR[INST].name;
+  if(!S3) return; TGT=poseFor(i,true) /* v23: never show a borrowed/slid quick pose: the shown pose is always the full solve (cached), as in e5c932f */; debugDots(); pressStrings(TGT&&TGT.ev); const pt=$('posTag'); if(pt) pt.textContent=(p===0?'Open position':'Position '+p)+(e.shape?' · Mode Lab Shape '+e.shape:'')+' · '+INSTR[INST].name;
 }
 window.showEvent=showEvent; window.frame=frame;
 window.showCustom=(notes,label)=>{ const ev=[{tick:0,dur:960,restBefore:true,notes:notes.map(n=>({s:n[0],f:n[1]})),bar:0,beats:[]}];
@@ -922,8 +936,8 @@ function warm(){ if(!RES||!S3) return; if(/nowarm/.test(location.search)){ windo
   let fill=0; const head=()=>SP&&SP.on?SP.i:(typeof PLAYI!=='undefined'?Math.max(PLAYI,CURI||0):0);
   window.LASTUI=performance.now(); window.HEADREADY=true; window.HEADMS=Math.round(performance.now()-tw0); $('prog').style.display='none';
   const step=()=>{ if(gen!==window._warmGen||inst!==INST||!RES) return; if(!(SP&&SP.on)&&performance.now()-(window.LASTUI||0)<1500){ setTimeout(step,250); return; } const t=performance.now(); const budget=1;
-    while(left>0&&performance.now()-t<budget){ let did=false; const h=head(); if(SP&&SP.on) break; /* never solve while playing: the music and the hand stay in step */ if(false){ /* while playing, only shapes with no library match (held as the last pose) are solved, just ahead of the playhead */ for(let j=h;j<Math.min(N,h+40);j++){ if(done[j]) continue; const q=poseFor(j); if(!q._hold){ continue; } solve(j); did=true; break; } if(!did) break; } else { for(let j=Math.max(0,h-1);j<Math.min(N,h+60);j++){ if(solve(j)){ did=true; break; } } if(!did){ while(fill<N&&done[fill]) fill++; if(fill<N) solve(fill); } } }
-    if(left>0) setTimeout(step,SP&&SP.on?8:30); else { window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; try{ if(window.UNIQ&&!/nocache/.test(location.search)){ const o=exportPoses(); const f=POSEFILE||{}; const add={}; let n=0; for(const k in o) if(!f[k]){ add[k]=o[k]; n++; } if(n) localStorage.setItem('h3dposes_'+SOLVER_VER,JSON.stringify(add)); } }catch(_){} if(!SP.on){ if(TGT) applyPose(TGT); else restPose(); } } };
+    while(left>0&&performance.now()-t<budget){ let did=false; const h=head(); if(SP&&SP.on){ /* v23: while playing, keep fully solved poses ahead of the playhead (one solve per tick) */ const lim=Math.min(N,h+48); let j=h; while(j<lim&&done[j]) j++; if(j<lim) solve(j); break; } /* never solve while playing: the music and the hand stay in step */ if(false){ /* while playing, only shapes with no library match (held as the last pose) are solved, just ahead of the playhead */ for(let j=h;j<Math.min(N,h+40);j++){ if(done[j]) continue; const q=poseFor(j); if(!q._hold){ continue; } solve(j); did=true; break; } if(!did) break; } else { for(let j=Math.max(0,h-1);j<Math.min(N,h+60);j++){ if(solve(j)){ did=true; break; } } if(!did){ while(fill<N&&done[fill]) fill++; if(fill<N) solve(fill); } } }
+    if(left>0) setTimeout(step,SP&&SP.on?24:30); else { window.WARMMS=Math.round(performance.now()-tw0); window.WARM=true; try{ if(window.UNIQ&&!/nocache/.test(location.search)){ const o=exportPoses(); const f=POSEFILE||{}; const add={}; let n=0; for(const k in o) if(!f[k]){ add[k]=o[k]; n++; } if(n) localStorage.setItem('h3dposes_'+SOLVER_VER,JSON.stringify(add)); } }catch(_){} if(!SP.on){ if(TGT) applyPose(TGT); else restPose(); } } };
   step(); }
 /* timer-driven silent preview (same clock as the player: ticks at the score tempo) */
 let simRAF=0;
