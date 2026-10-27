@@ -299,7 +299,7 @@ function strTopZ(sEngine){ const I=INSTR[INST]; const i=photoStr(sEngine); if(!I
 /* lowest skin point of finger k's tip segment within 6 mm (in-plane) of P: where the pad actually rests */
 function lowSkinZ(k,P){ if(CAPS){ updateCaps(); let mz=1e9; for(const sg of CAPS.segs){ if(sg.k!==k||sg.j<2) continue; const A=sg.A,B=sg.B; const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,((P.x-A.x)*ab.x+(P.y-A.y)*ab.y)/Math.max(1e-6,ab.x*ab.x+ab.y*ab.y))); const Q=A.clone().add(ab.multiplyScalar(t)); if(Math.hypot(Q.x-P.x,Q.y-P.y)<0.6+sg.r) mz=Math.min(mz,Q.z-sg.r); } return mz<1e8?mz:P.z; } const S=skinInit(); const v=new S3.THREE.Vector3(); let mz=1e9; S.mesh.updateMatrixWorld(true); S.mesh.skeleton.update();
   for(const i of S.L[k]){ S.mesh.boneTransform(i,v); v.applyMatrix4(S.mesh.matrixWorld); if(Math.hypot(v.x-P.x,v.y-P.y)<0.6&&v.z<mz) mz=v.z; } return mz<1e8?mz:P.z; }
-const BEHIND=0.30; /* cm: pad centre 3 mm behind the fret wire (real players: 2-4 mm) */
+const BEHIND=+(new URLSearchParams(location.search).get('behind')||0.5); /* cm: v24 (Dale) pad centre 5 mm behind the fret wire so the fleshy pad sits in the fret space, not on the wire (capped at 45% of the space) */
 function noteWorld(sEngine,f,z,harm){ const I=INSTR[INST]; const i=photoStr(sEngine);
   const x= f<=0 ? fretR(I,0)-(CAPO?-6:-22) : (harm ? fretR(I,f) : fretR(I,f)+Math.min(BEHIND/2.54*I.S,(fretR(I,f-1)-fretR(I,f))*0.45));  // headstock side of the wire; harmonic = over the wire
   return W(I,x,strY(I,Math.max(0,Math.min(I.nut.length-1,i)),x),z); }
@@ -558,7 +558,7 @@ function nailDir(sg,d){ /* the back of the finger = away from the palm: the side
 /* exact capsule contact for finger k (its proximal, middle and distal segments) */
 function capNearest(k,P){ let best=null,minZ=1e9; for(const sg of CAPS.segs){ if(sg.k!==k||sg.j===0) continue; const A=sg.A,B=sg.B; const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,P.clone().sub(A).dot(ab)/ab.lengthSq())); const Q=A.clone().add(ab.multiplyScalar(t)); const dist=Q.distanceTo(P);
     const sp=Q.clone().add(P.clone().sub(Q).multiplyScalar(sg.r/Math.max(1e-6,dist))); const d=Math.abs(dist-sg.r); minZ=Math.min(minZ,Math.min(A.z,B.z)-sg.r); if(!best||d<best.d) best={p:sp,d,q:Q,r:sg.r,j:sg.j}; } best.minZ=minZ; return best; }
-function render3d(){ if(S3){ updateCaps(); let n=0; S3.scene.traverse(()=>n++); if(n!==window._shN){ window._shN=n; S3.scene.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=!o.material||!o.material.alphaMap; } }); } if(!(window.PR&&PR.render())) S3.renderer.render(S3.scene,S3.cam); } }
+function render3d(){ if(S3&&window.NORENDER3D){ updateCaps&&0; return; } if(S3){ updateCaps(); let n=0; S3.scene.traverse(()=>n++); if(n!==window._shN){ window._shN=n; S3.scene.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=!o.material||!o.material.alphaMap; } }); } if(!(window.PR&&PR.render())) S3.renderer.render(S3.scene,S3.cam); } }
 let ORB=null; function orbitInit(){ if(ORB||!S3.THREE.OrbitControls) return; ORB=new S3.THREE.OrbitControls(S3.cam,S3.renderer.domElement); ORB.enableDamping=true; ORB.addEventListener('change',()=>{ render3d(); }); ORB.addEventListener('start',()=>{ window.ORBITED=1; }); }
 window.orbit=(az,el,dist)=>{ /* scripted orbit for screenshots: az/el in degrees around the current target */ const t=ORB.target, r=dist||S3.cam.position.distanceTo(t); const A=az*Math.PI/180, E=el*Math.PI/180;
   S3.cam.up.set(0,1,0); S3.cam.position.set(t.x+r*Math.sin(A)*Math.cos(E), t.y+r*Math.sin(E), t.z+r*Math.cos(A)*Math.cos(E)); S3.cam.lookAt(t); window.ORBITED=1; render3d(); };
@@ -618,7 +618,7 @@ function fitFinger(n,tgt,curl,start,flat,iters){
   const err=q=>{ S3.setFinger(n,q); const pad=padPoint(n); let e=pad.distanceToSquared(tgt)+(flat?0:Math.pow(q.p-q.m*1.3,2)*0.02)+(duck?0.25:0.06)*Math.pow(q.a-A0*(duck?0.3:1),2); if(duck) e+=0.35*(Math.pow(q.m-0.5,2)+3*Math.pow(q.p-0.38,2));   /* v1.89 relaxed duck bill prior (Study Lab Techniques) */
     if(!flat&&!duck){ const dj=S3.wpos(S3.FN[n]+'-finger-phalanx-distal'), mj=S3.wpos(S3.FN[n]+'-finger-phalanx-intermediate'), tp=S3.wpos(S3.FN[n]+'-finger-tip'); /* arch: tip joint and middle joint stand up off the board */
       e+=Math.pow(Math.max(0,tgt.z+0.9-dj.z),2)*3+Math.pow(Math.max(0,tgt.z+1.6-mj.z),2)*2;
-      const dz=(tp.z-dj.z)/Math.max(1e-6,tp.distanceTo(dj)); e+=(window.PERPW!=null?window.PERPW:4.0)*Math.pow(Math.max(0,dz+(window.PERPT!=null?PERPT:0.985)),2);  if(window.FREED) e+=(window.DCW!=null?DCW:0.02)*Math.pow(q.d-0.67*q.p,2); if(window.REBUILD&&!tgt.free){ const deg=Math.asin(Math.max(-1,Math.min(1,-dz)))*180/Math.PI; e+=RB.aw*Math.pow(Math.max(0,RB.a0-deg)+Math.max(0,deg-RB.a1),2)/100; } }   /* v30: last segment comes straight down onto the string (>= ~80 deg to the board) */  /* end segment near perpendicular to the board */
+      const dz=(tp.z-dj.z)/Math.max(1e-6,tp.distanceTo(dj)); e+=(window.PERPW!=null?window.PERPW:4.0)*Math.pow(Math.max(0,dz+(window.PERPT!=null?PERPT:0.985)),2);  if(window.FREED) e+=(window.DCW!=null?DCW:0.02)*Math.pow(q.d-0.67*q.p,2); if(window.REBUILD&&!tgt.free){ let deg=Math.asin(Math.max(-1,Math.min(1,-dz)))*180/Math.PI; if(window.SIGNATT!==0){ /* v24 root fix: asin(dz) cannot tell 70 deg from 110 deg (tip curled back under) - use the signed attack angle against the finger's own heading */ const dv=tp.clone().sub(dj).normalize(), mh=dj.clone().sub(mj); mh.z=0; mh.normalize(); deg=Math.atan2(-dv.z,dv.x*mh.x+dv.y*mh.y)*180/Math.PI; } const C=(window.RBCTXF&&window.RBCTXF[n])||window.RBCTX||[RB.a0,RB.a1]; e+=RB.aw*Math.pow(Math.max(0,C[0]-deg)+Math.max(0,deg-C[1]),2)/100; } }   /* v30: last segment comes straight down onto the string (>= ~80 deg to the board) */  /* end segment near perpendicular to the board */
     return e; };
   clampQ(best); let be=err(best), st=0.25;
   for(let it=0;it<(iters||7);it++){ let imp=true,guard=0; while(imp&&guard++<10){ imp=false; for(const k of (window.FREED&&!flat&&!duck?['m','p','d','a']:['m','p','a'])) for(const sg of [-1,1]){ const q=clampQ(Object.assign({},best,{[k]:best[k]+sg*st})); const e=err(q); if(e<be){be=e;best=q;imp=true;} } } st/=2; }
@@ -627,7 +627,11 @@ function fitFinger(n,tgt,curl,start,flat,iters){
 const THUMBC={};
 /* v15: held 'support' fingers above fret 12 are dropped when solving (frets there are too narrow for a held 3-fret span); the played note is always solved */
 window.solveEv=e=>{ if(window.SUPSKIP===0||!e||!e.notes||!e.notes.some(n=>n.support&&n.f>=12)) return e; const keep=e.notes.map(n=>!(n.support&&n.f>=12)); return Object.assign({},e,{notes:e.notes.filter((n,j)=>keep[j]),fingers:e.fingers.filter((f,j)=>keep[j]),_full:e}); };
-function bestPose(e,prev){ e=solveEv(e); const colP=r=>{ if(!window.SOLCOL||!window.HCOL||!GUIT||!GUIT.userData.strG) return 0; applyPose(r); for(let k=1;k<=4;k++) if(r.fing[k]) S3.setFinger(k,r.fing[k]); const F=HCOL.measure(e); let p=0; for(let k=0;k<=5;k++) if(F[k]) p+=Math.max(0,F[k].penReal!=null?F[k].penReal:F[k].pen); return p; };
+/* v24 (Dale): tip attack angle targets per finger ROLE, never past 90. lead single note 85-90; barre chord: index flat, middle ~90, ring/pinky ~75; power chords / multi-finger shapes: index 75-85, middle 75-88, ring/pinky 65-80 */
+function roleBands(e){ const pk=[...new Set(e.notes.map((n,j)=>n.f>0?e.fingers[j]:0).filter(f=>f>=1&&f<=4))]; const B=barreInfo(e,1); const R={};
+  for(const k of pk){ if(pk.length<=1) R[k]=[window.UCMIN||85,window.UCMAX||90]; else if(B) R[k]=k===1?null:k===2?[85,90]:[70,80]; else R[k]=k===1?[75,85]:k===2?[75,88]:[65,80]; } return R; }
+window.roleBands=roleBands;
+function bestPose(e,prev){ e=solveEv(e); { window.RBCTXF=window.SIGNATT===0?null:roleBands(e); window.RBCTX=null; }  /* v24: Dale's context targets inside the solver itself */ const colP=r=>{ if(!window.SOLCOL||!window.HCOL||!GUIT||!GUIT.userData.strG) return 0; applyPose(r); for(let k=1;k<=4;k++) if(r.fing[k]) S3.setFinger(k,r.fing[k]); const F=HCOL.measure(e); let p=0; for(let k=0;k<=5;k++) if(F[k]) p+=Math.max(0,F[k].penReal!=null?F[k].penReal:F[k].pen); return p; };
   const sc=r=>{ const q=evQ(e,r.fing); r.Q=q; const cp=colP(r); q.col=+cp.toFixed(3); return q.bad*100+q.w+cp*(window.SOLCOL||0); }; const ok=r=>!r.Q.bad&&!(r.Q.col>0.1);
   let r=poseForEv(e,prev), best=sc(r);
   /* finger accuracy first: if any pad misses (or, with SOLCOL, the hand sinks into the neck), retry cold-started, without the thumb lift, and with the thumb higher or lower; keep the best */
@@ -683,19 +687,43 @@ function barreInfo(e,f){ f=f||1; const ns=e.notes.filter((n,j)=>e.fingers[j]===f
 window.barreInfo=barreInfo;
 /* v23 uncurl: pressing fingertips must come down at ~90 deg to the board (pad on the string, knuckles arched, rest of the finger off the board), never curled back under. Per pressed finger, re-balance MCP/PIP/DIP so the last segment sits at 80-90 deg while the pad stays on its target; cached on the shared pose (POSEC) so each shape is done once. */
 window.tipAttack=k=>{ const nm=S3.FN[k]; const mj=S3.wpos(nm+'-finger-phalanx-intermediate'), dj=S3.wpos(nm+'-finger-phalanx-distal'), tp=S3.wpos(nm+'-finger-tip'); const d=tp.clone().sub(dj).normalize(); const m=dj.clone().sub(mj); m.z=0; m.normalize(); return Math.atan2(-d.z, d.x*m.x+d.y*m.y)*180/Math.PI; };
-function uncurl(P,e){ if(window.UNCURL===0||!P||!P.fing||P.fing._uc) return P; const BI=barreInfo(e,1); applyPose(P); const nPress=new Set(e.notes.map((n,j)=>n.f>0?e.fingers[j]:0).filter(f=>f>=1&&f<=4)).size; const chord=nPress>=2; /* Dale: single-note lines ~90 deg; chords/power chords/double-stops/held shapes more relaxed (~70-86) */ const A1=chord?(window.UCMAXC||86):(window.UCMAX||90), A0=chord?(window.UCMINC||70):(window.UCMIN||82); const AX=noteWorld(1,12,0).sub(noteWorld(1,1,0)).normalize(); const along=(a,b)=>a.clone().sub(b).dot(AX);
-  for(let k=1;k<=4;k++){ const F=P.fing[k]; if(!F||!F.on||!F.tgt||(BI&&k===1)||F.flat) continue; S3.setFinger(k,F); const a0=tipAttack(k); if(a0<=A1+1) continue; const tgt=F.tgt; const msr=()=>{ try{ const R=HCOL.measure(e)[k]; return R?[Math.max(0,R.penReal!=null?R.penReal:R.pen),Math.max(0,R.minStr)]:[0,0]; }catch(_){ return [0,0]; } }; const [pen0,gap0]=msr();
-    const lat=(a,b)=>{ const v=a.clone().sub(b); v.sub(AX.clone().multiplyScalar(v.dot(AX))); v.z=0; return v.length(); };
-    const dx0=Math.abs(along(padPoint(k),tgt)), ly0=lat(padPoint(k),tgt); let done=false;
-    /* the pad point sits nearer the nail end as the tip stands up, so the target may sink up to 1.2 mm toward the string; contact/penetration are measured on the skin */
-    for(const dz of [0,0.04,0.08,0.12]){ if(done) break; const T2=tgt.clone(); T2.z-=dz;
-      const err=q=>{ S3.setFinger(k,q); const pad=padPoint(k); const a=tipAttack(k); const nm=S3.FN[k]; const dj=S3.wpos(nm+'-finger-phalanx-distal'), mj=S3.wpos(nm+'-finger-phalanx-intermediate'); return pad.distanceToSquared(T2)+5*Math.pow(along(pad,T2),2)+0.0006*(Math.pow(Math.max(0,a-A1),2)+Math.pow(Math.max(0,A0-a),2))+Math.pow(Math.max(0,tgt.z+0.9-dj.z),2)*3+Math.pow(Math.max(0,tgt.z+1.6-mj.z),2)*2; };
-      let best=Object.assign({},F), be=err(best), st=0.12;
-      for(let it=0;it<5;it++){ let imp=true,g=0; while(imp&&g++<8){ imp=false; for(const key of ['d','p','m']) for(const sg of [-1,1]){ const q=Object.assign({},best,{[key]:best[key]+sg*st}); q.d=Math.max(0.15,Math.min(1.6,q.d)); q.p=Math.max(0.45,Math.min(1.9,q.p)); q.m=Math.max(-0.2,Math.min(1.6,q.m)); const ee=err(q); if(ee<be){ be=ee; best=q; imp=true; } } } st/=2; }
-      S3.setFinger(k,best); const pd=padPoint(k); if(Math.abs(along(pd,tgt))<=dx0+0.015&&lat(pd,tgt)<=ly0+0.05&&tipAttack(k)<a0-2){ const [p1,g1]=msr(); if(p1<=pen0+0.01&&g1<=Math.max(gap0,0.06)){ best.miss=Math.sqrt(pd.distanceToSquared(tgt)); P.fing[k]=best; Object.defineProperty(P.fing,'_ucChg',{value:1,configurable:true}); done=true; } } }
-    if(!done) S3.setFinger(k,F); }
-  Object.defineProperty(P.fing,'_uc',{value:1,configurable:true}); return P; }
-{ const _pf=poseFor; poseFor=function(i,full){ const P0=_pf(i,full); if(P0&&P0._quick) return P0; const P=uncurl(P0,RES.events[i]);  if(P&&!P._colfix&&!(P.fing&&P.fing._ucChg)&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(RES.events[i])]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P&&P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(!(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search))) return P; try{ return HCOL.fix(P,RES.events[i]); }catch(err){ console.warn('colfix skipped',i,err&&err.message); return P; } }; }
+if(/[?&]uncurl=0/.test(location.search)) window.UNCURL=0; if(/[?&]fclamp=0/.test(location.search)) window.FCLAMP=0; { const sv=new URLSearchParams(location.search).get("set"); if(sv) sv.split(",").forEach(kv=>{ const [k,v]=kv.split(":"); if(/^[A-Z][A-Z0-9_]*$/.test(k)) window[k]=+v; }); } if(/[?&]signatt=0/.test(location.search)) window.SIGNATT=0;
+function uncurl(P,e){ if(window.UNCURL===0||!P||!P.fing||P.fing._uc||!window.HCOL) return P; const BI=barreInfo(e,1);
+  const pressK=[...new Set(e.notes.map((n,j)=>n.f>0?e.fingers[j]:0).filter(f=>f>=1&&f<=4))]; const chord=pressK.length>=2;
+  /* Dale: single-note lines ~90 deg (82-90, aim 86); chords/power chords/double-stops/held shapes relaxed (70-86, aim 78) */
+  const RBD=roleBands(e); const A1=chord?86:90, A0=chord?70:85;
+  const K=pressK.filter(k=>{ const F=P.fing[k]; return F&&F.on&&F.tgt&&!(BI&&k===1)&&!F.flat; }); if(!K.length){ Object.defineProperty(P.fing,'_uc',{value:1,configurable:true}); return P; }
+  const g=S3.group; const setAll=()=>{ applyPose(P); };
+  const AX=noteWorld(1,12,0).sub(noteWorld(1,1,0)).normalize(); const along=(a,b)=>a.clone().sub(b).dot(AX);
+  const lat=(a,b)=>{ const v=a.clone().sub(b); v.sub(AX.clone().multiplyScalar(v.dot(AX))); v.z=0; return v.length(); };
+  const pr=R=>Math.max(0,R?(R.penReal!=null?R.penReal:R.pen):0);
+  const snap=()=>{ const F=HCOL.measure(e); return {pen:[0,1,2,3,4,5].reduce((m,j)=>Math.max(m,pr(F[j])),0),gap:j=>F[j]?Math.max(0,F[j].minStr):0,clr:j=>F[j]?F[j].minStr:1e9}; };
+  setAll(); const a0={}; let need=false; for(const k of K){ a0[k]=tipAttack(k); if(a0[k]>((RBD[k]||[0,A1])[1])+1) need=true; } if(!need){ Object.defineProperty(P.fing,'_uc',{value:1,configurable:true}); return P; }
+  const S0=snap(); const dx0={}, ly0={}; for(const k of K){ const pd=padPoint(k); dx0[k]=Math.abs(along(pd,P.fing[k].tgt)); ly0[k]=lat(pd,P.fing[k].tgt); }
+  const free=[1,2,3,4].filter(k=>P.fing[k]&&!pressK.includes(k)); const clr0={}; for(const k of free) clr0[k]=S0.clr(k);
+  const band=(a,k)=>{ const b=(k&&RBD[k])||[A0,A1]; return Math.pow(Math.max(0,a-b[1]),2)+Math.pow(Math.max(0,b[0]-a),2)+0.15*Math.pow(a-(b[0]+b[1])/2,2); };
+  const cost0=K.reduce((s,k)=>s+band(a0[k],k),0);
+  const P0pos=P.G.pos.clone(), F0={}; for(const k of K) F0[k]=Object.assign({},P.fing[k]);
+  /* root cause: with the knuckles where the curled pose left them the finger can only reach its string by over-flexing, so the tip rolls past vertical. Let the hand settle a few mm (across the neck / away from the board) and the MCP take more of the flexion, so the last segment can stand up with the pad still on its string. DIP stays anatomically coupled (0.25-0.95 x PIP). */
+  const HM=BI?0:(window.UCHAND!=null?UCHAND:(chord?0.25:0.4));
+  const tryFit=(sink,hm)=>{ P.G.pos.copy(P0pos); for(const k of K) P.fing[k]=Object.assign({},F0[k]); const T2={}; for(const k of K){ T2[k]=F0[k].tgt.clone(); T2[k].z-=sink; }
+    const clampF=q=>{ q.m=Math.max(-0.2,Math.min(1.6,q.m)); q.p=Math.max(0.45,Math.min(1.9,q.p)); q.d=Math.max(Math.max(0.15,q.p*0.25),Math.min(q.p*0.95+0.15,Math.min(1.5,q.d))); return q; };
+    const fe=k=>{ const q=P.fing[k]; S3.setFinger(k,q); const pad=padPoint(k), a=tipAttack(k), nm=S3.FN[k]; const dj=S3.wpos(nm+'-finger-phalanx-distal'), mj=S3.wpos(nm+'-finger-phalanx-intermediate'); const t=F0[k].tgt;
+      return pad.distanceToSquared(T2[k])+5*Math.pow(along(pad,T2[k]),2)+0.0006*band(a,k)+Math.pow(Math.max(0,t.z+0.9-dj.z),2)*3+Math.pow(Math.max(0,t.z+1.6-mj.z),2)*2+0.002*Math.pow(q.d/q.p-0.55,2); };
+    const tot=()=>{ g.position.copy(P.G.pos); g.updateMatrixWorld(true); let s=0; for(const k of K) s+=fe(k); const o=P.G.pos.clone().sub(P0pos); return s+0.01*(o.y*o.y+o.z*o.z); };
+    let be=tot();
+    for(let st=0.12,it=0;it<5;it++,st/=2){ let imp=true,gd=0; while(imp&&gd++<8){ imp=false;
+      for(const k of K) for(const key of ['d','p','m']) for(const sg of [-1,1]){ const old=P.fing[k]; P.fing[k]=clampF(Object.assign({},old,{[key]:old[key]+sg*st})); const ee=tot(); if(ee<be){ be=ee; imp=true; } else { P.fing[k]=old; } }
+      if(hm>0) for(const ax of ['y','z']) for(const sg of [-1,1]){ const v=P.G.pos[ax]+sg*st*0.5; if(Math.abs(v-P0pos[ax])>hm) continue; const old=P.G.pos[ax]; P.G.pos[ax]=v; const ee=tot(); if(ee<be){ be=ee; imp=true; } else P.G.pos[ax]=old; } } }
+    setAll(); const S=snap(); let c=0; for(const k of K){ const pd=padPoint(k); if(Math.abs(along(pd,F0[k].tgt))>dx0[k]+0.015||lat(pd,F0[k].tgt)>ly0[k]+0.05){ window._ucWhy='pos'; return null; } if(S.gap(k)>Math.max(S0.gap(k),0.06)){ window._ucWhy='gap'+S.gap(k).toFixed(3); return null; } c+=band(tipAttack(k),k); }
+    if(S.pen>S0.pen+0.01){ window._ucWhy='pen'+(S.pen-S0.pen).toFixed(3); return null; } for(const k of free) if(S.clr(k)<Math.min(clr0[k],0.15)-1e-4){ window._ucWhy='clr'; return null; }
+    const o=P.G.pos.clone().sub(P0pos); return {c:c+2*(o.y*o.y+o.z*o.z),pos:P.G.pos.clone(),f:Object.fromEntries(K.map(k=>[k,Object.assign({},P.fing[k])]))}; };
+  let best=null; for(const hm of (HM>0?[HM,0]:[0])) for(const sink of [0,0.04,0.08,0.12]){ const r=tryFit(sink,hm); if(window.UCDBG) UCDBG.push({ev:RES.events.indexOf(e),K,chord,hm,sink,ok:!!r,why:r?'':window._ucWhy,a:K.map(k=>+tipAttack(k).toFixed(1)),a0:K.map(k=>+a0[k].toFixed(1)),dp:P.G.pos.clone().sub(P0pos).toArray().map(x=>+x.toFixed(3)),c:r&&+r.c.toFixed(1),c0:+cost0.toFixed(1)}); if(r&&(!best||r.c<best.c)) best=r; if(best&&best.c<cost0*0.15) break; }
+  P.G.pos.copy(P0pos); for(const k of K) P.fing[k]=F0[k];
+  if(best&&best.c<cost0-1){ P.G.pos.copy(best.pos); for(const k of K){ P.fing[k]=best.f[k]; P.fing[k].miss=Math.sqrt(padPoint(k).distanceToSquared(F0[k].tgt)); } Object.defineProperty(P.fing,'_ucChg',{value:1,configurable:true}); }
+  setAll(); Object.defineProperty(P.fing,'_uc',{value:1,configurable:true}); return P; }
+/* v24: uncurl runs AFTER the collision fix (the fix re-seats pads by flexing and would otherwise roll the tip back past vertical); its own guards keep penetration, pad contact and neighbour clearance */
+{ const _pf=poseFor; poseFor=function(i,full){ const P0=_pf(i,full); if(!P0||P0._quick) return P0; const e=RES.events[i]; let P=P0; if(!P._colfix&&POSEFILE&&POSEFILE.__colfix&&POSEFILE[evSig(e)]&&!POSEFILE.__colfix_dirty) P._colfix=1; else if(P._colfix&&P._colfix!==1&&window.HCOL&&P._colfix!==HCOL.stamp()) delete P._colfix; if(window.HCOL&&S3&&!/[?&]colfix=0/.test(location.search)){ try{ P=HCOL.fix(P,e); }catch(err){ console.warn('colfix skipped',i,err&&err.message); } } try{ return uncurl(P,e); }catch(err){ console.warn('uncurl skipped',i,err&&err.message); return P; } }; }
 function poseForEv(e,prev){
   const I=INSTR[INST], p=e.pos, base=Math.max(p,1), nStr=I.nut.length, THREE=S3.THREE;
   const used={};
@@ -832,14 +860,67 @@ function motionTarget(now){ if(!TGT||window.SNAP||window.NOMOTION||!RES) return 
       const Q=N&&N.fing[k]; const stays=Q&&Q.on&&Q.tgt&&F.tgt&&Q.tgt.distanceTo&&Q.tgt.distanceTo(F.tgt)<0.05; if(N&&!stays&&window.FLUENT!==0){ const w=ss((u-0.85)/0.15); F.m-=0.10*w; F.p-=0.06*w; } continue; }
     if(sameHand&&N.fing[k]){ const w=0.7*ss((u-0.2)/0.8); const Q=N.fing[k]; F.m+=(Q.m-F.m)*w; F.p+=(Q.p-F.p)*w; F.d+=(Q.d-F.d)*w; F.a=(F.a||0)+((Q.a||0)-(F.a||0))*w; }
     const t=now/1000; F.m+=0.018*Math.sin(t*1.1+k*1.7); F.a=(F.a||0)+0.012*Math.sin(t*0.7+k); }
+  if(N&&!sameHand&&N.G&&window.FLUENT!==0){ const w=(window.HLEAD!=null?HLEAD:0.2)*ss((u-0.88)/0.12); if(w>0){ M.G={pos:M.G.pos.clone().lerp(N.G.pos,w),q:M.G.q.clone().slerp(N.G.q,w),scale:M.G.scale}; } }   /* v24: the arm starts the shift as the fingers release */
   for(const [x,y] of [[3,4],[4,3]]){ const A=M.fing[x], B=M.fing[y]; if(!A.on){ const c=0.18; A.m+=(B.m-A.m)*c; A.p+=(B.p-A.p)*c*0.6; } }
   return M; }
+/* v24 HARD RULE (Dale): on EVERY displayed frame (solved, interpolated, bent, any file) the thumb/palm never go through the neck and no finger goes through the fretboard/neck.
+   Final per-frame constraint, applied after all motion layers and right before the frame is drawn. Corrections release smoothly (no pops); thumb joints are also acceleration-limited. */
+const FC={th:0,pa:0,f:[0,0,0,0,0],tv:null,tp:null,last:null};
+function fcWrap(){ if(FC.wrapped||!S3) return; FC.wrapped=1; const sF=S3.setFinger, sT=S3.setThumb; S3.setFinger=function(k,q){ (FC.lastF||(FC.lastF={}))[k]=q; return sF.apply(this,arguments); }; S3.setThumb=function(q){ FC.lastT=q; return sT.apply(this,arguments); }; }
+function frameClamp(e){ fcWrap(); if(window.FCLAMP===0||!window.HCOL||!GUIT||!GUIT.userData.xE||!FC.lastT||!e) return; window.CLAMPED=0; const THREE=S3.THREE; const g=S3.group;
+  const pen=(F,k)=>F[k]&&/board|neck/.test(F[k].penObj||'')?Math.max(0,F[k].penReal!=null?F[k].penReal:F[k].pen):0; const anyPen=F=>[0,1,2,3,4,5].some(k=>pen(F,k)>0); const tot=F=>[0,1,2,3,4,5].reduce((a,k)=>a+pen(F,k),0);
+  const inv=g.parent?new THREE.Matrix4().copy(g.parent.matrixWorld).invert():null; const dirL=(x,y,z)=>{ const v=new THREE.Vector3(x,y,z).transformDirection(GUIT.matrixWorld); if(inv) v.transformDirection(inv); return v; };
+  const backW=new THREE.Vector3(0,0,-1).transformDirection(GUIT.matrixWorld);
+  /* 1) pop limiters: cap joint acceleration of the displayed thumb and fingers */
+  const T0=FC.lastT; const T={y:T0.y,p:T0.p,f:T0.f,o:(T0.o||[0,0,0]).slice()};
+  { const v=[T.y,T.p,T.f], A=window.FCACC||0.05; if(FC.tp&&FC.tv&&!window.SNAP){ for(let j=0;j<3;j++){ const want=v[j]-FC.tp[j]; const dv=Math.max(-A,Math.min(A,want-FC.tv[j])); FC.tv[j]+=dv; v[j]=FC.tp[j]+FC.tv[j]; } } else FC.tv=[0,0,0]; FC.tp=v.slice(); T.y=v[0]; T.p=v[1]; T.f=v[2]; }
+  const Q={}; for(let k=1;k<=4;k++){ const q=FC.lastF&&FC.lastF[k]; if(q) Q[k]={m:q.m,p:q.p,d:q.d,a:q.a||0}; }
+  const setF=(k,q)=>{ S3.setFinger(k,q); }; for(const k in Q) setF(+k,Q[k]);
+  let ts=FC.th*(window.FCREL||0.88); const setT=()=>S3.setThumb({y:T.y,p:T.p,f:T.f,o:[T.o[0]+backW.x*ts,T.o[1]+backW.y*ts,T.o[2]+backW.z*ts]}); setT(); g.updateMatrixWorld(true);
+  let F=HCOL.measure(e);
+  const es=(typeof solveEv==='function')?solveEv(e):e; const PK=new Set(es.notes.map((n,j)=>n.f>0&&!n.harm?es.fingers[j]:0).filter(f=>f>=1&&f<=4));
+  /* 2) free (non-pressing) fingers lifted clear of the strings (>= 4.5 mm), relaxed: MCP opens, PIP/DIP ease; never into anything */
+  { const FM=window.FREEMIN!=null?FREEMIN:0.45; for(let k=1;k<=4;k++){ if(PK.has(k)||!Q[k]||!F[k]||F[k].minStr>=FM) continue; let bF=F, bq=Q[k];
+      for(const d of [0.05,0.1,0.16,0.23,0.31,0.4,0.5]){ const q={m:Q[k].m-d,p:Math.max(0.15,Q[k].p-d*0.6),d:Math.max(0.1,Q[k].d-d*0.4),a:Q[k].a}; setF(k,q); g.updateMatrixWorld(true); const F2=HCOL.measure(e); if(tot(F2)>tot(F)+1e-5) continue; if(F2[k].minStr>bF[k].minStr){ bF=F2; bq=q; } if(F2[k].minStr>=FM) break; }
+      Q[k]=bq; setF(k,bq); F=bF; } g.updateMatrixWorld(true); F=HCOL.measure(e); }
+  /* 3) pressing pads seated on their string once the note has sounded (ramps in 30-90 ms): whole hand toward the board by the smallest gap, then per-finger flex; never into anything */
+  if(window.SEAT!==0&&PK.size){ const ms=(window.VNOW!=null?VNOW:performance.now())-SHOWT; const w=Math.max(0,Math.min(1,(ms-30)/60)), ss=w*w*(3-2*w);
+    if(ss>0){ const gmin=Math.min(...[...PK].map(k=>F[k]?F[k].minStr:1)); if(gmin>0.03&&gmin<0.6){ const dn=dirL(0,0,-1); const p0=g.position.clone(); let d=(gmin-0.015)*ss; for(let it=0;it<4;it++){ g.position.copy(p0).addScaledVector(dn,d); g.updateMatrixWorld(true); const F2=HCOL.measure(e); if(tot(F2)<=tot(F)+1e-6){ F=F2; break; } d*=0.5; if(it===3){ g.position.copy(p0); g.updateMatrixWorld(true); } } }
+      for(const k of PK){ if(!Q[k]||!F[k]||F[k].minStr<=0.04) continue; const fq=c=>({m:Q[k].m+c,p:Q[k].p+c*0.5,d:Q[k].d,a:Q[k].a}); setF(k,fq(0.6)); g.updateMatrixWorld(true); if(HCOL.measure(e)[k].minStr>0.04){ setF(k,Q[k]); continue; } let lo=0,hi=0.6; for(let it=0;it<7;it++){ const mid=(lo+hi)/2; setF(k,fq(mid)); g.updateMatrixWorld(true); if(HCOL.measure(e)[k].minStr>0.02) lo=mid; else hi=mid; }
+        setF(k,fq(hi*ss)); g.updateMatrixWorld(true); const F3=HCOL.measure(e); if(tot(F3)>tot(F)+1e-6){ setF(k,Q[k]); g.updateMatrixWorld(true); } else { Q[k]=fq(hi*ss); F=F3; } } } }
+  /* pop limiter on the final finger joints (after lift/seat): cap joint acceleration */
+  { const A=window.FCACCF||0.08; FC.fp=FC.fp||{}; FC.fv=FC.fv||{}; for(let k=1;k<=4;k++){ const q=Q[k]; if(!q) continue; const v=[q.m,q.p,q.d,q.a||0]; const P0=FC.fp[k], V0=FC.fv[k]; if(P0&&V0&&!window.SNAP){ for(let j=0;j<4;j++){ const want=v[j]-P0[j]; const dv=Math.max(-A,Math.min(A,want-V0[j])); V0[j]+=dv; v[j]=P0[j]+V0[j]; } } else FC.fv[k]=[0,0,0,0]; FC.fp[k]=v.slice(); Q[k]={m:v[0],p:v[1],d:v[2],a:v[3]}; setF(k,Q[k]); } g.updateMatrixWorld(true); F=HCOL.measure(e); }
+  /* 4) HARD RULE: nothing through the neck/board. thumb: base out the back + flex relaxed; fingers: open/curl that finger; leftovers: shortest whole-hand move */
+  const thumbFix=()=>{ for(let it=0;it<8&&pen(F,5)>0;it++){ ts+=pen(F,5)+0.03; setT(); g.updateMatrixWorld(true); F=HCOL.measure(e); window.CLAMPED=1; } for(let it=0;it<6&&pen(F,5)>0;it++){ T.f*=0.8; T.p*=0.9; setT(); g.updateMatrixWorld(true); F=HCOL.measure(e); } };
+  thumbFix();
+  FC.pf=FC.pf||[0,0,0,0,0];
+  for(let pass=0;pass<3;pass++){
+  for(let k=1;k<=4;k++){ if(!Q[k]) continue; const Qk=Q[k]; const mk=d=>({m:Qk.m-d,p:Math.max(0,Qk.p-d*0.5),d:Math.max(0,Qk.d-d*0.3),a:Qk.a}); const prev=FC.pf[k]||0;
+    if(pen(F,k)<=0&&Math.abs(prev)<0.01){ FC.pf[k]=0; continue; }
+    /* smooth: keep (and slowly release) last frame's correction when it is still needed; otherwise the clear candidate nearest to it */
+    const cands=[prev*0.85,prev,0,0.05,-0.05,0.1,-0.1,0.18,-0.18,0.28,-0.28,0.4,-0.4,0.55,-0.55,0.75,0.95,1.2]; let best=null;
+    for(const d of cands){ setF(k,mk(d)); g.updateMatrixWorld(true); const F2=HCOL.measure(e); const t=tot(F2); const sc=t*100+Math.abs(d-prev)*0.5+Math.abs(d)*0.1; if(!best||sc<best.sc) best={sc,d,F:F2,t}; if(t<=0&&(d===prev*0.85)) break; }
+    if(best.t>0||best.d!==0) window.CLAMPED=1; Q[k]=mk(best.d); setF(k,Q[k]); g.updateMatrixWorld(true); F=best.F; FC.pf[k]=best.d; }
+  if([0,1,2,3,4].some(k=>pen(F,k)>0)){ window.CLAMPED=1; const D=[[0,0,-1],[0,0,1],[0,1,0],[0,-1,0],[0,0.7,-0.7],[0,-0.7,-0.7],[0,0.7,0.7],[0,-0.7,0.7],[1,0,0],[-1,0,0]].map(a=>dirL(...a)); const pos=g.position.clone(); let best={t:pen(F,0)*50+[1,2,3,4].reduce((a,k)=>a+pen(F,k),0),p:pos,F};
+    for(const d of [0.05,0.1,0.2,0.35,0.5,0.75,1.0,1.4,1.9,2.5,3.2,4.0,5.0]){ for(const v of D){ g.position.copy(pos).addScaledVector(v,d); g.updateMatrixWorld(true); const F2=HCOL.measure(e); const t=pen(F2,0)*50+[1,2,3,4].reduce((a,k)=>a+pen(F2,k),0); if(t<best.t-1e-6||(t<=0&&best.t>0)) best={t,p:g.position.clone(),F:F2}; if(t<=0) break; } if(best.t<=0) break; }
+    if(window.FCTR) FCTR.push(['srch',pass,+(pen(F,0)*10).toFixed(1),+best.t.toFixed(3),best.p.distanceTo(pos).toFixed(2)]); g.position.copy(best.p); g.updateMatrixWorld(true); F=best.F; const _pc=HCOL.measure(e); thumbFix(); if(window.FCTR) FCTR.push(['afterThumb',+(pen(_pc,0)*10).toFixed(1),+(pen(F,0)*10).toFixed(1),+(pen(F,5)*10).toFixed(1),+ts.toFixed(2)]); }
+  if(![0,1,2,3,4,5].some(k=>pen(F,k)>0)) break; }
+  if(anyPen(F)){ /* last resort: joint search over thumb slide and whole-hand move, everything counted */ const D=[[0,0,-1],[0,0,1],[0,1,0],[0,-1,0],[0,0.7,-0.7],[0,-0.7,-0.7],[0,0.7,0.7],[0,-0.7,0.7],[1,0,0],[-1,0,0]].map(a=>dirL(...a)); const pos=g.position.clone(), ts0=ts; let best={t:tot(F),p:pos,ts:ts,F};
+    outer: for(const tf of [1,0.7,0.45,0.25,0,1.3]){ ts=ts0*tf; setT(); for(const d of [0,0.1,0.2,0.35,0.5,0.75,1.0,1.4,1.9,2.5,3.2]){ for(const v of (d?D:[D[0]])){ g.position.copy(pos).addScaledVector(v,d); g.updateMatrixWorld(true); const F2=HCOL.measure(e); const t=tot(F2); if(t<best.t-1e-6) best={t,p:g.position.clone(),ts,F:F2}; if(t<=0) break outer; } } }
+    ts=best.ts; setT(); g.position.copy(best.p); g.updateMatrixWorld(true); F=best.F; window.CLAMPED=1; }
+  /* final pop smoothing: limit joint acceleration of the corrected fingers too, kept only where it stays clear of the neck/board */
+  { const A=window.FCACCF2||0.1; FC.fp2=FC.fp2||{}; FC.fv2=FC.fv2||{}; for(let k=1;k<=4;k++){ const q=Q[k]; if(!q) continue; const v=[q.m,q.p,q.d,q.a||0]; const P0=FC.fp2[k], V0=FC.fv2[k]; if(P0&&V0&&!window.SNAP){ const nv=v.slice(), nV=V0.slice(); let ch=false; for(let j=0;j<4;j++){ const want=v[j]-P0[j]; const dv=Math.max(-A,Math.min(A,want-V0[j])); if(Math.abs(dv-(want-V0[j]))>1e-6) ch=true; nV[j]=V0[j]+dv; nv[j]=P0[j]+nV[j]; }
+      if(ch){ const qL={m:nv[0],p:nv[1],d:nv[2],a:nv[3]}; setF(k,qL); g.updateMatrixWorld(true); const F2=HCOL.measure(e); if(!anyPen(F2)){ Q[k]=qL; F=F2; FC.fv2[k]=nV; FC.fp2[k]=nv; continue; } setF(k,q); g.updateMatrixWorld(true); } FC.fv2[k]=v.map((x,j)=>x-P0[j]); FC.fp2[k]=v; } else { FC.fv2[k]=[0,0,0,0]; FC.fp2[k]=v; } } }
+  FC.th=ts; for(const k in Q) FC.lastF[k]=Q[k];
+  if(window.FCTR) FCTR.push(['end',[0,1,2,3,4,5].map(k=>+(pen(F,k)*10).toFixed(1))]);
+  window.SHOWNT=T; window.SHOWNQ=Object.assign({},Q); window.FCLAST=F; }
+window.frameClamp=frameClamp;
 let lastT=performance.now();
 function loop(now){ requestAnimationFrame(loop); if(!S3||window.FREEZE) return; frame(now); }
 /* one rendered frame at time now (ms); also driven directly by the 60 fps capture with a virtual clock */
 function frame(now){ if(window.VNOW!=null) now=window.VNOW; { const r=$('stage').getBoundingClientRect(); const k=Math.round(r.width)+'x'+Math.round(r.height); if(k!==window._sz){ window._sz=k; frameCam(); } } if(ORB) ORB.update(); if(!TGT) return; const dt=Math.min(0.05,Math.max(0,(now-lastT)/1000)); lastT=now;
   /* v16 fluency: time constant follows the note length (fast passages stay tight, slow ones glide); two cascaded stages = smooth ease-in/ease-out, never a snap */
-  const tau=Math.max(0.045,Math.min(0.12,(window.EVDURMS||400)/1000*0.2))*(window.FLUENT===0?0.6:1); const k=1-Math.exp(-dt*(window.SNAP?1e3:1/tau)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:1/(tau*1.3))); MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(MIDP!==MT&&!window.SNAP){ const G2=blend(CUR,MT,kG).G; CUR.G=G2; }   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); narrowFollow(dt); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); labelTips(); }
+  const tau=Math.max(0.045,Math.min(0.12,(window.EVDURMS||400)/1000*0.2))*(window.FLUENT===0?0.6:1); const k=1-Math.exp(-dt*(window.SNAP?1e3:1/tau)); const MT=motionTarget(now); const kG=1-Math.exp(-dt*(window.SNAP?1e3:1/(tau*1.3*(window.HANDT||0.35)))); const G0=CUR&&CUR.G; const M0=MIDP, C0=CUR; MIDP=blend(MIDP,MT,MIDP?k:1); CUR=blend(CUR,MIDP,CUR?k:1); if(M0&&C0&&!window.SNAP&&window.FASTPRESS!==0){ /* v24: a finger that has to press the current note lands quickly (pads on the string well before mid-note), free fingers keep the slow relaxed glide */ const kF=1-Math.exp(-dt/(tau*(window.PRESST||0.4))); for(let q=1;q<=4;q++){ const T=MT.fing[q]; if(!T||!T.on) continue; MIDP.fing[q]=lerpQ(M0.fing[q],T,kF); CUR.fing[q]=lerpQ(C0.fing[q],MIDP.fing[q],kF); } } if(MIDP!==MT&&!window.SNAP){ /* v24: whole hand = two cascaded stages too (critically damped): a position shift eases in from rest and eases out (min-jerk-like), instead of starting at peak speed */ if(!window.HMID||!G0||window.HCASC===0){ window.HMID={pos:MT.G.pos.clone(),q:MT.G.q.clone(),scale:MT.G.scale}; if(G0) window.HMID={pos:G0.pos.clone(),q:G0.q.clone(),scale:G0.scale}; } const H=window.HMID; if(window.HCASC===0){ CUR.G=blend(CUR,MT,kG).G; } else { H.pos.lerp(MT.G.pos,kG); H.q.slerp(MT.G.q,kG); H.scale+=(MT.G.scale-H.scale)*kG; CUR.G={pos:G0.pos.clone().lerp(H.pos,kG),q:G0.q.clone().slerp(H.q,kG),scale:G0.scale+(H.scale-G0.scale)*kG}; } } else if(window.HMID&&CUR) window.HMID={pos:CUR.G.pos.clone(),q:CUR.G.q.clone(),scale:CUR.G.scale};   /* two cascaded stages = critically damped: eases in and out of each finger move, settles on the exact target */ applyPose(CUR); narrowFollow(dt); techFX(now); applyBend(now); if(window.RH) RH.update(now); try{ frameClamp(RES.events[CURI]); }catch(err){ window._fcErrN=(window._fcErrN||0)+1; if(!window._fcErr){ window._fcErr=1; window._fcErrMsg=String(err&&err.stack).slice(0,300); console.warn('frameClamp',err); } } updateBracket(); render3d(); labelTips(); }
 let SHOWT=0, BENT=false;
 function applyBend(now){ const e=RES&&RES.events[CURI]; if(!e) return; const tps=SP&&SP.on?SP.tps:960*((typeof api!=='undefined'&&api.score&&api.score.tempo)||70)/60; const durMs=e.dur/tps*1000; window.EVDURMS=durMs;
   const u=window.BENDU!=null?window.BENDU:Math.max(0,(now-SHOWT-60)/durMs); const B=bendState(e,u);
@@ -871,7 +952,7 @@ window.techFX=techFX;
 /* deterministic frame stepper for videos: t seconds from event i0 at the score tempo */
 window.renderAt=(tSec,i0)=>{ const E=RES.events, bpm=(api.score&&api.score.tempo)||70, tps=960*bpm/60; window.FREEZE=1; const tick=E[i0].tick+tSec*tps; let i=i0; while(i+1<E.length&&E[i+1].tick<=tick) i++;
   if(i!==CURI||!TGT){ window.PREVP=CUR||poseFor(i,true); showEvent(i); } const msIn=(tick-E[i].tick)/tps*1000; const k=Math.min(1,msIn/90), kk=k*k*(3-2*k);
-  CUR=MIDP=blend(window.PREVP||TGT,TGT,kk); applyPose(CUR); window.RHT=msIn+60; window.BENDU=msIn/(E[i].dur/tps*1000); const now=performance.now(); techFX(now); applyBend(now); if(window.RH) RH.update(now); updateBracket(); render3d(); return {i,bar:E[i].bar}; };
+  CUR=MIDP=blend(window.PREVP||TGT,TGT,kk); applyPose(CUR); window.RHT=msIn+60; window.BENDU=msIn/(E[i].dur/tps*1000); const now=performance.now(); techFX(now); applyBend(now); if(window.RH) RH.update(now); try{ frameClamp(E[i]); }catch(_){ } updateBracket(); render3d(); return {i,bar:E[i].bar}; };
 function updateBracket(){ const I=INSTR[INST], br=GUIT.userData.br, b=TGT.base; const xa=CM(I,fretR(I,b-1)), xb=CM(I,fretR(I,Math.min(b+3,22-CAPO)));
   const y=-CM(I,strY(I,0,fretR(I,b+1)))+0.9; br.scale.x=Math.abs(xa-xb)-0.3; br.position.set((xa+xb)/2,y,0.1); }
 const COL=['#22d3ee','#22c55e','#d4a017','#ef4444'];
@@ -925,7 +1006,7 @@ window.labelNut=()=>{ const I=INSTR[INST], nS=I.nut.length, L=$('tipLbl'); const
   L.innerHTML=h; window.NOLABEL=1; };
 window.camView=v=>{ window.CAMV=v; frameCam(); };
 /* precompute every pose in small idle chunks so playback never waits on the IK */
-let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v35',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); try{ const L=JSON.parse(localStorage.getItem('h3dposes_'+SOLVER_VER)||'null'); if(L) importPoses(L); }catch(_){} POSES={}; }   /* drop per-event poses solved before the file arrived */
+let POSEFILE=null; async function loadPoseFile(){ if(POSEFILE!==null||/nocache/.test(location.search)) return; try{ const r=await fetch('poses3d.json?v=v36',{cache:'no-cache'}); POSEFILE=r.ok?await r.json():{}; }catch(_){ POSEFILE={}; } importPoses(POSEFILE); try{ const L=JSON.parse(localStorage.getItem('h3dposes_'+SOLVER_VER)||'null'); if(L) importPoses(L); }catch(_){} POSES={}; }   /* drop per-event poses solved before the file arrived */
 /* idle/stopped: rest in the solved pose of the first fretted event (same rules as playing), never the unposed bind hand */
 function restPose(){ if(!RES||!S3) return; const i=RES.events.findIndex(e=>e.notes.some(n=>n.f>0)); if(i<0) return; window.CURI=i; showEvent(i); }
 function warm(){ if(!RES||!S3) return; if(/nowarm/.test(location.search)){ window.WARM=true; window.HEADREADY=true; return; } if(POSEFILE===null&&!/nocache/.test(location.search)){ loadPoseFile().then(warm); return; }
