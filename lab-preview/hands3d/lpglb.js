@@ -1,4 +1,4 @@
-/* Blender Les Paul (assets/lp.glb, Draco) replaces the code-built electric visuals. Physics, strings, capo and control hit-targets stay from buildGuitar.
+/* Blender Les Paul (assets/lp-body.glb + LOCKED assets/headstock-locked.glb, Draco) replaces the code-built electric visuals. Physics, strings, capo and control hit-targets stay from buildGuitar.
    ?lp=code or ?raw=1 keeps the old guitar. */
 window.LPGLB=(function(){
   let P=null;
@@ -6,7 +6,8 @@ window.LPGLB=(function(){
   function addScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
   function load(T){ if(P) return P; P=(async()=>{ if(!T.DRACOLoader) await addScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js');
       const L=new T.GLTFLoader(), D=new T.DRACOLoader(); D.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/'); L.setDRACOLoader(D);
-      const g=await new Promise((res,rej)=>L.load('assets/lp.glb?v=21',res,undefined,rej)); return g.scene; })(); return P; }
+      /* v22 HARD RULE: the approved Gibson headstock is a separate LOCKED asset (assets/headstock-locked.glb, sha256 in .sha256, guard tools/check-headstock.sh). The body GLB carries no headstock, and no material tweak touches it. */
+      const ld=u=>new Promise((res,rej)=>L.load(u,res,undefined,rej)); const [g,h]=await Promise.all([ld('assets/lp-body.glb?v=22b'),ld('assets/headstock-locked.glb?h=40ab315a48e7')]); g.scene.userData.hsLocked=h.scene; return g.scene; })(); return P; }
   const G0=()=>typeof GUIT!=='undefined'?GUIT:null;
   function hide(G){ G.children.forEach(c=>{ if(c===G.userData.strG||c.name==='LP_GLB'||c.name==='capo') return;
     c.traverse(o=>{ if(!o.material) return; (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m&&!m.isMeshBasicMaterial) m.visible=false; }); }); }); }
@@ -62,7 +63,9 @@ window.LPGLB=(function(){
     window.INLAYLOG=[]; m.traverse(o=>{ const k=/^inlay(\d\d)$/.exec(o.name); if(!k||!o.isMesh) return; const n=+k[1]; const a=fx['fret'+String(n).padStart(2,'0')], b=n>1?fx['fret'+String(n-1).padStart(2,'0')]:fx.nut; if(!a||!b) return;
       const g=o.geometry=o.geometry.clone(); g.computeBoundingBox(); const c=g.boundingBox.getCenter(new T.Vector3()), sz=g.boundingBox.getSize(new T.Vector3()); const wb=bb(o).getSize(new T.Vector3()); const gap=Math.abs(a.x-b.x)*sz.x/Math.max(1e-6,wb.x);
       const sx=Math.min(window.INLAYX||1.6,(window.INLAYMAX||0.5)*gap/sz.x), sy=window.INLAYY||1.08; if(sx<=1&&sy<=1) return; g.translate(-c.x,-c.y,-c.z); g.scale(Math.max(1,sx),sy,1); g.translate(c.x,c.y,c.z); g.computeBoundingSphere(); window.INLAYLOG.push([n,+sx.toFixed(2)]); }); }
-  function refineLPC(m,T){ if(window.REFINE===0) return; m.traverse(o=>{ if(!o.isMesh||!o.material) return; /* v21: the approved headstock (e9a5a0a) is left exactly as approved */ let q=o; while(q){ if(/^(headstock|tuner_|bushing|post|truss_|inlay_diamond|hs_)/.test(q.name)) return; q=q.parent; } const n=o.material.name;
+  /* the locked headstock is added after every body tweak has run, as-is (materials untouched, only shadows/anisotropy like the rest) */
+  function addLockedHeadstock(src,m,T){ const h=src.userData.hsLocked; if(!h) return; const H=new T.Group(); H.name='HS_LOCKED'; h.children.slice().forEach(c=>H.add(c.clone(true))); H.traverse(o=>{ o.userData.locked=1; if(/^string\d/.test(o.name)) o.visible=false; if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; const ms=Array.isArray(o.material)?o.material:[o.material]; ms.forEach(x=>{ if(x&&x.map) x.map.anisotropy=8; }); } }); m.add(H); window.HS_LOCKED=1; }
+  function refineLPC(m,T){ if(window.REFINE===0) return; m.traverse(o=>{ if(!o.isMesh||!o.material) return; /* v21: the approved headstock (e9a5a0a) is left exactly as approved */ let q=o; while(q){ if(q.userData&&q.userData.locked) return; if(/^(headstock|tuner_|bushing|post|truss_|inlay_diamond|hs_)/.test(q.name)) return; q=q.parent; } const n=o.material.name;
     if(/^body_(top|back)_3$/.test(o.name)&&window.PLY===2){ o.visible=true; o.material=o.material.clone(); o.material.polygonOffset=true; o.material.polygonOffsetFactor=-4; o.material.polygonOffsetUnits=-(window.PLYOFF||24); o.renderOrder=2; }
     else if(n==='ebony'&&!o.material._v20){ o.material=o.material.clone(); o.material._v20=1; o.material.color.multiplyScalar(window.EBONY||0.45); o.material.roughness=0.5; }
     else if(n==='pearl'&&!o.material._v20){ o.material=o.material.clone(); o.material._v20=1; o.material.clearcoat=1; o.material.clearcoatRoughness=0.05; o.material.roughness=0.3; o.material.color.setRGB(window.PEARLC?window.PEARLC[0]:0.76,window.PEARLC?window.PEARLC[1]:0.84,window.PEARLC?window.PEARLC[2]:0.86); if(window.PEARLTEX!==0){ o.material.map=pearlTex(T); o.material.needsUpdate=true; } if('sheen' in o.material&&o.material.sheen!==undefined){ try{ o.material.sheen=new T.Color(0.25,0.32,0.38); }catch(e){} } }
@@ -89,6 +92,6 @@ window.LPGLB=(function(){
       const lev=m.getObjectByName('switch_lever'), tip=m.getObjectByName('switch_tip'); let piv=null;
       if(lev&&tip){ piv=new T.Group(); piv.position.copy(lev.position); lev.parent.add(piv); lev.position.set(0,0,0); lev.rotation.set(0,0,0); tip.position.set(0,0,1.65); tip.rotation.set(0,0,0); piv.add(lev); piv.add(tip); }
       G.userData.lpglb={root:m,piv,knobs:[1,2,3,4].map(k=>[m.getObjectByName('knob'+k),m.getObjectByName('knob'+k+'_cap')])};
-      G.add(m); smoothBody(m,T); fixPickups(m,T); try{ refineLPC(m,T); }catch(e){ window.REFINE_ERR=String(e); } try{ fixInlays(m,T); }catch(e){ window.REFINE_ERR=String(e); } placeKnobs(G,I,m,T); window._shN=-1; window.LPGLB_READY=1; window.render3d(); }).catch(e=>console.warn('lp.glb not loaded, keeping the code guitar',e)); }
+      G.add(m); smoothBody(m,T); fixPickups(m,T); try{ refineLPC(m,T); }catch(e){ window.REFINE_ERR=String(e); } try{ fixInlays(m,T); }catch(e){ window.REFINE_ERR=String(e); } placeKnobs(G,I,m,T); addLockedHeadstock(src,m,T); window._shN=-1; window.LPGLB_READY=1; window.render3d(); }).catch(e=>console.warn('lp.glb not loaded, keeping the code guitar',e)); }
   return {apply,on,sync};
 })();
