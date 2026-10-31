@@ -1397,7 +1397,7 @@ header .rail-left .logo-dale:not(.logo-dale-full){display:none !important}
   </div>
 
   <div class="controls">
-    <button class="action" id="playRef" type="button">▶ Play Scale</button>
+    <button class="action" id="playRef" type="button" data-mx-beat>▶ Play Scale</button>
     <button class="action ghost" id="playNote" type="button">♪ Note</button>
     <button class="action practice" id="practiceBtn" type="button">Practice</button>
     <button class="action" id="startBtn" type="button">Test me</button>
@@ -4681,6 +4681,6 @@ html[data-theme="light"] #mlArtBox,body.light #mlArtBox{background:rgba(245,240,
     if(e.key==="Escape"&&b&&b.classList.contains("show")){ b.classList.remove("show"); e.stopPropagation(); return; }
     if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("ml-art-zoom")) hit(e); },true);
 })();
-</script><script src="pwa.js?v=1.90" defer></script>
+</script><script src="pwa.js?v=1.90" defer></script><script src="motion.js?v=1.90" defer></script>
 </body>
 </html>

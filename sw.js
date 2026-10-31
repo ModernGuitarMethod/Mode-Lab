@@ -2,9 +2,9 @@
    so a new build shows on the next open; the cache is only an offline fallback.
    It never touches localStorage, so progress and settings survive every update. */
 const VERSION = "1.90";
-const CACHE = "modelab-" + VERSION + ".1";
+const CACHE = "modelab-" + VERSION + ".2";
 const LABS = ["Study","Mode","Fret","Jam","Chord","Tab","Songwriter"].map(n => n + "-Lab-v" + VERSION + ".html");
-const PRECACHE = ["index.html", "manifest.webmanifest", "pwa.js", "icon-192.png", "icon-512.png", "apple-touch-icon.png", ...LABS];
+const PRECACHE = ["index.html", "manifest.webmanifest", "pwa.js", "motion.js", "icon-192.png", "icon-512.png", "apple-touch-icon.png", ...LABS];
 /* a followed redirect (modelab.app answers /X.html with a 307 to /X) cannot answer a navigation as-is */
 function clean(r){ return r.redirected ? new Response(r.body, {status: r.status, statusText: r.statusText, headers: r.headers}) : r; }
 function key(url){ const u = new URL(url); u.search = ""; u.hash = ""; let p = u.pathname;
@@ -26,7 +26,7 @@ self.addEventListener("fetch", e => {
   if (url.origin !== self.location.origin) return;   /* CDNs (notation, sounds, fonts) go straight to the network */
   if (url.pathname.endsWith("/sw.js")) return;
   const p = url.pathname;
-  const fresh = req.mode === "navigate" || /\.html$/.test(p) || !/\.[a-z0-9]+$/i.test(p) || /(version\.json|pwa\.js|\.webmanifest)$/.test(p);
+  const fresh = req.mode === "navigate" || /\.html$/.test(p) || !/\.[a-z0-9]+$/i.test(p) || /(version\.json|pwa\.js|motion\.js|\.webmanifest)$/.test(p);
   if (fresh) {
     e.respondWith((async () => {
       try {
