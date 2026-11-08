@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><link rel="icon" href="data:,"><link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js">
+<html lang="en"><head><meta name="robots" content="noindex,nofollow"><link rel="icon" href="data:,"><link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"><link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js">
 <script>
 /* Standalone preview: retained embedded models and recordings; startup avoids rendering the superseded photo guitar. */
 window.TP_PERF={}; const tpMark=n=>{window.TP_PERF[n]=performance.now();performance.mark('tp-'+n); console.debug('TP_PERF',n,window.TP_PERF[n]);}; tpMark('start');
@@ -1287,7 +1287,7 @@ window.LPGLB=(function(){
       /* v22 HARD RULE: the approved Gibson headstock is a separate LOCKED asset (assets/headstock-locked.glb, sha256 in .sha256, guard tools/check-headstock.sh). The body GLB carries no headstock, and no material tweak touches it. */
       const ld=u=>new Promise((res,rej)=>L.load(u,res,undefined,rej)); const [g,h]=await Promise.all([ld('assets/lp-body.glb?v=22b'),ld('assets/headstock-locked.glb?h=40ab315a48e7')]); g.scene.userData.hsLocked=h.scene; return g.scene; })(); return P; }
   const G0=()=>typeof GUIT!=='undefined'?GUIT:null;
-  function hide(G){ G.children.forEach(c=>{ if(c===G.userData.strG||c.name==='LP_GLB'||c.name==='capo') return;
+  function hide(G){ G.children.forEach(c=>{ if(c===G.userData.strG||c.name==='LP_GLB'||c.name==='capo'||c.name==='HEADSTOCK_STRINGS') return;
     c.traverse(o=>{ if(!o.material) return; (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m&&!m.isMeshBasicMaterial) m.visible=false; }); }); }); }
   function sync(){ const G=G0(); if(!G||INST!=='electric'||!on()) return; hide(G); const L=G.userData.lpglb; if(!L) return;
     G.traverse(g=>{ const pt=g.userData&&g.userData.part; if(!pt) return;
@@ -1396,7 +1396,7 @@ window.LPGLB=(function(){
       const lev=m.getObjectByName('switch_lever'), tip=m.getObjectByName('switch_tip'); let piv=null;
       if(lev&&tip){ piv=new T.Group(); piv.position.copy(lev.position); lev.parent.add(piv); lev.position.set(0,0,0); lev.rotation.set(0,0,0); tip.position.set(0,0,1.65); tip.rotation.set(0,0,0); piv.add(lev); piv.add(tip); }
       G.userData.lpglb={root:m,piv,knobs:[1,2,3,4].map(k=>[m.getObjectByName('knob'+k),m.getObjectByName('knob'+k+'_cap')])};
-      G.add(m); smoothBody(m,T); try{ refineBinding(m,T); }catch(e){ window.BIND_ERR=String(e&&e.stack||e); } fixPickups(m,T); try{ refineLPC(m,T); }catch(e){ window.REFINE_ERR=String(e); } try{ fixInlays(m,T); }catch(e){ window.REFINE_ERR=String(e); } placeKnobs(G,I,m,T); addLockedHeadstock(src,m,T); window._shN=-1; window.LPGLB_READY=1; tpMark('guitar-model'); window.render3d(); requestAnimationFrame(()=>tpMark('guitar-frame')); }).catch(e=>console.warn('lp.glb not loaded, keeping the code guitar',e)); }
+      G.add(m); smoothBody(m,T); try{ refineBinding(m,T); }catch(e){ window.BIND_ERR=String(e&&e.stack||e); } fixPickups(m,T); try{ refineLPC(m,T); }catch(e){ window.REFINE_ERR=String(e); } try{ fixInlays(m,T); }catch(e){ window.REFINE_ERR=String(e); } placeKnobs(G,I,m,T); addLockedHeadstock(src,m,T); if(window.HSSTR) HSSTR.build(G,I,inst); window._shN=-1; window.LPGLB_READY=1; tpMark('guitar-model'); window.render3d(); requestAnimationFrame(()=>tpMark('guitar-frame')); }).catch(e=>console.warn('lp.glb not loaded, keeping the code guitar',e)); }
   return {apply,on,sync,preload:load};
 })();
 
@@ -2233,7 +2233,7 @@ function buildGuitar(){
         const cap=new THREE.Mesh(new THREE.SphereGeometry(0.55,14,10,0,Math.PI*2,0,Math.PI/2),gold); cap.rotation.x=-Math.PI/2; cap.position.set(CM(I,tx-xN),-CM(I,ty),-hsT-1.1); hsG.add(cap); }); }
     hsG.rotation.y=ang; GUIT.add(hsG);
     const vol=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),neckMat); const vyc=(yTop(xN)+yBot(xN))/2; vol.scale.set(1.6,(yTop(xN)-yBot(xN))/2*0.95,1.0); vol.position.set(CM(I,xN)+0.3,vyc,-1.25); GUIT.add(vol);
-    if(window.LPGLB&&glbVisual) LPGLB.apply(GUIT,I,inst); if(window.PR) PR.upgrade(GUIT,I,inst); if(window.GCTL) GCTL.attach3d(); if(window.LPGLB&&!glbVisual) LPGLB.apply(GUIT,I,inst); render3d(); });
+    if(window.LPGLB&&glbVisual) LPGLB.apply(GUIT,I,inst); if(window.PR) PR.upgrade(GUIT,I,inst); if(window.GCTL) GCTL.attach3d(); if(window.LPGLB&&!glbVisual) LPGLB.apply(GUIT,I,inst); if(window.HSSTR&&!glbVisual) HSSTR.build(GUIT,I,inst); render3d(); });
 }
 const MIRROR=false; /* audience view: the photo is shown as shot (headstock right, low E on top), so no mirroring and logos read correctly */
 function mirrorCam(){ S3.cam.updateProjectionMatrix(); if(MIRROR&&window.CAMV!=='player') S3.cam.projectionMatrix.elements[0]*=-1; S3.cam.projectionMatrixInverse.copy(S3.cam.projectionMatrix).invert(); }
@@ -4133,4 +4133,80 @@ const iv=setInterval(()=>{ try{ if(run()) clearInterval(iv); }catch(e){ window.S
 </script>
 <script>if(/[?&]pose=old/.test(location.search)){ const b=document.createElement("a"); b.textContent="Old engine · tap for v2"; b.href=location.pathname; b.style.cssText="position:fixed;right:10px;bottom:10px;z-index:99;background:rgba(20,16,10,.85);color:#aaa;border:1px solid #888;border-radius:14px;padding:5px 11px;font:600 12px system-ui,sans-serif;text-decoration:none"; document.body.appendChild(b); }</script><script>(function(){ const s=document.createElement('select'); s.id='hpSongs';
  [["", "Demo songs\u2026"], ["Little-Wing.gp3", "Little Wing"], ["tests/techniques.gp", "Techniques"], ["tests/fmt/full-song.gp5", "Full song"], ["tests/user/Another-One-Bites-The-Dust_-_Queen.gp3", "Queen \u00b7 Another One Bites the Dust"], ["tests/user/Metallica_-_Master_Of_Puppets.gp4", "Metallica \u00b7 Master of Puppets"], ["tests/user/acdc-jailbreak_3.gp5", "AC/DC \u00b7 Jailbreak"], ["tests/user/alice-in-chains-down_in_a_hole.gp4", "Alice in Chains \u00b7 Down in a Hole"], ["tests/user/arctic_monkeys-do_i_wanna_know.gp5", "Arctic Monkeys \u00b7 Do I Wanna Know?"], ["tests/user/black_sabbath-iron_man.gp3", "Black Sabbath \u00b7 Iron Man"], ["tests/user/blink_182-dammit.gp3", "blink-182 \u00b7 Dammit"], ["tests/user2/Dani-California_-_Red-hot-chili-peppers.gp5", "Red Hot Chili Peppers \u00b7 Dani California"], ["tests/user2/beatles_the-blackbird.gp4", "The Beatles \u00b7 Blackbird"], ["tests/user2/darkness_the-i_believe_in_a_thing_called_love.gp4", "The Darkness \u00b7 I Believe in a Thing Called Love"], ["tests/user2/depeche_mode-dream_on.gp4", "Depeche Mode \u00b7 Dream On"], ["tests/user2/dire_straits-sultans_of_swing.gp4", "Dire Straits \u00b7 Sultans of Swing"], ["tests/user2/fall-out-boy-sugar_we_re_going_down.gp4", "Fall Out Boy \u00b7 Sugar, We're Goin Down"]].forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; s.appendChild(o); });
- s.onchange=()=>{ if(!s.value) return; loadScoreFile(new File([__embBuf(s.value)],s.value.split('/').pop())); s.value=''; }; const host=document.getElementById('posture'); if(host&&host.parentNode){ const lab=document.createElement('label'); lab.textContent='Song '; lab.appendChild(s); host.parentNode.after(lab); } else document.body.appendChild(s); })();</script></body></html>
+ s.onchange=()=>{ if(!s.value) return; loadScoreFile(new File([__embBuf(s.value)],s.value.split('/').pop())); s.value=''; }; const host=document.getElementById('posture'); if(host&&host.parentNode){ const lab=document.createElement('label'); lab.textContent='Song '; lab.appendChild(s); host.parentNode.after(lab); } else document.body.appendChild(s); })();</script><script>
+/* String-only headstock continuations. The approved headstock, tuners and photo assets are read-only. */
+window.HSSTR=(function(){
+  const NAME='HEADSTOCK_STRINGS';
+  const PHOTO={
+    acoustic:{posts:[[2014,379],[2091,382],[2167,377],[2167,485],[2090,481],[2014,485]],radius:6},
+    bass:{posts:[[1558,203],[1640,219],[1723,237],[1598,278]],radius:7}
+  };
+  const LP_POSTS=['post','post001','post002','post005','post004','post003'];
+  function build(G,I,inst){
+    if(!G||!window.S3||G!==GUIT)return;
+    const T=S3.THREE, n=I.nut.length;
+    // Six physical capstans on the locked LP/acoustic, four on the bass. No invented extra pegs.
+    if(n!==(inst==='bass'?4:6))return;
+    const locked=inst==='electric'&&window.LPGLB&&LPGLB.on();
+    const H=locked?G.getObjectByName('HS_LOCKED'):null;
+    if(locked&&!H)return;
+    const key=inst+'|'+I.nut.map(p=>p.join(',')).join(';')+'|'+I.gauge.join(',');
+    if(G.userData.hsStringsKey===key&&G.getObjectByName(NAME))return;
+    const old=G.getObjectByName(NAME);if(old){G.remove(old);old.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.userData.hsOwnMaterial&&o.material)o.material.dispose();});}
+    const t0=performance.now(), group=new T.Group();group.name=NAME;
+    const ang=T.MathUtils.degToRad(I.hsAngle||0), N=new T.Vector3(Math.sin(ang),0,Math.cos(ang)), U=new T.Vector3(Math.cos(ang),0,-Math.sin(ang)), V=new T.Vector3(0,1,0);
+    const xN=I.nut[0][0], photoPoint=(x,y,z)=>new T.Vector3(CM(I,xN),0,0).addScaledVector(U,CM(I,x-xN)).addScaledVector(V,-CM(I,y)).addScaledVector(N,z);
+    const audit=[];
+    for(let i=0;i<n;i++){
+      const gauge=I.gauge[i], wire=locked?gauge/2:gauge/2+0.02;
+      const nut=locked?W(I,xN,I.nut[i][1],I.fretH+I.action[0]+gauge/2-boardDrop(I,xN,-CM(I,I.nut[i][1]))):W(I,xN,I.nut[i][1],0.16);
+      let C,r,postName;
+      if(locked){
+        const post=H.getObjectByName(LP_POSTS[i]);if(!post)continue;
+        // The GLB post meshes have baked vertices. Read their bounds in guitar space; never edit them.
+        const p=post.geometry.attributes.position, q=new T.Vector3();let lo=Infinity,hi=-Infinity,umin=Infinity,umax=-Infinity,vmin=Infinity,vmax=-Infinity;
+        for(let k=0;k<p.count;k++){q.fromBufferAttribute(p,k);post.localToWorld(q);G.worldToLocal(q);const u=q.dot(U),v=q.dot(V),h=q.dot(N);lo=Math.min(lo,h);hi=Math.max(hi,h);umin=Math.min(umin,u);umax=Math.max(umax,u);vmin=Math.min(vmin,v);vmax=Math.max(vmax,v);}
+        r=(vmax-vmin)/2;
+        C=U.clone().multiplyScalar((umin+umax)/2).addScaledVector(V,(vmin+vmax)/2).addScaledVector(N,lo+0.26+wire);
+        postName=LP_POSTS[i];
+      }else{
+        const P=PHOTO[inst]||(I.tuners?{posts:[0,1,2,5,4,3].map(k=>I.tuners[k]),radius:6}:null);if(!P)continue;
+        const xy=P.posts[i];C=photoPoint(xy[0],xy[1],wire+0.016);r=CM(I,P.radius);postName=inst+'-photo-capstan-'+(i+1);
+      }
+      const guides=[nut];
+      if(inst==='bass'&&(i===1||i===2)){
+        // The middle A/D routes pass under the existing round retainer; G runs straight to its lower tuner.
+        guides.push(photoPoint(1597,i===1?224:241,wire+0.008));
+      }
+      const last=guides[guides.length-1], d=last.clone().sub(C), du=d.dot(U),dv=d.dot(V),dist=Math.hypot(du,dv),radius=r+wire;
+      if(dist<=radius)continue;
+      const phi=Math.atan2(dv,du), alpha=Math.acos(radius/dist), choices=[phi+alpha,phi-alpha];
+      const upper=locked?i<3:(inst==='bass'?i<3:i<3);
+      // Enter the inboard side of each shaft: the two LP/acoustic banks wind in opposite directions.
+      const a=choices.reduce((best,x)=>(upper?Math.sin(x)<Math.sin(best):Math.sin(x)>Math.sin(best))?x:best,choices[0]);
+      const entry=C.clone().addScaledVector(U,radius*Math.cos(a)).addScaledVector(V,radius*Math.sin(a));
+      const tangent=U.clone().multiplyScalar(-Math.sin(a)).addScaledVector(V,Math.cos(a)), dir=tangent.dot(entry.clone().sub(last))>=0?1:-1;
+      const turns=locked?(i<3?1.5:2):1.25, rise=gauge*1.12*turns;
+      const line=guides.concat([entry]), lengths=[];let lineLen=0;
+      for(let k=1;k<line.length;k++){lineLen+=line[k].distanceTo(line[k-1]);lengths.push(lineLen);}
+      const coilLen=Math.hypot(turns*Math.PI*2*radius,rise), total=lineLen+coilLen;
+      class StringCurve extends T.Curve{
+        getPoint(t,target){target=target||new T.Vector3();const distance=Math.max(0,Math.min(1,t))*total;
+          if(distance<lineLen){let k=0;while(k<lengths.length-1&&distance>lengths[k])k++;const start=k?lengths[k-1]:0;return target.copy(line[k]).lerp(line[k+1],(distance-start)/(lengths[k]-start));}
+          const u=(distance-lineLen)/coilLen,theta=a+dir*turns*Math.PI*2*u;
+          return target.copy(C).addScaledVector(U,radius*Math.cos(theta)).addScaledVector(V,radius*Math.sin(theta)).addScaledVector(N,rise*u);
+        }
+      }
+      const segments=Math.max(60,Math.ceil(turns*36+lineLen*2)), geometry=new T.TubeGeometry(new StringCurve(),segments,wire,6,false);
+      const shared=G.userData.strMat&&G.userData.strMat[i], material=shared||new T.MeshStandardMaterial({color:I.bass?0xb8b0a0:(i<=2?0xc9a86a:0xe0ddd5),metalness:0.85,roughness:0.35});
+      if(material.bumpMap){const uv=geometry.attributes.uv;for(let k=0;k<uv.count;k++){const x=uv.getX(k),y=uv.getY(k);uv.setXY(k,y,x*total/(gauge*1.1));}}
+      const mesh=new T.Mesh(geometry,material);mesh.name='headstock-string-'+(i+1);mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData={hsString:true,hsOwnMaterial:!shared,string:i,post:postName};group.add(mesh);
+      audit.push({string:i,post:postName,nut:nut.toArray(),entry:entry.toArray(),center:C.toArray(),radius:r,wire,turns,guides:guides.map(p=>p.toArray()),vertices:geometry.attributes.position.count});
+    }
+    G.add(group);G.userData.hsStringsKey=key;G.userData.hsStringAudit=audit;
+    window.HSSTR_LAST={instrument:inst,milliseconds:performance.now()-t0,strings:audit.length,vertices:audit.reduce((s,a)=>s+a.vertices,0)};
+  }
+  return {build};
+})();
+
+</script></body></html>
