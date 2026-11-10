@@ -116,6 +116,11 @@ window.KL_AUDIO={"base":"study-audio/","manifest":{"acoustic":{"open":{"file":"s
 (function(){
   const TONE={acoustic:{lp:17200,gain:1},electric:{lp:9000,gain:1.35},bass:{lp:5200,gain:1.3}}, MAXF={acoustic:9,electric:9,bass:12};
   let ac=null, master=null, OUT=null; const BANK={}, LOADING={};
+  function fresh(){ try{ if(ac&&ac.state!=='closed') ac.close(); }catch(_){} ac=null; master=null; OUT=null; }
+  const wait=(pr,ms)=>Promise.race([Promise.resolve(pr).catch(()=>{}),new Promise(r=>setTimeout(r,ms))]);
+  /* every Play: resume; if the context is closed (pagehide/bfcache) or stays interrupted/suspended (iOS), build a new one (decoded samples are reused) */
+  async function wake(){ let a=ctx(); if(a.state==='closed'){ fresh(); a=ctx(); } if(a.state!=='running'){ await wait(a.resume&&a.resume(),1500); }
+    if(a.state!=='running'){ fresh(); a=ctx(); if(a.state!=='running') await wait(a.resume&&a.resume(),1500); window.AUDIO_REBUILT=(window.AUDIO_REBUILT|0)+1; } return a; }
   function ctx(){ if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=0.8; master.connect(OUT||ac.destination); } return ac; }
   const AL=k=>k==='strat'?'electric':k;   /* the Stratocaster plays the electric (Les Paul) recordings */
   function load(inst){ inst=AL(inst); if(LOADING[inst]) return LOADING[inst]; const M=window.KL_AUDIO.manifest[inst], B=BANK[inst]={};
@@ -136,7 +141,7 @@ window.KL_AUDIO={"base":"study-audio/","manifest":{"acoustic":{"open":{"file":"s
   function playPitch(inst,midi,prefI,when,dur,vel){ inst=AL(inst); const O=OPN[inst]; let best=null;
     for(let i=0;i<O.length;i++) for(let g=0;g<=MAXF[inst];g++){ if(!(BANK[inst]||{})['s'+i+'f'+g]) continue; const d=Math.abs(midi-(O[i]+g))+0.25*Math.abs(i-Math.min(O.length-1,Math.max(0,prefI))); if(!best||d<best.d) best={d,i,g}; }
     if(!best) return play(inst,prefI,0,when,dur,vel); const lg=play(inst,best.i,best.g,when,dur,vel,Math.pow(2,(midi-(O[best.i]+best.g))/12)); lg.midi=midi; return lg; }
-  window.StudySamples={ctx,load,play,playPitch,pick,stopAll(){ if(master){ master.disconnect(); master=ac.createGain(); master.gain.value=0.8; master.connect(OUT||ac.destination); } },
+  window.StudySamples={ctx,wake,fresh,load,play,playPitch,pick,stopAll(){ if(master){ master.disconnect(); master=ac.createGain(); master.gain.value=0.8; master.connect(OUT||ac.destination); } },
     setOutput(n){ OUT=n; if(master){ master.disconnect(); master.connect(n||ac.destination); } }};
 })();
 
@@ -1419,7 +1424,7 @@ window.GCTL=(function(){
     eqL.type='lowshelf'; eqL.frequency.value=220; eqH.type='highshelf'; eqH.frequency.value=2600; hs.type='highshelf'; hs.frequency.value=3500; lp.type='lowpass';
     if(kind==='neck'){ eqL.gain.value=3; eqH.gain.value=-6; } else { eqL.gain.value=0; eqH.gain.value=0; }   /* neck: warmer/rounder; bridge = the recorded reference (brightest) */
     eqL.connect(eqH); eqH.connect(lp); lp.connect(hs); hs.connect(g); g.connect(mix); return {in:eqL,lp,hs,g,mix}; }
-  function build(){ if(CH) return CH; A=StudySamples.ctx(); const input=A.createGain(), scoop=A.createBiquadFilter(), out=A.createGain();
+  function build(){ if(CH&&A===StudySamples.ctx()) return CH; A=StudySamples.ctx(); const input=A.createGain(), scoop=A.createBiquadFilter(), out=A.createGain();
     scoop.type='peaking'; scoop.frequency.value=750; scoop.Q.value=0.9; scoop.gain.value=0;
     const N=pickupChain('neck'), B=pickupChain('bridge'); input.connect(N.in); input.connect(B.in); N.mix.connect(scoop); B.mix.connect(scoop); scoop.connect(out); out.connect(A.destination);
     CH={input,scoop,N,B,out}; apply(true); StudySamples.setOutput(input); return CH; }
@@ -1870,17 +1875,19 @@ $('speed').onchange=()=>api.playbackSpeed=+$('speed').value;
 /* playback = Study Lab's recordings for the chosen instrument, scheduled on the AudioContext clock from the SAME event list the hand follows;
    alphaTab is only the tab display (its own synth is not used) */
 let SP={on:false,raf:0};
-async function samplePlay(fromBar,toBar,fromI){ tpMark('play-request'); sampleStop(); const inst=INST, a=StudySamples.ctx(); if(window.GCTL) GCTL.build(); if(a.resume) await a.resume(); $('status').textContent='Loading Study Lab '+INSTR[inst].name+' samples…';
-  const n=await StudySamples.load(inst); $('status').textContent=INSTR[inst].name+' · Study Lab samples ('+n+')'; if(inst!==INST) return;
+async function samplePlay(fromBar,toBar,fromI){ tpMark('play-request'); sampleStop(); const inst=INST, tok=window.PLAYTOK=(window.PLAYTOK|0)+1; { const a0=StudySamples.ctx(); if(a0.resume&&a0.state!=='closed') a0.resume().catch(()=>{}); } const a=await StudySamples.wake(); if(tok!==window.PLAYTOK) return; if(window.GCTL) GCTL.build(); $('status').textContent='Loading Study Lab '+INSTR[inst].name+' samples…';
+  const n=await StudySamples.load(inst); $('status').textContent=INSTR[inst].name+' · Study Lab samples ('+n+')'; if(inst!==INST||tok!==window.PLAYTOK) return;
   const E=RES.events, bpm=api.score.tempo||70, tps=960*bpm/60*(+$('speed').value), nS=opens.length; window.NOTELOG=[];
   let i0=fromI!=null?Math.max(0,Math.min(E.length-1,fromI)):Math.max(0,E.findIndex(e=>e.bar>=(fromBar||1))); let i1=toBar?E.findIndex(e=>e.bar>toBar):-1; if(i1<0) i1=E.length;
   const t0=a.currentTime+0.25, tick0=E[i0].tick; const at=e=>t0+(e.tick-tick0)/tps;
-  for(let i=i0;i<i1;i++){ const e=E[i]; e.notes.forEach((nn,k)=>{ if(nn.tie||nn.support) return; const lg=StudySamples.playPitch(inst,nn.pitch!=null?nn.pitch:opens[nn.s]+CAPO+nn.f,nS-1-nn.s,at(e),nn.dead?0.035:e.dur/tps,nn.dead?0.3:nn.ghost?0.4:0.8); lg.ev=i; lg.bar=e.bar; lg.s=nn.s+1; lg.finger=e.fingers[k]; if((nn.bend||nn.vib)&&lg.src){ const r0=lg.src.playbackRate.value, D=e.dur/tps; for(let q=0;q<=24;q++){ const u=q/24; lg.src.playbackRate.setValueAtTime(r0*Math.pow(2,bendSemis(nn,u)/12),lg.t0+u*D); } lg.bent=true; } }); }
-  SP={on:true,i:i0,i1,t0,tick0,tps,raf:0,ts:performance.now()}; window.SIM=1; $('play').textContent='❚❚ Pause'; showEvent(i0);
-  const step=()=>{ if(!SP.on) return; const now=a.currentTime; while(SP.i+1<SP.i1&&at(E[SP.i+1])<=now+0.06){ SP.i++; showEvent(SP.i); seekShow(SP.i); (window.HANDLOG=window.HANDLOG||[]).push({ev:SP.i,audioT:+now.toFixed(3),noteT:+at(E[SP.i]).toFixed(3)}); }
-    if(SP.i+1<SP.i1||now<at(E[SP.i1-1])+E[SP.i1-1].dur/tps) SP.raf=requestAnimationFrame(step); else { SP.on=false; window.SPDONE=true; $('play').textContent='▶ Play'; StudySamples.stopAll(); toStart(); } };
+  const LIVE=[]; const sched=i=>{ const e=E[i]; e.notes.forEach((nn,k)=>{ if(nn.tie||nn.support) return; const lg=StudySamples.playPitch(inst,nn.pitch!=null?nn.pitch:opens[nn.s]+CAPO+nn.f,nS-1-nn.s,at(e),nn.dead?0.035:e.dur/tps,nn.dead?0.3:nn.ghost?0.4:0.8); lg.ev=i; lg.bar=e.bar; lg.s=nn.s+1; lg.finger=e.fingers[k]; if((nn.bend||nn.vib)&&lg.src){ const r0=lg.src.playbackRate.value, D=e.dur/tps; for(let q=0;q<=24;q++){ const u=q/24; lg.src.playbackRate.setValueAtTime(r0*Math.pow(2,bendSemis(nn,u)/12),lg.t0+u*D); } lg.bent=true; } if(lg.src) LIVE.push({src:lg.src,end:lg.t0+Math.max(0.12,nn.dead?0.035:e.dur/tps)+0.6}); }); };
+  SP={on:true,i:i0,i1,k:i0,t0,tick0,tps,raf:0,iv:0,live:LIVE,ts:performance.now()};
+  const pump=()=>{ if(!SP.on||SP.live!==LIVE) return; const now=a.currentTime; while(SP.k<SP.i1&&at(E[SP.k])<=now+3){ if(at(E[SP.k])>=now-0.08) sched(SP.k); else SP.skipped=(SP.skipped|0)+1; SP.k++; } if(LIVE.length>64){ let j=0; for(const l of LIVE) if(l.end>now) LIVE[j++]=l; LIVE.length=j; } };
+  pump(); SP.iv=setInterval(pump,150); window.SIM=1; $('play').textContent='❚❚ Pause'; showEvent(i0);
+  const step=()=>{ if(!SP.on) return; pump(); const now=a.currentTime; while(SP.i+1<SP.i1&&at(E[SP.i+1])<=now+0.06){ SP.i++; showEvent(SP.i); seekShow(SP.i); (window.HANDLOG=window.HANDLOG||[]).push({ev:SP.i,audioT:+now.toFixed(3),noteT:+at(E[SP.i]).toFixed(3)}); }
+    if(SP.i+1<SP.i1||now<at(E[SP.i1-1])+E[SP.i1-1].dur/tps) SP.raf=requestAnimationFrame(step); else { SP.on=false; clearInterval(SP.iv); window.SPDONE=true; $('play').textContent='▶ Play'; StudySamples.stopAll(); toStart(); } };
   window.HANDLOG=[]; window.SPDONE=false; step(); }
-function sampleStop(){ if(SP.on){ SP.on=false; cancelAnimationFrame(SP.raf); } StudySamples.stopAll(); $('play').textContent='▶ Play'; }
+function sampleStop(){ if(SP.on){ SP.on=false; cancelAnimationFrame(SP.raf); } clearInterval(SP.iv); if(SP.live){ for(const l of SP.live){ try{ l.src.stop(0); }catch(_){} } SP.live.length=0; } StudySamples.stopAll(); $('play').textContent='▶ Play'; }
 window.samplePlay=samplePlay; window.sampleStop=sampleStop;
 ['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,()=>{ window.LASTUI=performance.now(); },true));
 let PLAYI=0; function seekShow(i){ const k=$('seek'); if(RES&&RES.events.length) k.max=RES.events.length-1; k.value=i; }
@@ -3592,7 +3599,7 @@ function glowTex(){ const c=document.createElement('canvas'); c.width=c.height=1
   r.addColorStop(0,'rgba(255,255,255,1)'); r.addColorStop(0.3,'rgba(255,255,255,0.7)'); r.addColorStop(0.65,'rgba(255,255,255,0.18)'); r.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=r; g.fillRect(0,0,128,128); return new T.CanvasTexture(c); }
 function make(k,col){ const mk=(sz,c,ro)=>{ const m=new T.Mesh(new T.PlaneGeometry(sz,sz),new T.MeshBasicMaterial({map:tex,color:c,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,side:T.DoubleSide})); m.renderOrder=ro; return m; };
   const halo=mk(2.2,col[0],30), core=mk(0.9,col[1],31); const g=new T.Group(); g.add(halo); g.add(core); grp.add(g); return {g,halo,core,a:0,col:null}; }   /* flat glows turned to face the camera (sprites did not draw in this renderer) */
-function update(now,instant){ if(!T||!grp) return; const md=mode(); grp.visible=md!=='off'; if(md==='off') return; const col=COLORS[md]||COLORS.gold;
+function update(now,instant){ if(!T||!grp) return; if(typeof GUIT!=='undefined'&&GUIT&&grp.parent!==GUIT) GUIT.add(grp); const md=mode(); grp.visible=md!=='off'; if(md==='off') return; const col=COLORS[md]||COLORS.gold;
   const P=(typeof CUR!=='undefined')?CUR:null; const resting=window.HP&&HP.REST; const t=performance.now(); const dt=Math.min(100,t-(update.last||t)); update.last=t;
   for(let k=1;k<=4;k++){ const on=!!(P&&P.fing&&P.fing[k]&&P.fing[k].on&&!resting); let g=G[k]; if(!g) g=G[k]=make(k,col); if(g.col!==md){ g.halo.material.color.setHex(col[0]); g.core.material.color.setHex(col[1]); g.col=md; }
     const target=on?1:0; if(instant) g.a=target; else g.a+=(target-g.a)*Math.min(1,dt/(on?60:160)*2.2);
@@ -4579,4 +4586,20 @@ window.HSSTR=(function(){
     const t=(typeof ORB!=='undefined'&&ORB&&ORB.target)?ORB.target:(S3.group?S3.group.getWorldPosition(v):null); if(!t) return o(sc,cam);
     const n=Math.min(6,Math.max(cam.near,cam.position.distanceTo(t)*0.08)); if(n<=cam.near+1e-6) return o(sc,cam);
     const e=cam.projectionMatrix.elements, f=cam.far, e10=e[10], e14=e[14]; e[10]=-(f+n)/(f-n); e[14]=-2*f*n/(f-n);
-    try{ return o(sc,cam); } finally { e[10]=e10; e[14]=e14; } }; window.STRAT_NEAR=1; },200); })();</script></body></html>
+    try{ return o(sc,cam); } finally { e[10]=e10; e[14]=e14; } }; window.STRAT_NEAR=1; },200); })();</script><script>/* strat-sidedots-v1 */(function(){ if(/[?&]sidedots=0/.test(location.search)||!window.STRAT3D) return; const ob=STRAT3D.build;
+  STRAT3D.build=function(G,I){ const r=ob.apply(this,arguments); try{ add(G,I); }catch(e){ window.SIDEDOT_ERR=String(e&&e.stack||e); } return r; };
+  function add(G,I){ if(!G||!I||!I.strat||!window.S3) return; const old=G.getObjectByName('STRAT_SIDEDOTS'); if(old) G.remove(old);
+    const T=S3.THREE, yT=G.userData.yTop, yB=G.userData.yBot; if(!yT||!yB) return; const grp=new T.Group(); grp.name='STRAT_SIDEDOTS';
+    const xN=I.nut[0][0], xE=fretPx(I,I.fbEnd||22)-0.6/2.54*I.S, BAND=0.30, D=0.20, R=D/2;
+    const rw=new T.MeshStandardMaterial({color:0x0c0705,roughness:0.7,metalness:0,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4});
+    const band=(fy,sgn)=>{ const N=48, pos=[], idx=[]; for(let i=0;i<=N;i++){ const px=xE+(xN-xE)*i/N, x=CM(I,px), y=fy(px)+sgn*0.02, z0=-boardDrop(I,px,fy(px))-0.004; pos.push(x,y,z0, x,y,z0-BAND); }
+      for(let i=0;i<N;i++){ const a=2*i; if(sgn>0) idx.push(a,a+2,a+1, a+1,a+2,a+3); else idx.push(a,a+1,a+2, a+1,a+3,a+2); }
+      const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(pos,3)); g.setIndex(idx); g.computeVertexNormals(); const m=new T.Mesh(g,rw); m.name='STRAT_FB_EDGE'; grp.add(m); };
+    band(yT,1); band(yB,-1);
+    const dm=new T.MeshStandardMaterial({color:0xf1e9d2,roughness:0.35,metalness:0,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8}), dg=new T.CircleGeometry(R,20);
+    const slope=Math.atan2(yT(xN)-yT(xE),CM(I,xN)-CM(I,xE));
+    [3,5,7,9,12,15,17,19,21].forEach(n=>{ const pm=(fretPx(I,n-1)+fretPx(I,n))/2; const offs=n===12?[-0.30,0.30]:[0];
+      offs.forEach(o=>{ const x=CM(I,pm)+o, px=x/2.54*I.S, y=yT(px)+0.035, z=-boardDrop(I,px,yT(px))-0.004-BAND/2; const d=new T.Mesh(dg,dm); d.position.set(x,y,z); d.rotation.set(-Math.PI/2,0,0); d.name='STRAT_SIDEDOT_'+n; grp.add(d); }); });
+    grp.children.forEach(c=>{ if(c.name.indexOf('STRAT_SIDEDOT_')===0){ const q=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,0,1),slope); c.quaternion.premultiply(q); } });
+    G.add(grp); window.STRAT_SIDEDOTS=grp.children.length; if(typeof render3d==='function') render3d(); }
+})();</script></body></html>
