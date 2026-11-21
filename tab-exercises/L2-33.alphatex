@@ -1,0 +1,15 @@
+\title "Lesson 2.33 · Seven-eight (2+2+3)"
+\tempo 70
+\hideDynamics
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 7 8
+:8 0.6{ac} 3.6{beam split} 0.5{ac} 2.5{beam split} 0.4{ac} 2.4 0.3 |
+:8 0.6{ac} 3.6{beam split} 0.5{ac} 2.5{beam split} 0.4{ac} 2.4 0.3 |
+:8 0.6{ac} 3.6{beam split} 0.5{ac} 2.5{beam split} 0.4{ac} 2.4 0.3 |
+:8 0.6{ac} 3.6{beam split} 0.5{ac} 2.5 :4 0.6{ac d} |

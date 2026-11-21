@@ -1,0 +1,15 @@
+\title "Lesson 2.13 · One riff, two places"
+\tempo 70
+\hideDynamics
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+:4 0.5{d} :8 3.5 :4 0.4 2.4 |
+:4 5.6{d} :8 8.6 :4 5.5 7.5 |
+:4 0.5{d} :8 3.5 :4 0.4 2.4 |
+:1 0.5 |

@@ -1,0 +1,15 @@
+\title "Lesson 2.20 · Harmonics, ghost notes, trills"
+\tempo 70
+\hideDynamics
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+\ro :2 12.3{nh} 12.2{nh} |
+:4 5.3 7.3{g} 5.3 7.3{g} |
+:8 5.2{h} 7.2 5.2{h} 7.2 :2 5.2{tr (7 16)} |
+\rc 2 :4 12.1{tt} 5.1 :2 (0.3{lr} 1.2{lr} 0.1{lr}) |

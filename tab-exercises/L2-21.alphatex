@@ -1,0 +1,15 @@
+\title "Lesson 2.21 · Rhythm in tab"
+\tempo 70
+\hideDynamics
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+\ro :4 0.6 :8 3.6 0.5 :4 2.5 0.4 |
+:4 2.4 :8 0.3 2.3 :4 0.4 2.4 |
+:4 0.6 :8 3.6 0.5 :4 2.5 0.4 |
+\rc 2 :4 2.4 :8 2.5 0.5 :2 0.6 |

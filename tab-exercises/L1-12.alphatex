@@ -1,0 +1,14 @@
+\title "Lesson 1.12 · What tab is"
+\tempo 70
+\hideDynamics
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+:4 0.6 3.6 0.5 3.5 |
+0.4 2.4 0.3 2.3 |
+0.2 1.2 :2 r |

@@ -1,0 +1,14 @@
+\title "Lesson 2.16 · Dynamics and articulation"
+\tempo 70
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+:4 0.3{dy p cre} 2.3{cre} 0.3{cre} 2.3{cre} |
+:4 0.3{dy mf ten txt "ten."} 2.3{ten} 0.3{ac} 2.3{ac} |
+:4 0.3{dy f st} 2.3{st} 0.3{dec} 2.3{dec} |
+:2 0.3{dy mp ten txt "ten."} 0.3{fermata medium} |

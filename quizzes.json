@@ -1,0 +1,1722 @@
+{
+"version": "1.91-quiz",
+"note": "Written from /workspace/merge/narration/level-*.md; answer = index into options (the lesson shuffles the order on screen).",
+"lessons": {
+"1.1": [
+{
+"q": "In this lesson, Ionian is another name for which scale?",
+"options": [
+"The minor scale",
+"The major scale",
+"The chromatic scale"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which root, family and mode does the lesson ask you to choose?",
+"options": [
+"C, Major, Ionian",
+"G, Major, Mixolydian",
+"A, Minor, Aeolian"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What does BPM mean?",
+"options": [
+"Bars per minute",
+"Bass pitch marker",
+"Beats per minute"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "What tempo does the lesson use?",
+"options": [
+"Sixty BPM",
+"Eighty BPM",
+"One hundred and twenty BPM"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Which control changes the playback speed?",
+"options": [
+"The root",
+"The tempo",
+"The mode"
+],
+"answer": 1,
+"cue": "check"
+}
+],
+"1.2": [
+{
+"q": "How does an electric guitar usually become loud enough for a room?",
+"options": [
+"Its hollow body moves the air",
+"Pickups and an amplifier",
+"A larger bridge"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What moves the air on an acoustic guitar?",
+"options": [
+"The vibrating strings, bridge and body",
+"A pickup",
+"An amplifier"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Why did electric guitars develop?",
+"options": [
+"Players wanted lighter instruments",
+"Players needed more volume",
+"Players wanted more strings"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "How is a standard four string bass tuned?",
+"options": [
+"Like the guitar's four highest strings",
+"Like the guitar's four lowest strings, an octave lower",
+"Like the guitar's four lowest strings, an octave higher"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Does either instrument belong to just one style?",
+"options": [
+"Yes, acoustic is for folk only",
+"Yes, electric is for rock only",
+"No, neither belongs to just one style"
+],
+"answer": 2,
+"cue": "explain-a"
+}
+],
+"1.18": [
+{
+"q": "In open C major, where does finger three go?",
+"options": [
+"A string, fret three",
+"D string, fret two",
+"B string, fret one"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which string do you keep silent in open C?",
+"options": [
+"High e",
+"Low E",
+"G"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does the cross above low E mean?",
+"options": [
+"Play it at fret one",
+"Play it open",
+"Leave that string out"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "From the A string across, which notes sound?",
+"options": [
+"C, E, G, C, E",
+"C, F, A, C, F",
+"A, C, E, A, C"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "If the G string sounds dull, what should you check?",
+"options": [
+"Whether the second finger is touching it",
+"Whether the tempo is too fast",
+"Whether low E is ringing"
+],
+"answer": 0,
+"cue": "check"
+}
+],
+"1.32": [
+{
+"q": "What connects the guitar output to the amplifier input in a basic setup?",
+"options": [
+"A speaker cable",
+"An instrument cable",
+"A power lead"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What should you do before connecting or disconnecting?",
+"options": [
+"Turn the volume down",
+"Turn the gain up",
+"Open the amplifier"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What does gain control?",
+"options": [
+"Only the final level",
+"How strongly a stage is driven, and it may add distortion",
+"The speaker load"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Is a speaker output the same as an instrument input?",
+"options": [
+"Yes, they are the same socket",
+"Only on tube amplifiers",
+"No, they are different sockets"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "How should you set the level when you start?",
+"options": [
+"Start low, play a note and raise it gradually",
+"Start at full volume",
+"Set the master first, then the gain at maximum"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"1.33": [
+{
+"q": "What does a magnetic pickup sense?",
+"options": [
+"The movement of suitable metal strings",
+"The sound in the room",
+"The player's picking hand"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Why does a humbucker use two coils?",
+"options": [
+"To make it louder only",
+"To reduce common electrical hum",
+"To add distortion"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "How does the bridge pickup often sound?",
+"options": [
+"Rounder",
+"Brighter and more focused",
+"Exactly like the neck pickup"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What does the selector do?",
+"options": [
+"Chooses pickups or combinations",
+"Sets the tempo",
+"Changes the tuning"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Do bridge and neck sounds set rules for each style?",
+"options": [
+"Yes, they are fixed rules",
+"Only for rock",
+"No, they are starting points for listening"
+],
+"answer": 2,
+"cue": "explain-b"
+}
+],
+"1.34": [
+{
+"q": "What does delay do?",
+"options": [
+"Adds grit",
+"Repeats the sound after a short gap",
+"Suggests a space around the sound"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does reverb suggest?",
+"options": [
+"A space around the sound",
+"Distortion",
+"A change in pitch"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which of these are modulation effects?",
+"options": [
+"Drive and fuzz",
+"Chorus and tremolo",
+"Delay and reverb"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Are chorus and tremolo the same effect?",
+"options": [
+"Yes",
+"Only at slow speeds",
+"No, though both can create movement"
+],
+"answer": 2,
+"cue": "explain-a"
+},
+{
+"q": "What is the lesson's useful starting order?",
+"options": [
+"Guitar, drive, modulation, delay, reverb, then amplifier input",
+"Guitar, reverb, delay, drive, then amplifier input",
+"Guitar, delay, drive, reverb, then amplifier input"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"1.35": [
+{
+"q": "What changes when you play the same note lightly and then more firmly?",
+"options": [
+"The tuning",
+"The attack and level",
+"The fret position"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What changes when you pick nearer the neck or nearer the bridge?",
+"options": [
+"The balance of the sound",
+"The pitch of the note",
+"Nothing until an effect is added"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "How many equipment controls does the lesson change at a time?",
+"options": [
+"All of them",
+"Two",
+"One"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "Where should you judge a tone?",
+"options": [
+"Only when playing alone",
+"In its musical context",
+"Only with headphones"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What do you compare before changing any equipment control?",
+"options": [
+"Two different picking touches",
+"Two amplifiers",
+"Two guitars"
+],
+"answer": 0,
+"cue": "check"
+}
+],
+"1.36": [
+{
+"q": "What does action mean?",
+"options": [
+"String height above the frets",
+"How well fretted pitches agree",
+"The string gauge"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What is intonation?",
+"options": [
+"How loud the guitar is",
+"How well fretted pitches agree across the neck",
+"How high the strings sit"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Can the open strings be in tune while a fretted note sounds wrong?",
+"options": [
+"No, never",
+"Yes",
+"Only on bass"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "How should you store the guitar?",
+"options": [
+"Securely, away from heat and sudden climate changes",
+"Next to a heater",
+"In direct sun"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What should you do if you find an issue?",
+"options": [
+"Take the guitar apart",
+"Make an adjustment you haven't tried before",
+"Record it for a teacher or technician"
+],
+"answer": 2,
+"cue": "wrap"
+}
+],
+"1.37": [
+{
+"q": "About how long is each practice part?",
+"options": [
+"Two minutes",
+"Ten minutes",
+"Thirty minutes"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which Mode setting does the lesson use?",
+"options": [
+"C Ionian, Shape two, both directions, two octaves, sixty BPM",
+"G Mixolydian, Shape one, up only, eighty BPM",
+"A Aeolian, Shape three, one octave, seventy BPM"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What do you do in Chord?",
+"options": [
+"Record an idea",
+"Check open C",
+"Keep a pulse"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What do you do in Songwriter?",
+"options": [
+"Find C notes",
+"Read a phrase",
+"Record an idea"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "When do you start the next task?",
+"options": [
+"After completing and reviewing one task",
+"Straight away, all at once",
+"Only after a week"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"2.1": [
+{
+"q": "Which notes are in C major?",
+"options": [
+"C, D, E, F, G, A, B",
+"C, D, E flat, F, G, A flat, B flat",
+"C, D, E, F sharp, G, A, B"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which semitone does the lesson ask you to listen to?",
+"options": [
+"E to F",
+"B to C",
+"C to D"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does notation show?",
+"options": [
+"Strings and frets",
+"Pitch and rhythm",
+"Only fingering"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What does tab show?",
+"options": [
+"Strings and frets",
+"Dynamics",
+"Key signatures"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What does the next C after B do?",
+"options": [
+"Starts a new key",
+"Lowers the tonic",
+"Repeats the tonic an octave higher"
+],
+"answer": 2,
+"cue": "explain-a"
+}
+],
+"2.3": [
+{
+"q": "Where else does the C at A string fret three sound at the same pitch?",
+"options": [
+"Low E string, fret eight",
+"B string, fret one",
+"G string, fret five"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "The C on the B string at fret one is...",
+"options": [
+"the same pitch",
+"an octave higher",
+"an octave lower"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "How is guitar notation written compared with its sound?",
+"options": [
+"An octave below its sound",
+"At its sounding pitch",
+"An octave above its sound"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "Where is written middle C on the guitar?",
+"options": [
+"A string, fret three",
+"Low E string, fret three",
+"G string, open"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "The open G string is written on which treble line?",
+"options": [
+"Line one",
+"Line two",
+"Line four"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+],
+"2.8": [
+{
+"q": "In simple time, how do beats split?",
+"options": [
+"Into three equal parts",
+"Into two equal quavers",
+"Into four semiquavers only"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does swing change?",
+"options": [
+"The written pitches",
+"Paired quavers to a long short feel",
+"The speed of the main pulse"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does a tied note do?",
+"options": [
+"Carries over without another attack",
+"Is played twice",
+"Is left out"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "For the swing pass, what changes?",
+"options": [
+"The speed of the main pulse",
+"The written pitches",
+"The placement between beats"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "What do you do before strumming the rhythm card?",
+"options": [
+"Clap it",
+"Swing it",
+"Play it twice as fast"
+],
+"answer": 0,
+"cue": "explain-a"
+}
+],
+"2.13": [
+{
+"q": "Which line is the top line of tab?",
+"options": [
+"Low E",
+"High e",
+"The G string"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Can two different tab locations produce exactly the same pitch?",
+"options": [
+"Yes",
+"No",
+"Only on bass"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which note does the example begin on?",
+"options": [
+"Open A",
+"G string fret two",
+"Open D"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Moving the whole riff an octave higher puts it in…",
+"options": [
+"A different register",
+"The same register",
+"A different tuning"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Which note value must keep its full length?",
+"options": [
+"The quaver",
+"The minim",
+"The dotted crotchet"
+],
+"answer": 2,
+"cue": "check"
+}
+],
+"2.15": [
+{
+"q": "How many pitch classes does the chromatic scale use?",
+"options": [
+"Seven",
+"Twelve",
+"Eight"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does each next fret do to the pitch?",
+"options": [
+"Raises it by one semitone",
+"Raises it by one tone",
+"Lowers it by one semitone"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "On high e, which notes come first?",
+"options": [
+"E, F, F sharp, G, G sharp",
+"E, F sharp, G sharp, A, B",
+"E, E sharp, F, G flat, G"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which spellings does the exercise use on the way down?",
+"options": [
+"Sharps",
+"Flats",
+"Double sharps"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Which fret repeats open E an octave higher?",
+"options": [
+"Fret seven",
+"Fret five",
+"Fret twelve"
+],
+"answer": 2,
+"cue": "explain-b"
+}
+],
+"3.9": [
+{
+"q": "C to E is a...",
+"options": [
+"minor third",
+"major third",
+"perfect fifth"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "C to G is a...",
+"options": [
+"perfect fifth",
+"perfect fourth",
+"major sixth"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "E to G is a...",
+"options": [
+"major third",
+"minor third",
+"tone"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "In A minor, A to C is a...",
+"options": [
+"major third",
+"minor third",
+"perfect fifth"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What changes the chord quality?",
+"options": [
+"The order of the stacked thirds",
+"The tempo",
+"The string you play it on"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"3.21": [
+{
+"q": "Which notes do C Ionian and A Aeolian share?",
+"options": [
+"C, D, E, F, G, A, B",
+"C, D, E flat, F, G, A flat, B flat",
+"A, B, C sharp, D, E, F sharp, G sharp"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "How many sharps or flats are in their signature?",
+"options": [
+"One flat",
+"None",
+"One sharp"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which flats does C Aeolian use?",
+"options": [
+"E flat, A flat and B flat",
+"B flat only",
+"B flat, E flat, A flat and D flat"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Which parent signature does C Aeolian use?",
+"options": [
+"E flat major, three flats",
+"F major, one flat",
+"G major, one sharp"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "C Ionian and C Aeolian keep C as tonic but change how many degrees?",
+"options": [
+"One",
+"Two",
+"Three"
+],
+"answer": 2,
+"cue": "explain-b"
+}
+],
+"4.13": [
+{
+"q": "In G major, which chord is the dominant?",
+"options": [
+"C",
+"D",
+"E minor"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "In G major, which chord is predominant?",
+"options": [
+"C",
+"D",
+"G"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which note in D is the leading note that rises to G?",
+"options": [
+"A",
+"D",
+"F sharp"
+],
+"answer": 2,
+"cue": "explain-a"
+},
+{
+"q": "Five to one is which cadence?",
+"options": [
+"Plagal",
+"Perfect",
+"Interrupted"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Five to six minor is which cadence?",
+"options": [
+"Interrupted",
+"Imperfect",
+"Perfect"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"4.17": [
+{
+"q": "Which notes does G seven contain?",
+"options": [
+"G, B, D, F",
+"G, B, D, F sharp",
+"G, B flat, D, F"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Over G seven, which notes add ninth and thirteenth colour?",
+"options": [
+"C and F",
+"A and E",
+"B and D"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Over G seven, C is the...",
+"options": [
+"natural eleventh",
+"ninth",
+"thirteenth"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Is an avoid note forbidden?",
+"options": [
+"Yes, never play it",
+"No, its placement and resolution matter",
+"Only on beat one"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Over D minor seven, G seven and C major seven, the key collection stays...",
+"options": [
+"G major",
+"D minor",
+"C major"
+],
+"answer": 2,
+"cue": "explain-b"
+}
+],
+"4.19": [
+{
+"q": "Which notes are in C add nine?",
+"options": [
+"C, E, G, D",
+"C, E, G, B, D",
+"C, E, G, B flat, D"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which extra note does C major nine contain besides D?",
+"options": [
+"B flat",
+"B",
+"A"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which seventh does C nine use?",
+"options": [
+"B",
+"B flat",
+"A"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "In C major, which notes are in G nine?",
+"options": [
+"G, B, D, F, A",
+"G, B, D, F sharp, A",
+"G, B flat, D, F, A"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "In G nine, the ninth is a...",
+"options": [
+"chord tone",
+"tension",
+"root"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+],
+"4.24": [
+{
+"q": "Which beats do you choose chord tones for first?",
+"options": [
+"Beats one and three",
+"Beats two and four",
+"Only beat four"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which progression does the lesson use?",
+"options": [
+"C, A minor, F, G",
+"C, F, G, C",
+"A minor, D minor, E, A minor"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What does an enclosure do?",
+"options": [
+"Repeats the target",
+"Approaches a target from both sides",
+"Skips the target"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Over C, what does F, D, E surround?",
+"options": [
+"F",
+"D",
+"E"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "Where do you mark the harmony?",
+"options": [
+"Directly above the melody",
+"Below the tab",
+"In a separate file"
+],
+"answer": 0,
+"cue": "explain-a"
+}
+],
+"4.28": [
+{
+"q": "Which chords does the A blues use?",
+"options": [
+"A seven, D seven and E seven",
+"A, D and E major seven",
+"A minor, D minor and E minor"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which notes can outline each chord?",
+"options": [
+"Root, fifth and octave",
+"Only the third",
+"Every chromatic note"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Over A seven, the flat seventh is...",
+"options": [
+"G sharp",
+"G",
+"F"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What would G sharp imply over A?",
+"options": [
+"A seven",
+"A minor",
+"A major seven"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "Over E seven, the flat seventh is...",
+"options": [
+"D",
+"D sharp",
+"C"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"5.9": [
+{
+"q": "With A fixed, what is the parent major key of A Dorian?",
+"options": [
+"G",
+"C",
+"D"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "With A fixed, what is the parent major key of A Phrygian?",
+"options": [
+"F",
+"B flat",
+"E"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "With A fixed, what is the parent major key of A Lydian?",
+"options": [
+"A",
+"E",
+"D"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What do parallel modes do?",
+"options": [
+"Share a collection and change tonic",
+"Keep tonic and change collection",
+"Keep both tonic and collection"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Is this exercise relative or parallel?",
+"options": [
+"Relative",
+"Parallel",
+"Neither"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+],
+"5.10": [
+{
+"q": "Which notes does A Hirajoshi use in this library?",
+"options": [
+"A, B, C, E, F",
+"A, C, D, E, G",
+"A, B, C sharp, E, F sharp"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which degrees of A natural minor do its gaps leave out?",
+"options": [
+"Two and six",
+"Four and seven",
+"Three and five"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "E Hijaz matches which scale here?",
+"options": [
+"E Phrygian Dominant",
+"E Dorian",
+"E Lydian"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Which note is the major third in E Hijaz?",
+"options": [
+"G",
+"G sharp",
+"A"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What are these fretted collections?",
+"options": [
+"Exact copies of the traditions",
+"Twelve tone approximations",
+"Microtonal scales"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+],
+"5.11": [
+{
+"q": "What does harmonic minor change in A minor?",
+"options": [
+"Raises G to G sharp",
+"Raises F and G",
+"Lowers C"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What does melodic minor raise?",
+"options": [
+"Only G",
+"Both F and G, to F sharp and G sharp",
+"Only C"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which note do all three keep as their minor third?",
+"options": [
+"C",
+"C sharp",
+"B"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "How does classical melodic minor commonly descend?",
+"options": [
+"As harmonic minor",
+"As natural minor",
+"With the raised notes"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "In A minor, which notes are in G sharp diminished seven?",
+"options": [
+"G sharp, B, D, F",
+"G sharp, B, D sharp, F sharp",
+"G, B flat, D flat, F"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"6.1": [
+{
+"q": "How does an enclosure approach a target?",
+"options": [
+"From above and below before landing on it",
+"Only from below",
+"By skipping it"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Over D minor seven, which note does G, E, F enclose?",
+"options": [
+"G",
+"E",
+"F"
+],
+"answer": 2,
+"cue": "explain-a"
+},
+{
+"q": "F over D minor seven is the chord's...",
+"options": [
+"third",
+"fifth",
+"root"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Through D minor seven, G seven, C major seven, which thirds do you aim for?",
+"options": [
+"F, B and E",
+"D, G and C",
+"A, D and G"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What do the chromatic approach notes do?",
+"options": [
+"Hold for a full bar",
+"Resolve immediately to the targets",
+"Replace the targets"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+],
+"7.1": [
+{
+"q": "What does a fully diminished seventh stack?",
+"options": [
+"Major thirds",
+"Minor thirds",
+"Perfect fourths"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which notes are in F sharp diminished seven?",
+"options": [
+"F sharp, A, C, E flat",
+"F sharp, A, C, E",
+"F sharp, A sharp, C sharp, E"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "In C major, F sharp diminished seven can lead to...",
+"options": [
+"G",
+"D minor",
+"C"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "C sharp diminished seven leads to...",
+"options": [
+"G",
+"D minor",
+"F"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What does half diminished use instead of the diminished seventh?",
+"options": [
+"A major seventh",
+"A minor seventh",
+"No seventh"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+],
+"7.2": [
+{
+"q": "Which notes are in C augmented?",
+"options": [
+"C, E, G sharp",
+"C, E flat, G",
+"C, E, G"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "In A harmonic minor, C augmented is the chord on degree...",
+"options": [
+"one",
+"three",
+"five"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which upper-voice line does the lesson follow?",
+"options": [
+"G, G sharp, A, B flat, A",
+"G, A, B, C, D",
+"G, F sharp, F, E, D"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Are an augmented triad and an augmented sixth chord the same thing?",
+"options": [
+"Yes",
+"Only in minor",
+"No"
+],
+"answer": 2,
+"cue": "explain-b"
+},
+{
+"q": "Which harmony comes before the later augmented sixth lesson?",
+"options": [
+"Neapolitan harmony",
+"Modal mixture",
+"Tritone substitution"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"7.4": [
+{
+"q": "Which two chords can both lead to D minor?",
+"options": [
+"A seven and C sharp diminished seven",
+"G seven and B diminished",
+"E seven and G sharp diminished seven"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "A seven is which function?",
+"options": [
+"Five seven of two",
+"Five seven of five",
+"Borrowed four"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "In the chain, each chord points to the next root...",
+"options": [
+"a fifth below",
+"a step above",
+"a third below"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "Which chord ends the chain?",
+"options": [
+"G seven",
+"C major seven",
+"A minor seven"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What do you play first?",
+"options": [
+"The chain's roots E, A, D, G, C",
+"The flat sevenths only",
+"The final chord only"
+],
+"answer": 0,
+"cue": "check"
+}
+],
+"7.7": [
+{
+"q": "G Altered and D flat Lydian Dominant use the same pitch classes from which scale?",
+"options": [
+"A flat melodic minor",
+"G harmonic minor",
+"D flat major"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "G Altered's displayed flat four sounds as which note?",
+"options": [
+"C",
+"B",
+"A sharp"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does a suspended fourth do?",
+"options": [
+"Replaces the third",
+"Adds an eleventh on top of the third",
+"Replaces the root"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What does a pedal do?",
+"options": [
+"Removes the bass",
+"Holds a note while chords change",
+"Changes the tempo"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Which are the guide tones in G seven?",
+"options": [
+"B and F",
+"G and D",
+"A and E"
+],
+"answer": 0,
+"cue": "check"
+}
+],
+"7.9": [
+{
+"q": "What does parallel comparison keep?",
+"options": [
+"C as tonic",
+"The same note collection",
+"The same key signature"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Which chord can C major borrow from C Aeolian?",
+"options": [
+"F minor",
+"F major",
+"D minor"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "Does relative A minor supply those altered notes?",
+"options": [
+"Yes",
+"No",
+"Only F minor"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Which notes does C Mixolydian keep?",
+"options": [
+"E flat and B flat",
+"E natural and B flat",
+"E natural and B natural"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "What does C Aeolian have as well as B flat?",
+"options": [
+"E flat",
+"F sharp",
+"A natural"
+],
+"answer": 0,
+"cue": "explain-b"
+}
+],
+"7.14": [
+{
+"q": "In a C to G pivot, which note changes?",
+"options": [
+"F to F sharp",
+"B to B flat",
+"C to C sharp"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What is the new key signature?",
+"options": [
+"One flat",
+"No sharps or flats",
+"One sharp"
+],
+"answer": 2,
+"cue": "explain-a"
+},
+{
+"q": "A direct lift moves to a new key without what?",
+"options": [
+"A shared pivot",
+"A change of tempo",
+"Any chords"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What stays unchanged in a direct lift?",
+"options": [
+"The durations and phrase shape",
+"The key",
+"Every pitch"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "When the phrase moves a tone higher to D, minor chords stay...",
+"options": [
+"major",
+"minor",
+"diminished"
+],
+"answer": 1,
+"cue": "check"
+}
+],
+"7.15": [
+{
+"q": "What is form?",
+"options": [
+"How often chords change",
+"The order of sections",
+"The strumming pattern"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What is harmonic rhythm?",
+"options": [
+"How busy the strumming is",
+"How often chords change",
+"The drum pattern"
+],
+"answer": 1,
+"cue": "explain-b"
+},
+{
+"q": "Does a different lyric always mean a new musical section?",
+"options": [
+"Yes",
+"No",
+"Only in a chorus"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does the lesson compare while keeping the pulse unchanged?",
+"options": [
+"One chord per bar with two per bar",
+"Fast and slow tempos",
+"Major and minor keys"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What do you mark for each section?",
+"options": [
+"Its bar count and which material repeats",
+"Only its lyric",
+"Only its key"
+],
+"answer": 0,
+"cue": "explain-a"
+}
+],
+"7.16": [
+{
+"q": "What is monophony?",
+"options": [
+"One line",
+"Melody with accompaniment",
+"Independent lines"
+],
+"answer": 0,
+"cue": "explain-a"
+},
+{
+"q": "What is homophony?",
+"options": [
+"One line",
+"Melody with accompaniment",
+"Independent lines"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "Do several instruments doubling one melody automatically create polyphony?",
+"options": [
+"Yes",
+"No",
+"Only with drums"
+],
+"answer": 1,
+"cue": "explain-a"
+},
+{
+"q": "What does the bass do?",
+"options": [
+"Anchors the low register",
+"Plays only the highest notes",
+"Supplies only the melody"
+],
+"answer": 0,
+"cue": "explain-b"
+},
+{
+"q": "What do drums clarify?",
+"options": [
+"The harmony",
+"The pulse",
+"The melody"
+],
+"answer": 1,
+"cue": "explain-b"
+}
+]
+}
+}

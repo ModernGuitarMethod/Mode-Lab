@@ -1,0 +1,14 @@
+\title "Lesson 2.18 · Expression terms"
+\tempo 70
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+:4 0.3{txt "legato · dolce" dy mp} 2.3 0.2 1.2 |
+\tempo 60 :4 3.2{txt "rit."} 1.2 0.2 2.3 |
+\tempo 70 :4 0.3{txt "a tempo" dy f} 2.3 0.2 1.2 |
+:2 0.3{txt "subito p" dy p} 0.3 |

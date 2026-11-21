@@ -1,0 +1,15 @@
+\title "Lesson 2.6 · Rests"
+\tempo 70
+\hideDynamics
+.
+\track "Guitar"
+\staff {score tabs}
+\clef G2
+\ks C
+\tuning E4 B3 G3 D3 A2 E2
+\instrument 25
+\ts 4 4
+:4 0.3 r 0.3 0.3 |
+:4 0.3 :8 r 0.3 :4 r 0.3 |
+:2 0.3 :4 r 0.3 |
+:1 r |
